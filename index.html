@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Tracker les habitudes de votre chien" />
+  <title>AniTracker 🐾</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+  <!-- Chart.js CDN (cached by service worker on first load) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== Header ===== -->
+  <header>
+    <span class="header-icon">🐾</span>
+    <div>
+      <h1>AniTracker</h1>
+      <div class="header-sub">Journal de mon chien</div>
+    </div>
+  </header>
+
+  <!-- ===== Page 1 : Nouvelle entrée ===== -->
+  <main id="page-new" class="page active">
+
+    <div class="card">
+      <div class="card-title">Type d'événement</div>
+      <div class="segment">
+        <button class="seg-btn active" data-type="walk">🐕 Balade</button>
+        <button class="seg-btn" data-type="bathroom">🚽 Besoin</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Action</div>
+      <div class="segment" id="action-panel">
+        <!-- Filled dynamically by app.js -->
+      </div>
+    </div>
+
+    <div class="card" id="location-section">
+      <div class="card-title">Lieu</div>
+      <div class="segment">
+        <button class="seg-btn active" data-loc="outside">🌿 Dehors</button>
+        <button class="seg-btn" data-loc="inside">🏠 Dedans</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Date &amp; heure</div>
+      <div class="datetime-row">
+        <label>🕐</label>
+        <input type="datetime-local" id="entry-time" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Note (optionnel)</div>
+      <div class="datetime-row">
+        <label>📝</label>
+        <input type="text" id="entry-note" placeholder="Ex : a bien mangé avant…"
+          style="background:transparent;border:none;color:var(--text);font-size:.9rem;font-family:inherit;flex:1;outline:none;" />
+      </div>
+    </div>
+
+    <button class="btn-submit" id="btn-add">＋ Enregistrer</button>
+
+  </main>
+
+  <!-- ===== Page 2 : Statistiques ===== -->
+  <main id="page-stats" class="page">
+
+    <div class="quick-stats">
+      <div class="qs-item walk-color">
+        <div class="qs-value" id="qs-walks">0</div>
+        <div class="qs-label">Balades<br>7 jours</div>
+      </div>
+      <div class="qs-item pipi-color">
+        <div class="qs-value" id="qs-pipi">0</div>
+        <div class="qs-label">Pipis<br>7 jours</div>
+      </div>
+      <div class="qs-item caca-color">
+        <div class="qs-value" id="qs-caca">0</div>
+        <div class="qs-label">Cacas<br>7 jours</div>
+      </div>
+    </div>
+
+    <!-- Score propreté -->
+    <div class="card">
+      <div class="card-title">🏆 Score propreté – 7 jours</div>
+      <div class="score-ring">
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 140 140" width="140" height="140">
+            <circle class="ring-bg"   cx="70" cy="70" r="54" />
+            <circle class="ring-fill" cx="70" cy="70" r="54"
+              stroke-dasharray="339.3" stroke-dashoffset="339.3" />
+          </svg>
+          <div class="ring-text">
+            <span class="ring-pct" id="ring-pct">—</span>
+            <span class="ring-label" id="ring-label">Dehors</span>
+          </div>
+        </div>
+        <div class="score-details">
+          <div class="score-item green">
+            <span class="si-label">💧 Pipi dehors</span>
+            <span class="si-value" id="si-pipi-out">0</span>
+          </div>
+          <div class="score-item red">
+            <span class="si-label">💧 Pipi dedans</span>
+            <span class="si-value" id="si-pipi-in">0</span>
+          </div>
+          <div class="score-item green">
+            <span class="si-label">💩 Caca dehors</span>
+            <span class="si-value" id="si-caca-out">0</span>
+          </div>
+          <div class="score-item red">
+            <span class="si-label">💩 Caca dedans</span>
+            <span class="si-value" id="si-caca-in">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Graphique besoins -->
+    <div class="card">
+      <div class="card-title">📊 Besoins – 7 derniers jours</div>
+      <div class="chart-wrap">
+        <canvas id="chart-needs"></canvas>
+      </div>
+    </div>
+
+    <!-- Graphique balades -->
+    <div class="card">
+      <div class="card-title">🚶 Balades &amp; accidents – 7 jours</div>
+      <div class="chart-wrap">
+        <canvas id="chart-walks"></canvas>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ===== Page 3 : Historique ===== -->
+  <main id="page-history" class="page">
+    <div class="card">
+      <div class="card-title">📋 Historique complet</div>
+      <div class="entry-list" id="entry-list"></div>
+    </div>
+  </main>
+
+  <!-- ===== Bottom Nav ===== -->
+  <nav>
+    <button class="nav-btn active" id="nav-new" data-page="new">
+      <span class="nav-icon">➕</span>
+      Nouveau
+    </button>
+    <button class="nav-btn" id="nav-stats" data-page="stats">
+      <span class="nav-icon">📊</span>
+      Stats
+    </button>
+    <button class="nav-btn" id="nav-history" data-page="history">
+      <span class="nav-icon">📋</span>
+      Historique
+    </button>
+  </nav>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
