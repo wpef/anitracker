@@ -44,6 +44,22 @@
       </div>
     </div>
 
+    <!-- Card durée (visible uniquement pour les balades) -->
+    <div class="card" id="duration-section" style="display:none">
+      <div class="card-title">⏱ Durée</div>
+      <div class="duration-presets">
+        <button class="dur-btn" data-min="15">15min</button>
+        <button class="dur-btn" data-min="30">30min</button>
+        <button class="dur-btn" data-min="45">45min</button>
+        <button class="dur-btn" data-min="60">1h</button>
+        <button class="dur-btn" data-min="90">1h30</button>
+      </div>
+      <div class="datetime-row" style="margin-top:10px">
+        <label>✏️</label>
+        <input type="number" id="entry-duration" min="1" max="480" placeholder="Durée en minutes" />
+      </div>
+    </div>
+
     <div class="card" id="location-section">
       <div class="card-title">Lieu</div>
       <div class="segment">
@@ -57,6 +73,13 @@
       <div class="datetime-row">
         <label>🕐</label>
         <input type="datetime-local" id="entry-time" />
+      </div>
+      <div class="time-shortcuts">
+        <button class="time-shortcut-btn" data-offset="0">Maintenant</button>
+        <button class="time-shortcut-btn" data-offset="-15">-15 min</button>
+        <button class="time-shortcut-btn" data-offset="-30">-30 min</button>
+        <button class="time-shortcut-btn" data-offset="-60">-1h</button>
+        <button class="time-shortcut-btn" data-offset="-120">-2h</button>
       </div>
     </div>
 
@@ -79,15 +102,15 @@
     <div class="quick-stats">
       <div class="qs-item walk-color">
         <div class="qs-value" id="qs-walks">0</div>
-        <div class="qs-label">Balades<br>7 jours</div>
+        <div class="qs-label">Balades<br>24h</div>
       </div>
       <div class="qs-item pipi-color">
         <div class="qs-value" id="qs-pipi">0</div>
-        <div class="qs-label">Pipis<br>7 jours</div>
+        <div class="qs-label">Pipis<br>24h</div>
       </div>
       <div class="qs-item caca-color">
         <div class="qs-value" id="qs-caca">0</div>
-        <div class="qs-label">Cacas<br>7 jours</div>
+        <div class="qs-label">Cacas<br>24h</div>
       </div>
     </div>
 
@@ -127,6 +150,20 @@
       </div>
     </div>
 
+    <!-- Graphique évolution score propreté -->
+    <div class="card">
+      <div class="card-title">📈 Évolution propreté – 7 jours</div>
+      <div class="chart-wrap">
+        <canvas id="chart-propret"></canvas>
+      </div>
+    </div>
+
+    <!-- Balades aujourd'hui -->
+    <div class="card">
+      <div class="card-title">🦮 Balades aujourd'hui</div>
+      <div class="today-walks-summary" id="today-walks-summary">—</div>
+    </div>
+
     <!-- Graphique besoins -->
     <div class="card">
       <div class="card-title">📊 Besoins – 7 derniers jours</div>
@@ -148,7 +185,7 @@
   <!-- ===== Page 3 : Historique ===== -->
   <main id="page-history" class="page">
     <div class="card">
-      <div class="card-title">📋 Historique complet</div>
+      <div class="card-title">📅 Historique</div>
       <div class="entry-list" id="entry-list"></div>
     </div>
   </main>

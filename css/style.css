@@ -153,7 +153,9 @@ nav {
 .seg-btn[data-type="walk"].active    { background: var(--walk);     }
 .seg-btn[data-type="bathroom"].active{ background: var(--bathroom); }
 .seg-btn[data-action="start"].active,
-.seg-btn[data-action="end"].active   { background: var(--accent2);  color: var(--walk); }
+.seg-btn[data-action="end"].active,
+.seg-btn[data-action="walk_from_start"].active,
+.seg-btn[data-action="walk_from_end"].active { background: var(--accent2); color: var(--walk); }
 .seg-btn[data-action="pipi"].active  { background: #1565c0;         color: #90caf9; }
 .seg-btn[data-action="caca"].active  { background: #4e342e;         color: #ffcc80; }
 .seg-btn[data-loc="outside"].active  { background: var(--outside);  color: #fff; }
@@ -339,6 +341,86 @@ nav {
 .qs-item.pipi-color   .qs-value { color: #90caf9;         }
 .qs-item.caca-color   .qs-value { color: #ffcc80;         }
 
+/* ===== Time Shortcut Buttons ===== */
+.time-shortcuts {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+.time-shortcut-btn {
+  border: 1px solid rgba(255,255,255,.12);
+  background: var(--bg);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: .75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+  white-space: nowrap;
+}
+.time-shortcut-btn:active {
+  background: var(--accent2);
+  color: var(--walk);
+  border-color: var(--walk);
+}
+
+/* ===== Duration Presets ===== */
+.duration-presets {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.dur-btn {
+  border: 1px solid rgba(255,255,255,.12);
+  background: var(--bg);
+  color: var(--text2);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: .8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.dur-btn.active,
+.dur-btn:active {
+  background: var(--accent2);
+  color: var(--walk);
+  border-color: var(--walk);
+}
+#entry-duration {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: .9rem;
+  font-family: inherit;
+  flex: 1;
+  outline: none;
+  width: 100%;
+}
+#entry-duration::placeholder { color: var(--text2); }
+
+/* ===== Today Walks Summary ===== */
+.today-walks-summary {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--walk);
+  text-align: center;
+  padding: 8px 0;
+}
+.today-walks-empty {
+  font-size: .85rem;
+  color: var(--text2);
+  font-weight: 400;
+}
+.today-walks-dur {
+  color: var(--text2);
+  font-weight: 500;
+  font-size: .95rem;
+}
+
 /* ===== Date/Time Field ===== */
 .datetime-row {
   display: flex;
@@ -359,6 +441,100 @@ nav {
   cursor: pointer;
   outline: none;
   color-scheme: dark;
+}
+
+/* ===== Timeline (History Page) ===== */
+.tl-day-header {
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text2);
+  padding: 4px 0 6px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
+  margin-bottom: 4px;
+}
+.tl-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 16px;
+}
+.tl-item {
+  display: grid;
+  grid-template-columns: 40px 20px 1fr;
+  align-items: flex-start;
+  gap: 0 8px;
+  min-height: 52px;
+}
+.tl-time {
+  font-size: .7rem;
+  color: var(--text2);
+  font-weight: 600;
+  padding-top: 10px;
+  text-align: right;
+}
+.tl-line-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.tl-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 13px;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.tl-dot-walk     { background: var(--walk); box-shadow: 0 0 6px var(--walk); }
+.tl-dot-bathroom { background: var(--bathroom); box-shadow: 0 0 6px var(--bathroom); }
+.tl-connector {
+  width: 2px;
+  flex: 1;
+  min-height: 10px;
+  background: rgba(255,255,255,.08);
+}
+.tl-card {
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.tl-card-icon {
+  font-size: 1.1rem;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.tl-card-icon.walk     { background: rgba(76,201,240,.15); }
+.tl-card-icon.bathroom { background: rgba(247,127,0,.15);  }
+.tl-card-body { flex: 1; min-width: 0; }
+.tl-card-title { font-size: .85rem; font-weight: 700; }
+.tl-card-note {
+  font-size: .72rem;
+  color: var(--text2);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tl-duration {
+  font-size: .68rem;
+  font-weight: 700;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: rgba(76,201,240,.15);
+  color: var(--walk);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ===== Scrollbar ===== */
