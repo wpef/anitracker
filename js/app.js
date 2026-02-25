@@ -1,10 +1,12 @@
-import { saveEntry, deleteEntry, getStats, getAllEntries } from './db.js';
+import { initDB, saveEntry, deleteEntry, updateEntry,
+         getStats, getAllEntries } from './db.js';
 
 // ===== State =====
-let currentType     = 'walk';             // 'walk' | 'bathroom'
-let currentAction   = 'walk_from_start';  // 'walk_from_start'|'walk_from_end'|'pipi'|'caca'
-let currentLocation = 'outside';          // 'outside' | 'inside'
+let currentType     = 'bathroom';
+let currentAction   = 'pipi';
+let currentLocation = 'outside';
 let charts          = {};
+let editingId       = null;
 
 // ===== DOM helpers =====
 const $ = id => document.getElementById(id);
@@ -20,14 +22,55 @@ function showPage(id) {
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   $(`page-${id}`).classList.add('active');
   $(`nav-${id}`).classList.add('active');
+  // Bouton flottant uniquement sur la page "new"
+  $('btn-add').style.display = id === 'new' ? 'block' : 'none';
 
-  if (id === 'stats') renderStats();
+  if (id === 'stats')   renderStats();
   if (id === 'history') renderHistory();
 }
 
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
+
+// ===== Utilities =====
+function formatDuration(totalMin) {
+  if (totalMin === null || totalMin === undefined || isNaN(totalMin)) return '';
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h${String(m).padStart(2, '0')}`;
+}
+
+function toLocalISO(date) {
+  const d = new Date(date);
+  d.setSeconds(0, 0);
+  return d.toISOString().slice(0, 16);
+}
+
+function localNow() {
+  return toLocalISO(new Date());
+}
+
+// ===== Toast =====
+let toastTimer;
+function showToast(msg) {
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== Sync indicator =====
+function setSyncState(state) {
+  // state: 'ok' | 'pending' | 'error'
+  const dot = $('sync-indicator');
+  if (!dot) return;
+  dot.className = `sync-dot sync-${state}`;
+  dot.title = state === 'ok' ? 'Synchronisé' : state === 'pending' ? 'Synchronisation…' : 'Erreur de sync';
+}
 
 // ===== New Entry Page =====
 function initNewEntry() {
@@ -40,13 +83,14 @@ function initNewEntry() {
     });
   });
 
-  // Action selector (delegated – panel swaps)
+  // Action selector (delegated)
   $('action-panel').addEventListener('click', e => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     currentAction = btn.dataset.action;
     setActive('action', currentAction);
     updateLocationVisibility();
+    updateFirmnessVisibility();
   });
 
   // Location selector
@@ -57,33 +101,59 @@ function initNewEntry() {
     });
   });
 
-  // Time shortcuts
+  // Time shortcuts → update entry-time (bathroom only)
   document.querySelector('.time-shortcuts').addEventListener('click', e => {
     const btn = e.target.closest('[data-offset]');
     if (!btn) return;
     const offsetMin = parseInt(btn.dataset.offset, 10);
-    const now = new Date();
-    now.setSeconds(0, 0);
-    now.setMinutes(now.getMinutes() + offsetMin);
-    $('entry-time').value = now.toISOString().slice(0, 16);
+    const t = new Date();
+    t.setSeconds(0, 0);
+    t.setMinutes(t.getMinutes() + offsetMin);
+    $('entry-time').value = toLocalISO(t);
   });
 
-  // Duration presets
+  // Firmness slider
+  $('entry-firmness').addEventListener('input', () => {
+    $('firmness-value').textContent = $('entry-firmness').value + '%';
+  });
+
+  // Walk: duration presets → set end = start + min
   document.querySelector('.duration-presets').addEventListener('click', e => {
     const btn = e.target.closest('[data-min]');
     if (!btn) return;
-    $('entry-duration').value = btn.dataset.min;
     document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    const min = parseInt(btn.dataset.min, 10);
+    const startVal = $('walk-start').value;
+    if (!startVal) return;
+    const end = new Date(new Date(startVal).getTime() + min * 60000);
+    $('walk-end').value = toLocalISO(end);
+    updateWalkDurationDisplay();
   });
+
+  // Walk: start changes → keep duration, push end
+  $('walk-start').addEventListener('change', () => {
+    const start = $('walk-start').value;
+    const end   = $('walk-end').value;
+    if (start && end) {
+      const dur = getWalkDurationMin();
+      if (dur > 0) {
+        const newEnd = new Date(new Date(start).getTime() + dur * 60000);
+        $('walk-end').value = toLocalISO(newEnd);
+      }
+    }
+    updateWalkDurationDisplay();
+  });
+
+  // Walk: end changes → recalculate duration
+  $('walk-end').addEventListener('change', updateWalkDurationDisplay);
 
   // Submit
   $('btn-add').addEventListener('click', handleAdd);
 
   // Init datetime
-  const now = new Date();
-  now.setSeconds(0, 0);
-  $('entry-time').value = now.toISOString().slice(0, 16);
+  $('entry-time').value = localNow();
+  $('walk-start').value = localNow();
 
   updateActionPanel();
   setActive('type', currentType);
@@ -91,80 +161,108 @@ function initNewEntry() {
 }
 
 function updateActionPanel() {
-  const panel = $('action-panel');
+  const panel     = $('action-panel');
+  const actionCard = $('action-card');
+
   if (currentType === 'walk') {
-    panel.innerHTML = `
-      <button class="seg-btn active" data-action="walk_from_start">🚶 Par le début</button>
-      <button class="seg-btn" data-action="walk_from_end">🏠 Par la fin</button>
-    `;
-    currentAction = 'walk_from_start';
+    actionCard.style.display = 'none';
+    currentAction = 'walk';
   } else {
+    actionCard.style.display = 'block';
     panel.innerHTML = `
-      <button class="seg-btn active" data-action="pipi">💧 Pipi</button>
+      <button class="seg-btn" data-action="pipi">💧 Pipi</button>
       <button class="seg-btn" data-action="caca">💩 Caca</button>
     `;
-    currentAction = 'pipi';
+    // keep currentAction if already pipi/caca, else default to pipi
+    if (currentAction !== 'pipi' && currentAction !== 'caca') currentAction = 'pipi';
+    setActive('action', currentAction);
   }
-  setActive('action', currentAction);
+
   updateLocationVisibility();
-  updateDurationVisibility();
+  updateWalkSectionVisibility();
+  updateFirmnessVisibility();
 }
 
 function updateLocationVisibility() {
   $('location-section').style.display = currentType === 'bathroom' ? 'block' : 'none';
 }
 
-function updateDurationVisibility() {
-  $('duration-section').style.display = currentType === 'walk' ? 'block' : 'none';
+function updateWalkSectionVisibility() {
+  const show = currentType === 'walk';
+  $('walk-section').style.display  = show ? 'block' : 'none';
+  $('datetime-card').style.display = show ? 'none'  : 'block';
 }
 
-function handleAdd() {
-  const timeVal = $('entry-time').value;
-  const anchorTime = timeVal ? new Date(timeVal) : new Date();
+function updateFirmnessVisibility() {
+  $('firmness-section').style.display =
+    (currentType === 'bathroom' && currentAction === 'caca') ? 'block' : 'none';
+}
+
+function getWalkDurationMin() {
+  const start = $('walk-start').value;
+  const end   = $('walk-end').value;
+  if (!start || !end) return 0;
+  return Math.round((new Date(end) - new Date(start)) / 60000);
+}
+
+function updateWalkDurationDisplay() {
+  const dur = getWalkDurationMin();
+  $('walk-duration-display').textContent = dur > 0 ? formatDuration(dur) : '— min';
+}
+
+async function handleAdd() {
   const note = $('entry-note').value.trim();
   let entry;
 
   if (currentType === 'walk') {
-    const durationMin = parseInt($('entry-duration').value, 10) || 0;
-    if (durationMin <= 0) {
-      showToast('⚠️ Renseigne une durée pour la balade');
+    const startVal = $('walk-start').value;
+    const endVal   = $('walk-end').value;
+    const durationMin = getWalkDurationMin();
+    if (!startVal || durationMin <= 0) {
+      showToast('⚠️ Renseigne un début et une fin pour la balade');
       return;
     }
-    let startTime, endTime;
-    if (currentAction === 'walk_from_start') {
-      startTime = new Date(anchorTime);
-      endTime   = new Date(anchorTime.getTime() + durationMin * 60000);
-    } else {
-      endTime   = new Date(anchorTime);
-      startTime = new Date(anchorTime.getTime() - durationMin * 60000);
-    }
     entry = {
-      type:        'walk',
-      anchor:      currentAction === 'walk_from_start' ? 'start' : 'end',
-      start_time:  startTime.toISOString(),
-      end_time:    endTime.toISOString(),
+      type:         'walk',
+      anchor:       'start',
+      start_time:   new Date(startVal).toISOString(),
+      end_time:     endVal ? new Date(endVal).toISOString() : null,
       duration_min: durationMin,
-      timestamp:   startTime.toISOString(),
+      timestamp:    new Date(startVal).toISOString(),
       note,
     };
   } else {
+    const timeVal = $('entry-time').value;
+    const firmness = currentAction === 'caca'
+      ? parseInt($('entry-firmness').value, 10) : undefined;
     entry = {
       type:      'bathroom',
       action:    currentAction,
       location:  currentLocation,
-      timestamp: anchorTime.toISOString(),
+      timestamp: timeVal ? new Date(timeVal).toISOString() : new Date().toISOString(),
       note,
+      ...(firmness !== undefined ? { firmness } : {}),
     };
   }
 
-  saveEntry(entry);
+  setSyncState('pending');
+  try {
+    await saveEntry(entry);
+    setSyncState('ok');
+  } catch {
+    setSyncState('error');
+  }
   showToast(entryLabel(entry) + ' enregistré ✓');
 
   // Reset form
-  const now = new Date();
-  now.setSeconds(0, 0);
-  $('entry-time').value = now.toISOString().slice(0, 16);
-  $('entry-note').value = '';
+  $('entry-time').value  = localNow();
+  $('walk-start').value  = localNow();
+  $('walk-end').value    = '';
+  $('entry-note').value  = '';
+  $('entry-firmness').value = '80';
+  $('firmness-value').textContent = '80%';
+  updateWalkDurationDisplay();
+  document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }
 
 function entryLabel(entry) {
@@ -179,31 +277,10 @@ function entryLabel(entry) {
   return label;
 }
 
-// ===== Utilities =====
-function formatDuration(totalMin) {
-  if (totalMin === null || totalMin === undefined) return '';
-  const h = Math.floor(totalMin / 60);
-  const m = totalMin % 60;
-  if (h === 0) return `${m}min`;
-  if (m === 0) return `${h}h`;
-  return `${h}h${String(m).padStart(2, '0')}`;
-}
-
-// ===== Toast =====
-let toastTimer;
-function showToast(msg) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
-}
-
 // ===== History Page (Timeline) =====
 function renderHistory() {
-  // Entries sorted newest-first (from db.js unshift)
   const allEntries = getAllEntries()
-    .filter(e => !(e.type === 'walk' && e.action === 'end')); // skip obsolete old walk_end
+    .filter(e => !(e.type === 'walk' && e.action === 'end'));
   const container = $('entry-list');
 
   if (!allEntries.length) {
@@ -214,13 +291,17 @@ function renderHistory() {
     return;
   }
 
-  // Group by local calendar day
+  // Group by local calendar day (newest day first, entries ascending within day)
   const groups = new Map();
   for (const e of allEntries) {
     const key = new Date(e.timestamp).toLocaleDateString('fr-FR',
       { year: 'numeric', month: '2-digit', day: '2-digit' });
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(e);
+  }
+  // Sort within each group: chronological (oldest first)
+  for (const [, dayEntries] of groups) {
+    dayEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
 
   const todayKey = new Date().toLocaleDateString('fr-FR',
@@ -250,11 +331,18 @@ function renderHistory() {
   }
 
   function entryMeta(e) {
-    if (e.type === 'walk' && e.duration_min) {
+    if (e.type === 'walk') {
       const start = new Date(e.start_time || e.timestamp);
-      const end   = new Date(e.end_time   || (start.getTime() + e.duration_min * 60000));
-      const fmt   = t => t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      return `${fmt(start)} → ${fmt(end)} · ${formatDuration(e.duration_min)}`;
+      const end   = e.end_time
+        ? new Date(e.end_time)
+        : (e.duration_min ? new Date(start.getTime() + e.duration_min * 60000) : null);
+      const fmt = t => t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const timeRange = end ? `${fmt(start)} → ${fmt(end)}` : fmt(start);
+      const durStr    = e.duration_min ? ` · ${formatDuration(e.duration_min)}` : '';
+      return timeRange + durStr;
+    }
+    if (e.type === 'bathroom' && e.action === 'caca' && e.firmness !== undefined) {
+      return `Fermeté : ${e.firmness}%`;
     }
     return '';
   }
@@ -293,7 +381,8 @@ function renderHistory() {
               ${e.note ? `<div class="tl-card-note">${e.note}</div>` : ''}
             </div>
             ${durBadge}${locBadge}
-            <button class="entry-delete" data-del="${e.id}" title="Supprimer">✕</button>
+            <button class="entry-edit"   data-edit="${e.id}" title="Modifier">✏️</button>
+            <button class="entry-delete" data-del="${e.id}"  title="Supprimer">✕</button>
           </div>
         </div>`;
     }
@@ -301,35 +390,196 @@ function renderHistory() {
   }
 
   container.innerHTML = html;
+
   container.querySelectorAll('[data-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      deleteEntry(Number(btn.dataset.del));
+    btn.addEventListener('click', async () => {
+      setSyncState('pending');
+      try {
+        await deleteEntry(btn.dataset.del);
+        setSyncState('ok');
+      } catch {
+        setSyncState('error');
+      }
       renderHistory();
     });
   });
+
+  container.querySelectorAll('[data-edit]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const entry = getAllEntries().find(e => e.id === btn.dataset.edit);
+      if (entry) openEditModal(entry);
+    });
+  });
 }
+
+// ===== Edit Modal =====
+function openEditModal(entry) {
+  editingId = entry.id;
+  let html = '';
+
+  if (entry.type === 'walk') {
+    const startVal = toLocalISO(entry.start_time || entry.timestamp);
+    const endVal   = entry.end_time ? toLocalISO(entry.end_time) : '';
+    const dur      = entry.duration_min || 0;
+    html = `
+      <div class="modal-field-group">
+        <div class="modal-field">
+          <label class="modal-label">🚶 Début</label>
+          <input type="datetime-local" id="edit-walk-start" value="${startVal}" class="modal-input" />
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">🏠 Fin</label>
+          <input type="datetime-local" id="edit-walk-end" value="${endVal}" class="modal-input" />
+        </div>
+      </div>
+      <div id="edit-dur-display" class="walk-duration-display">${dur > 0 ? formatDuration(dur) : '— min'}</div>
+      <div class="modal-field">
+        <label class="modal-label">📝 Note</label>
+        <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+      </div>`;
+  } else {
+    const timeVal = toLocalISO(entry.timestamp);
+    const isIn    = entry.location === 'inside';
+    const isCaca  = entry.action === 'caca';
+    const firmness = entry.firmness !== undefined ? entry.firmness : 80;
+    html = `
+      <div class="segment modal-segment">
+        <button class="seg-btn ${!isCaca ? 'active' : ''}" data-edit-action="pipi">💧 Pipi</button>
+        <button class="seg-btn ${isCaca  ? 'active' : ''}" data-edit-action="caca">💩 Caca</button>
+      </div>
+      <div class="segment modal-segment" style="margin-top:10px">
+        <button class="seg-btn ${!isIn ? 'active' : ''}" data-edit-loc="outside">🌿 Dehors</button>
+        <button class="seg-btn ${isIn  ? 'active' : ''}" data-edit-loc="inside">🏠 Dedans</button>
+      </div>
+      <div id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'};margin-top:14px">
+        <label class="modal-label">💩 Fermeté</label>
+        <input type="range" id="edit-firmness" min="0" max="100" value="${firmness}" step="5" />
+        <div class="firmness-row">
+          <span class="firmness-end">Liquide</span>
+          <span id="edit-firmness-value" class="firmness-current">${firmness}%</span>
+          <span class="firmness-end">Ferme</span>
+        </div>
+      </div>
+      <div class="modal-field" style="margin-top:14px">
+        <label class="modal-label">🕐 Date &amp; heure</label>
+        <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
+      </div>
+      <div class="modal-field" style="margin-top:10px">
+        <label class="modal-label">📝 Note</label>
+        <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+      </div>`;
+  }
+
+  $('modal-body').innerHTML = html;
+  $('edit-modal').style.display = 'flex';
+
+  // Walk: link start ↔ end ↔ duration
+  if (entry.type === 'walk') {
+    $('edit-walk-start').addEventListener('change', () => {
+      const dur = Math.round((new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000);
+      if ($('edit-walk-end').value && dur > 0) {
+        $('edit-dur-display').textContent = formatDuration(dur);
+      }
+    });
+    $('edit-walk-end').addEventListener('change', () => {
+      const dur = Math.round((new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000);
+      $('edit-dur-display').textContent = dur > 0 ? formatDuration(dur) : '— min';
+    });
+  }
+
+  // Bathroom: action toggle
+  if (entry.type === 'bathroom') {
+    $('modal-body').addEventListener('click', e => {
+      const aBtn = e.target.closest('[data-edit-action]');
+      if (aBtn) {
+        $('modal-body').querySelectorAll('[data-edit-action]').forEach(b => b.classList.remove('active'));
+        aBtn.classList.add('active');
+        const isCaca = aBtn.dataset.editAction === 'caca';
+        $('edit-firmness-section').style.display = isCaca ? 'block' : 'none';
+      }
+      const lBtn = e.target.closest('[data-edit-loc]');
+      if (lBtn) {
+        $('modal-body').querySelectorAll('[data-edit-loc]').forEach(b => b.classList.remove('active'));
+        lBtn.classList.add('active');
+      }
+    });
+    // Firmness live update
+    const efInput = $('edit-firmness');
+    if (efInput) {
+      efInput.addEventListener('input', () => {
+        $('edit-firmness-value').textContent = efInput.value + '%';
+      });
+    }
+  }
+}
+
+function closeEditModal() {
+  $('edit-modal').style.display = 'none';
+  editingId = null;
+}
+
+async function saveEdit() {
+  if (!editingId) return;
+  const entry = getAllEntries().find(e => e.id === editingId);
+  if (!entry) return;
+
+  let updated = {};
+
+  if (entry.type === 'walk') {
+    const startVal = $('edit-walk-start').value;
+    const endVal   = $('edit-walk-end').value;
+    const dur      = endVal
+      ? Math.round((new Date(endVal) - new Date(startVal)) / 60000) : (entry.duration_min || 0);
+    updated = {
+      start_time:   new Date(startVal).toISOString(),
+      end_time:     endVal ? new Date(endVal).toISOString() : null,
+      duration_min: dur,
+      timestamp:    new Date(startVal).toISOString(),
+      note:         $('edit-note').value.trim(),
+    };
+  } else {
+    const activeAction = $('modal-body').querySelector('[data-edit-action].active')?.dataset.editAction || entry.action;
+    const activeLoc    = $('modal-body').querySelector('[data-edit-loc].active')?.dataset.editLoc    || entry.location;
+    const firmInput    = $('edit-firmness');
+    const firmness     = (activeAction === 'caca' && firmInput) ? parseInt(firmInput.value, 10) : undefined;
+    updated = {
+      action:    activeAction,
+      location:  activeLoc,
+      timestamp: new Date($('edit-time').value).toISOString(),
+      note:      $('edit-note').value.trim(),
+      ...(firmness !== undefined ? { firmness } : {}),
+    };
+  }
+
+  setSyncState('pending');
+  try {
+    await updateEntry(editingId, updated);
+    setSyncState('ok');
+  } catch {
+    setSyncState('error');
+  }
+  closeEditModal();
+  renderHistory();
+  showToast('Entrée modifiée ✓');
+}
+
+// Modal bindings
+$('modal-close').addEventListener('click', closeEditModal);
+$('modal-cancel').addEventListener('click', closeEditModal);
+$('modal-save').addEventListener('click', saveEdit);
+$('edit-modal').addEventListener('click', e => {
+  if (e.target === $('edit-modal')) closeEditModal(); // tap outside
+});
 
 // ===== Stats Page =====
 function renderStats() {
   const s = getStats();
 
-  // Quick stats (24h)
-  $('qs-walks').textContent  = s.last24hWalks;
-  $('qs-pipi').textContent   = s.last24hPipi;
-  $('qs-caca').textContent   = s.last24hCaca;
-
-  // Balades aujourd'hui
-  const walkCount = s.todayWalks.length;
-  const totalTodayMin = s.todayWalks.reduce((sum, w) => sum + (w.durationMin || 0), 0);
-  let todaySummary;
-  if (walkCount === 0) {
-    todaySummary = '<span class="today-walks-empty">Pas encore de balade aujourd\'hui</span>';
-  } else {
-    const countLabel = walkCount === 1 ? '1 balade' : `${walkCount} balades`;
-    const durLabel = totalTodayMin > 0 ? ` · ${formatDuration(totalTodayMin)} au total` : '';
-    todaySummary = `<span class="today-walks-count">${countLabel}</span><span class="today-walks-dur">${durLabel}</span>`;
-  }
-  $('today-walks-summary').innerHTML = todaySummary;
+  // Quick-stats
+  $('qs-pipi-in').textContent    = s.todayPipiDedans;
+  $('qs-pipi-total').textContent = s.todayPipiTotal;
+  $('qs-walk-time').textContent  = s.todayWalkMinSince7am > 0
+    ? formatDuration(s.todayWalkMinSince7am) : '0';
 
   // Score propreté
   renderScoreRing(s.propretScore);
@@ -338,16 +588,26 @@ function renderStats() {
   $('si-caca-out').textContent = s.cacaDehors;
   $('si-caca-in').textContent  = s.cacaDedans;
 
-  // Charts
-  renderLineChart('chart-propret', s.dailyLabels, s.dailyPropretScore, '#4caf50');
-  renderBarChart('chart-needs', s.dailyLabels, [
-    { label: 'Pipi',  data: s.dailyPipi,   color: '#90caf9' },
-    { label: 'Caca',  data: s.dailyCaca,   color: '#ffcc80' },
-  ]);
-  renderBarChart('chart-walks', s.dailyLabels, [
-    { label: 'Balades', data: s.dailyWalks,  color: '#4cc9f0' },
-    { label: 'Dedans',  data: s.dailyInside, color: '#e94560' },
-  ]);
+  // Balades aujourd'hui
+  const walkCount     = s.todayWalks.length;
+  const totalTodayMin = s.todayWalks.reduce((sum, w) => sum + (w.durationMin || 0), 0);
+  let todaySummary;
+  if (walkCount === 0) {
+    todaySummary = '<span class="today-walks-empty">Pas encore de balade aujourd\'hui</span>';
+  } else {
+    const countLabel = walkCount === 1 ? '1 balade' : `${walkCount} balades`;
+    const durLabel   = totalTodayMin > 0 ? ` · ${formatDuration(totalTodayMin)} au total` : '';
+    todaySummary = `<span class="today-walks-count">${countLabel}</span><span class="today-walks-dur">${durLabel}</span>`;
+  }
+  $('today-walks-summary').innerHTML = todaySummary;
+
+  // Graphique propreté → barres par jour
+  renderBarChart('chart-propret', s.dailyLabels, [
+    { label: 'Propreté (%)', data: s.dailyPropretScore, color: '#4caf50' },
+  ], { yMax: 100, yUnit: '%' });
+
+  // Graphique fermeté caca → courbe
+  renderLineChart('chart-firmness', s.dailyLabels, s.dailyAvgFirmness, '#ffcc80');
 }
 
 function renderScoreRing(score) {
@@ -358,7 +618,7 @@ function renderScoreRing(score) {
 
   const fill = document.querySelector('.ring-fill');
   fill.setAttribute('stroke-dasharray', circum);
-  fill.setAttribute('stroke-dashoffset', circum);   // start at 0
+  fill.setAttribute('stroke-dashoffset', circum);
   setTimeout(() => fill.setAttribute('stroke-dashoffset', offset), 50);
 
   $('ring-pct').textContent   = score !== null ? pct + '%' : '—';
@@ -367,27 +627,22 @@ function renderScoreRing(score) {
     : 'Pas encore de données';
 }
 
-function renderBarChart(canvasId, labels, datasets) {
+function renderBarChart(canvasId, labels, datasets, opts = {}) {
   const ctx = $(canvasId);
   if (!ctx) return;
-
-  if (charts[canvasId]) {
-    charts[canvasId].destroy();
-  }
-
-  const colors = datasets.map(d => d.color);
+  if (charts[canvasId]) { charts[canvasId].destroy(); }
 
   charts[canvasId] = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
-      datasets: datasets.map((d, i) => ({
-        label: d.label,
-        data: d.data,
-        backgroundColor: colors[i] + '99',
-        borderColor: colors[i],
-        borderWidth: 2,
-        borderRadius: 6,
+      datasets: datasets.map(d => ({
+        label:           d.label,
+        data:            d.data.map(v => v === null ? NaN : v),
+        backgroundColor: d.color + '99',
+        borderColor:     d.color,
+        borderWidth:     2,
+        borderRadius:    6,
       })),
     },
     options: {
@@ -395,7 +650,15 @@ function renderBarChart(canvasId, labels, datasets) {
       maintainAspectRatio: false,
       plugins: {
         legend: {
-          labels: { color: '#9a9ab0', font: { size: 11 }, boxWidth: 12, padding: 10 }
+          display: datasets.length > 1,
+          labels: { color: '#9a9ab0', font: { size: 11 }, boxWidth: 12, padding: 10 },
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => isNaN(ctx.parsed.y)
+              ? 'Pas de données'
+              : ctx.parsed.y + (opts.yUnit || ''),
+          },
         },
       },
       scales: {
@@ -405,8 +668,14 @@ function renderBarChart(canvasId, labels, datasets) {
         },
         y: {
           beginAtZero: true,
-          ticks: { color: '#9a9ab0', precision: 0, font: { size: 10 } },
-          grid:  { color: 'rgba(255,255,255,.06)' },
+          ...(opts.yMax ? { max: opts.yMax } : {}),
+          ticks: {
+            color:     '#9a9ab0',
+            precision: 0,
+            font:      { size: 10 },
+            callback:  v => v + (opts.yUnit || ''),
+          },
+          grid: { color: 'rgba(255,255,255,.06)' },
         },
       },
     },
@@ -425,17 +694,17 @@ function renderLineChart(canvasId, labels, data, color) {
     data: {
       labels,
       datasets: [{
-        label: 'Score (%)',
-        data: cleaned,
-        borderColor: color,
-        backgroundColor: color + '22',
-        borderWidth: 2,
+        label:              'Fermeté (%)',
+        data:               cleaned,
+        borderColor:        color,
+        backgroundColor:    color + '22',
+        borderWidth:        2,
         pointBackgroundColor: color,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        fill: true,
-        tension: 0.35,
-        spanGaps: false,
+        pointRadius:        4,
+        pointHoverRadius:   6,
+        fill:               true,
+        tension:            0.35,
+        spanGaps:           false,
       }],
     },
     options: {
@@ -458,22 +727,20 @@ function renderLineChart(canvasId, labels, data, color) {
           min: 0,
           max: 100,
           ticks: { color: '#9a9ab0', font: { size: 10 }, callback: v => v + '%' },
-          grid: { color: 'rgba(255,255,255,.06)' },
+          grid:  { color: 'rgba(255,255,255,.06)' },
         },
       },
     },
   });
 }
 
-// ===== Quick Entry (raccourcis rapides Android) =====
-function handleQuickEntry() {
+// ===== Quick Entry (raccourcis URL) =====
+async function handleQuickEntry() {
   const params = new URLSearchParams(location.search);
   const quick  = params.get('quick');
   if (!quick) return;
 
-  const now = new Date().toISOString();
   let entry;
-
   if (quick === 'walk') {
     const durationMin = parseInt(params.get('dur'), 10) || 30;
     const start = new Date();
@@ -487,22 +754,36 @@ function handleQuickEntry() {
     entry = {
       type: 'bathroom', action: quick,
       location: params.get('loc') || 'outside',
-      timestamp: now, note: '',
+      timestamp: new Date().toISOString(), note: '',
     };
   } else {
     return;
   }
 
-  saveEntry(entry);
+  await saveEntry(entry);
   showToast(entryLabel(entry) + ' enregistré ✓');
   history.replaceState({}, '', '/');
 }
 
 // ===== Boot =====
-initNewEntry();
-handleQuickEntry();
-showPage('new');
+async function boot() {
+  setSyncState('pending');
 
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  initDB(() => {
+    // Re-render current page on remote updates
+    const active = document.querySelector('.page.active');
+    if (active?.id === 'page-stats')   renderStats();
+    if (active?.id === 'page-history') renderHistory();
+    setSyncState('ok');
+  });
+
+  initNewEntry();
+  await handleQuickEntry();
+  showPage('new');
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
 }
+
+boot();
