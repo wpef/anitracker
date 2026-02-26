@@ -1,4 +1,4 @@
-const CACHE_NAME = 'anitracker-v1';
+const CACHE_NAME = 'anitracker-v2';
 const ASSETS = [
   '/index.html',
   '/css/style.css',
@@ -24,7 +24,22 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request))
-  );
+  const url = new URL(e.request.url);
+  // Network-first pour les fichiers de l'app (toujours frais en ligne)
+  if (url.origin === location.origin) {
+    e.respondWith(
+      fetch(e.request)
+        .then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+          }
+          return response;
+        })
+        .catch(() => caches.match(e.request))
+    );
+  } else {
+    // Cache-first pour les ressources externes (Firebase CDN, etc.)
+    e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request)));
+  }
 });
