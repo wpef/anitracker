@@ -56,7 +56,8 @@ function formatWalkTime(isoStr) {
 function toLocalISO(date) {
   const d = new Date(date);
   d.setSeconds(0, 0);
-  return d.toISOString().slice(0, 16);
+  const pad = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function localNow() {
