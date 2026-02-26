@@ -225,6 +225,71 @@
 
 </div>
 
+<!-- ===== Écran de configuration Firebase ===== -->
+<div id="setup-overlay" class="setup-overlay" style="display:none">
+  <div class="setup-screen">
+    <div class="setup-icon">🔥</div>
+    <h2 class="setup-title">Connexion Firebase</h2>
+    <p class="setup-desc">
+      Pour synchroniser les données entre vos deux téléphones,
+      colle ta configuration Firebase ci-dessous.
+    </p>
+
+    <div class="setup-steps">
+      <div class="setup-step">
+        <span class="step-num">1</span>
+        <span>Va sur <strong>console.firebase.google.com</strong></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">2</span>
+        <span>Crée un projet → <strong>Realtime Database</strong> → mode test</span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">3</span>
+        <span>⚙️ Paramètres → <strong>Tes applications</strong> → icône Web <code>&lt;/&gt;</code></span>
+      </div>
+      <div class="setup-step">
+        <span class="step-num">4</span>
+        <span>Copie le bloc <code>firebaseConfig = { … }</code> et colle-le ici :</span>
+      </div>
+    </div>
+
+    <textarea id="setup-input" class="setup-textarea"
+      placeholder='{
+  "apiKey": "AIzaSy…",
+  "authDomain": "mon-projet.firebaseapp.com",
+  "databaseURL": "https://mon-projet-default-rtdb.europe-west1.firebasedatabase.app",
+  "projectId": "mon-projet",
+  "storageBucket": "mon-projet.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123…"
+}'></textarea>
+
+    <div id="setup-error" class="setup-error" style="display:none">
+      ⚠️ Config invalide — vérifie que <code>apiKey</code> et <code>databaseURL</code> sont présents.
+    </div>
+
+    <button class="btn-submit" id="setup-save">✓ Enregistrer et démarrer</button>
+
+    <details class="setup-rules-hint">
+      <summary>Règles Firebase à configurer (obligatoire)</summary>
+      <pre class="setup-rules-code">{
+  "rules": {
+    "entries": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}</pre>
+      <p>Dans Firebase console → Realtime Database → Règles → colle le texte ci-dessus → Publier</p>
+    </details>
+
+    <button class="setup-reset-btn" id="setup-reset" style="display:none">
+      🔄 Réinitialiser la configuration
+    </button>
+  </div>
+</div>
+
 <!-- ===== Modal Édition ===== -->
 <div id="edit-modal" class="modal-overlay" style="display:none">
   <div class="modal-sheet">

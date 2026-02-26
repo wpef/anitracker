@@ -7,9 +7,11 @@
 import { initializeApp }                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, remove, update,
          onValue, get }                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
-import { firebaseConfig }                           from './firebase-config.js';
+import { getFirebaseConfig }                        from './firebase-config.js';
 
-// ── Firebase init ──────────────────────────────────────────────────────────
+// ── Firebase init (config lue depuis localStorage) ─────────────────────────
+const firebaseConfig = getFirebaseConfig();
+if (!firebaseConfig) throw new Error('FIREBASE_NOT_CONFIGURED');
 const fbApp  = initializeApp(firebaseConfig);
 const fbDb   = getDatabase(fbApp);
 const ENTRIES_PATH = 'entries';

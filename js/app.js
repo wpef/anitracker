@@ -1,5 +1,5 @@
-import { initDB, saveEntry, deleteEntry, updateEntry,
-         getStats, getAllEntries } from './db.js';
+import { getFirebaseConfig, saveFirebaseConfig,
+         clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
 
 // ===== State =====
 let currentType     = 'bathroom';
@@ -734,6 +734,42 @@ function renderLineChart(canvasId, labels, data, color) {
   });
 }
 
+// ===== Chargement dynamique de db.js (après config Firebase) =====
+// Ces variables sont initialisées par loadDb()
+let initDB, saveEntry, deleteEntry, updateEntry, getStats, getAllEntries;
+
+async function loadDb() {
+  const db = await import('./db.js');
+  initDB       = db.initDB;
+  saveEntry    = db.saveEntry;
+  deleteEntry  = db.deleteEntry;
+  updateEntry  = db.updateEntry;
+  getStats     = db.getStats;
+  getAllEntries = db.getAllEntries;
+}
+
+// ===== Écran de configuration Firebase =====
+function showSetupScreen() {
+  $('setup-overlay').style.display = 'flex';
+  if (getFirebaseConfig()) {
+    $('setup-reset').style.display = 'block';
+  }
+}
+
+$('setup-save').addEventListener('click', () => {
+  const text = $('setup-input').value.trim();
+  const config = parseConfigInput(text);
+  $('setup-error').style.display = config ? 'none' : 'block';
+  if (!config) return;
+  saveFirebaseConfig(config);
+  location.reload();
+});
+
+$('setup-reset').addEventListener('click', () => {
+  clearFirebaseConfig();
+  location.reload();
+});
+
 // ===== Quick Entry (raccourcis URL) =====
 async function handleQuickEntry() {
   const params = new URLSearchParams(location.search);
@@ -767,10 +803,23 @@ async function handleQuickEntry() {
 
 // ===== Boot =====
 async function boot() {
+  // Vérifie si Firebase est configuré
+  if (!getFirebaseConfig()) {
+    showSetupScreen();
+    return;
+  }
+
+  // Charge db.js dynamiquement (échoue si config invalide)
+  try {
+    await loadDb();
+  } catch {
+    showSetupScreen();
+    return;
+  }
+
   setSyncState('pending');
 
   initDB(() => {
-    // Re-render current page on remote updates
     const active = document.querySelector('.page.active');
     if (active?.id === 'page-stats')   renderStats();
     if (active?.id === 'page-history') renderHistory();
