@@ -68,18 +68,29 @@
 
     <!-- Horaires balade (visible uniquement pour les balades) -->
     <div class="card" id="walk-section" style="display:none">
-      <div class="card-title">⏱ Horaires de la balade</div>
-      <div class="walk-times-grid">
-        <div class="walk-time-field">
-          <label>🚶 Début</label>
+      <div class="card-title">⏱ Balade</div>
+
+      <div class="walk-anchor-row">
+        <!-- Début -->
+        <label class="walk-anchor-btn active" id="anchor-start-btn">
+          <div class="anchor-label">🚶 Début</div>
+          <div class="anchor-time" id="anchor-start-time">—</div>
           <input type="datetime-local" id="walk-start" />
+        </label>
+
+        <!-- Durée calculée au centre -->
+        <div class="walk-middle">
+          <div id="walk-duration-display" class="walk-duration-pill">—</div>
         </div>
-        <div class="walk-time-field">
-          <label>🏠 Fin</label>
+
+        <!-- Fin -->
+        <label class="walk-anchor-btn" id="anchor-end-btn">
+          <div class="anchor-label">🏠 Fin</div>
+          <div class="anchor-time" id="anchor-end-time">—</div>
           <input type="datetime-local" id="walk-end" />
-        </div>
+        </label>
       </div>
-      <div id="walk-duration-display" class="walk-duration-display">— min</div>
+
       <div class="duration-presets">
         <button class="dur-btn" data-min="15">15min</button>
         <button class="dur-btn" data-min="30">30min</button>

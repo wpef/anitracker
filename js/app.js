@@ -7,6 +7,7 @@ let currentAction   = 'pipi';
 let currentLocation = 'outside';
 let charts          = {};
 let editingId       = null;
+let walkAnchor      = 'start'; // 'start' | 'end'
 
 // ===== DOM helpers =====
 const $ = id => document.getElementById(id);
@@ -41,6 +42,15 @@ function formatDuration(totalMin) {
   if (h === 0) return `${m}min`;
   if (m === 0) return `${h}h`;
   return `${h}h${String(m).padStart(2, '0')}`;
+}
+
+function formatWalkTime(isoStr) {
+  if (!isoStr) return '—';
+  const d     = new Date(isoStr);
+  const today = new Date();
+  const time  = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  if (d.toDateString() === today.toDateString()) return time;
+  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + ' ' + time;
 }
 
 function toLocalISO(date) {
@@ -117,36 +127,48 @@ function initNewEntry() {
     $('firmness-value').textContent = $('entry-firmness').value + '%';
   });
 
-  // Walk: duration presets → set end = start + min
+  // Walk: focus → switch active anchor
+  $('walk-start').addEventListener('focus', () => {
+    walkAnchor = 'start';
+    updateWalkAnchorUI();
+  });
+  $('walk-end').addEventListener('focus', () => {
+    walkAnchor = 'end';
+    updateWalkAnchorUI();
+  });
+
+  // Walk: start changes → update display + recalculate duration
+  $('walk-start').addEventListener('change', () => {
+    $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
+    updateWalkDurationDisplay();
+  });
+
+  // Walk: end changes → update display + recalculate duration
+  $('walk-end').addEventListener('change', () => {
+    $('anchor-end-time').textContent = formatWalkTime($('walk-end').value);
+    updateWalkDurationDisplay();
+  });
+
+  // Walk: duration presets → compute the NON-anchor side
   document.querySelector('.duration-presets').addEventListener('click', e => {
     const btn = e.target.closest('[data-min]');
     if (!btn) return;
     document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     const min = parseInt(btn.dataset.min, 10);
-    const startVal = $('walk-start').value;
-    if (!startVal) return;
-    const end = new Date(new Date(startVal).getTime() + min * 60000);
-    $('walk-end').value = toLocalISO(end);
-    updateWalkDurationDisplay();
-  });
-
-  // Walk: start changes → keep duration, push end
-  $('walk-start').addEventListener('change', () => {
-    const start = $('walk-start').value;
-    const end   = $('walk-end').value;
-    if (start && end) {
-      const dur = getWalkDurationMin();
-      if (dur > 0) {
-        const newEnd = new Date(new Date(start).getTime() + dur * 60000);
-        $('walk-end').value = toLocalISO(newEnd);
-      }
+    if (walkAnchor === 'start') {
+      const start = $('walk-start').value;
+      if (!start) return;
+      $('walk-end').value = toLocalISO(new Date(new Date(start).getTime() + min * 60000));
+      $('anchor-end-time').textContent = formatWalkTime($('walk-end').value);
+    } else {
+      const end = $('walk-end').value;
+      if (!end) return;
+      $('walk-start').value = toLocalISO(new Date(new Date(end).getTime() - min * 60000));
+      $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
     }
     updateWalkDurationDisplay();
   });
-
-  // Walk: end changes → recalculate duration
-  $('walk-end').addEventListener('change', updateWalkDurationDisplay);
 
   // Submit
   $('btn-add').addEventListener('click', handleAdd);
@@ -154,6 +176,8 @@ function initNewEntry() {
   // Init datetime
   $('entry-time').value = localNow();
   $('walk-start').value = localNow();
+  $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
+  walkAnchor = 'start';
 
   updateActionPanel();
   setActive('type', currentType);
@@ -205,9 +229,14 @@ function getWalkDurationMin() {
   return Math.round((new Date(end) - new Date(start)) / 60000);
 }
 
+function updateWalkAnchorUI() {
+  $('anchor-start-btn').classList.toggle('active', walkAnchor === 'start');
+  $('anchor-end-btn').classList.toggle('active', walkAnchor === 'end');
+}
+
 function updateWalkDurationDisplay() {
   const dur = getWalkDurationMin();
-  $('walk-duration-display').textContent = dur > 0 ? formatDuration(dur) : '— min';
+  $('walk-duration-display').textContent = dur > 0 ? formatDuration(dur) : '—';
 }
 
 async function handleAdd() {
