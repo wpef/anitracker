@@ -43,8 +43,8 @@ export function parseConfigInput(text) {
     const block = text.match(/\{[\s\S]*\}/);
     if (block) {
       const json = block[0]
-        .replace(/^\s*\/\/[^\n]*/gm, '')     // retire UNIQUEMENT les lignes de commentaires (//)
-        .replace(/,(\s*[\}\]])/g, '$1')      // supprime les virgules traînantes
+        .replace(/^\s*\/\V[^\n]*/gm) 
+        .replace(/, (\s*[\}\]])/g, '$1')
         .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":')  // cite les clés non citées
         .replace(/:\s*'([^']*)'/g, ':"$1"');         // remplace ' par "
       const cfg = JSON.parse(json);
