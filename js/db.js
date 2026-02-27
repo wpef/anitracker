@@ -87,7 +87,7 @@ export function getStats() {
 
   const isWalk = e => e.type === 'walk' && e.action !== 'end';
 
-  // ── 7 derniers jours ────────────────────────────────────────────────────
+  // ── 7 derniers jours (compteurs globaux pour le détail) ─────────────────
   const sevenDaysAgo = new Date(now);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
   sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -101,25 +101,30 @@ export function getStats() {
   const cacaDehors = caca.filter(e => e.location === 'outside').length;
   const cacaDedans = caca.filter(e => e.location === 'inside').length;
 
-  const totalBesoins = pipi.length + caca.length;
-  const totalDehors  = pipiDehors + cacaDehors;
-  const propretScore = totalBesoins > 0
-    ? Math.round((totalDehors / totalBesoins) * 100) : null;
-
-  // ── Aujourd'hui ─────────────────────────────────────────────────────────
+  // ── Score de propreté du JOUR (pour le ring) ─────────────────────────────
+  // Formule : pipiDehors / (pipi + cacaDedans) × 100
+  // Caca dehors = neutre, exclu du calcul
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
 
-  // Quick-stats aujourd'hui
-  const todayPipiTotal  = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi').length;
-  const todayPipiDedans = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi' && e.location === 'inside').length;
+  const todayPipi       = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
+  const todayCacaDedans = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca' && e.location === 'inside').length;
+  const todayPipiDehors = todayPipi.filter(e => e.location === 'outside').length;
+  const todayScoreTotal = todayPipi.length + todayCacaDedans;
+  const todayScore      = todayScoreTotal > 0
+    ? Math.round(todayPipiDehors / todayScoreTotal * 100) : null;
 
-  // Temps de balade depuis 7h
-  const todayFrom7am = new Date(now);
-  todayFrom7am.setHours(7, 0, 0, 0);
-  const todayWalkMinSince7am = entries
-    .filter(e => isWalk(e) && new Date(e.timestamp) >= todayFrom7am)
+  // ── Quick-stats : depuis 7h (ou hier 7h si avant 7h) ────────────────────
+  const statsFrom7am = new Date(now);
+  if (now.getHours() < 7) statsFrom7am.setDate(statsFrom7am.getDate() - 1);
+  statsFrom7am.setHours(7, 0, 0, 0);
+  const quickEntries = entries.filter(e => new Date(e.timestamp) >= statsFrom7am);
+
+  const todayPipiTotal  = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi').length;
+  const todayPipiDedans = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi' && e.location === 'inside').length;
+  const todayWalkMinSince7am = quickEntries
+    .filter(isWalk)
     .reduce((s, e) => s + (e.duration_min || 0), 0);
 
   // Balades aujourd'hui avec horaires
@@ -140,7 +145,6 @@ export function getStats() {
   const dailyCaca         = [];
   const dailyInside       = [];
   const dailyPropretScore = [];
-  const dailyAvgFirmness  = [];
 
   for (let i = 6; i >= 0; i--) {
     const day    = new Date(now);
@@ -163,16 +167,32 @@ export function getStats() {
     dailyCaca.push(dayCaca.length);
     dailyInside.push(dayEntries.filter(e => e.location === 'inside').length);
 
-    const dayTotal  = dayPipi.length + dayCaca.length;
-    const dayDehors = dayPipi.filter(e => e.location === 'outside').length
-                    + dayCaca.filter(e => e.location === 'outside').length;
-    dailyPropretScore.push(dayTotal > 0 ? Math.round(dayDehors / dayTotal * 100) : null);
-
-    const cacaWithFirmness = dayCaca.filter(e => e.firmness !== undefined && e.firmness !== null);
-    dailyAvgFirmness.push(cacaWithFirmness.length > 0
-      ? Math.round(cacaWithFirmness.reduce((s, e) => s + e.firmness, 0) / cacaWithFirmness.length)
-      : null);
+    // Même formule : pipiDehors / (pipi + cacaDedans)
+    const dayPipiDehors = dayPipi.filter(e => e.location === 'outside').length;
+    const dayCacaDedans = dayCaca.filter(e => e.location === 'inside').length;
+    const dayTotal      = dayPipi.length + dayCacaDedans;
+    dailyPropretScore.push(dayTotal > 0 ? Math.round(dayPipiDehors / dayTotal * 100) : null);
   }
+
+  // ── Fermeté des cacas – 3 derniers jours, entrées individuelles ──────────
+  const threeDaysAgo = new Date(now);
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
+  threeDaysAgo.setHours(0, 0, 0, 0);
+
+  const recentCacas = entries
+    .filter(e => e.type === 'bathroom' && e.action === 'caca' && e.firmness !== undefined)
+    .filter(e => new Date(e.timestamp) >= threeDaysAgo)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  const todayStr = now.toDateString();
+  const firmnessLabels = recentCacas.map(e => {
+    const d = new Date(e.timestamp);
+    const dayStr = d.toDateString() === todayStr
+      ? 'Auj.'
+      : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+    return dayStr + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  });
+  const firmnessData = recentCacas.map(e => e.firmness);
 
   return {
     total: entries.length,
@@ -184,7 +204,7 @@ export function getStats() {
     pipiDedans,
     cacaDehors,
     cacaDedans,
-    propretScore,
+    todayScore,
     todayWalks,
     todayPipiTotal,
     todayPipiDedans,
@@ -195,6 +215,7 @@ export function getStats() {
     dailyCaca,
     dailyInside,
     dailyPropretScore,
-    dailyAvgFirmness,
+    firmnessLabels,
+    firmnessData,
   };
 }
