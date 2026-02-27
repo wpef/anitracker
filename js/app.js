@@ -117,10 +117,26 @@ function initNewEntry() {
     const btn = e.target.closest('[data-offset]');
     if (!btn) return;
     const offsetMin = parseInt(btn.dataset.offset, 10);
-    const t = new Date();
+    let t;
+    if (offsetMin === 0) {
+      // "Maintenant" → heure courante réelle
+      t = new Date();
+    } else {
+      // Relatif à la valeur actuellement affichée
+      t = $('entry-time').value ? new Date($('entry-time').value) : new Date();
+      t.setMinutes(t.getMinutes() + offsetMin);
+    }
     t.setSeconds(0, 0);
-    t.setMinutes(t.getMinutes() + offsetMin);
     $('entry-time').value = toLocalISO(t);
+    sessionStorage.setItem('lastEntryTime', $('entry-time').value);
+  });
+
+  // Persistance du temps saisi
+  $('entry-time').addEventListener('change', () => {
+    sessionStorage.setItem('lastEntryTime', $('entry-time').value);
+  });
+  $('walk-start').addEventListener('change', () => {
+    sessionStorage.setItem('lastWalkStart', $('walk-start').value);
   });
 
   // Firmness slider
@@ -174,9 +190,9 @@ function initNewEntry() {
   // Submit
   $('btn-add').addEventListener('click', handleAdd);
 
-  // Init datetime
-  $('entry-time').value = localNow();
-  $('walk-start').value = localNow();
+  // Init datetime — restaure la dernière valeur ou heure courante
+  $('entry-time').value = sessionStorage.getItem('lastEntryTime') || localNow();
+  $('walk-start').value = sessionStorage.getItem('lastWalkStart') || localNow();
   $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
   walkAnchor = 'start';
 
@@ -284,9 +300,7 @@ async function handleAdd() {
   }
   showToast(entryLabel(entry) + ' enregistré ✓');
 
-  // Reset form
-  $('entry-time').value  = localNow();
-  $('walk-start').value  = localNow();
+  // Reset form — le temps reste inchangé, seuls les champs non-temporels se réinitialisent
   $('walk-end').value    = '';
   $('entry-note').value  = '';
   $('entry-firmness').value = '80';
@@ -307,7 +321,11 @@ function entryLabel(entry) {
   return label;
 }
 
-// ===== History Page (Timeline) =====
+// ===== History Page (Timeline proportionnelle) =====
+const PX_PER_MIN = 1.2;   // pixels par minute → 1h = 72px
+const TL_PAD_MIN = 20;    // marge haut/bas en minutes
+const CARD_H     = 54;    // hauteur estimée d'une card pour l'anti-overlap
+
 function renderHistory() {
   const allEntries = getAllEntries()
     .filter(e => !(e.type === 'walk' && e.action === 'end'));
@@ -321,7 +339,7 @@ function renderHistory() {
     return;
   }
 
-  // Group by local calendar day (newest day first, entries ascending within day)
+  // Grouper par jour local, le plus récent en tête
   const groups = new Map();
   for (const e of allEntries) {
     const key = new Date(e.timestamp).toLocaleDateString('fr-FR',
@@ -329,15 +347,11 @@ function renderHistory() {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(e);
   }
-  // Sort within each group: chronological (oldest first)
-  for (const [, dayEntries] of groups) {
-    dayEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }
+  for (const [, g] of groups) g.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
   const todayKey = new Date().toLocaleDateString('fr-FR',
     { year: 'numeric', month: '2-digit', day: '2-digit' });
-  const yest = new Date();
-  yest.setDate(yest.getDate() - 1);
+  const yest = new Date(); yest.setDate(yest.getDate() - 1);
   const yesterdayKey = yest.toLocaleDateString('fr-FR',
     { year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -350,72 +364,109 @@ function renderHistory() {
       { weekday: 'short', day: 'numeric', month: 'short' });
   }
 
-  function entryIcon(e) {
-    if (e.type === 'walk') return '🐾';
-    return e.action === 'pipi' ? '💧' : '💩';
-  }
-
-  function entryTitle(e) {
-    if (e.type === 'walk') return 'Balade';
-    return e.action === 'pipi' ? 'Pipi' : 'Caca';
-  }
-
-  function entryMeta(e) {
-    if (e.type === 'walk') {
-      const start = new Date(e.start_time || e.timestamp);
-      const end   = e.end_time
-        ? new Date(e.end_time)
-        : (e.duration_min ? new Date(start.getTime() + e.duration_min * 60000) : null);
-      const fmt = t => t.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      const timeRange = end ? `${fmt(start)} → ${fmt(end)}` : fmt(start);
-      const durStr    = e.duration_min ? ` · ${formatDuration(e.duration_min)}` : '';
-      return timeRange + durStr;
-    }
-    if (e.type === 'bathroom' && e.action === 'caca' && e.firmness !== undefined) {
-      return `Fermeté : ${e.firmness}%`;
-    }
-    return '';
-  }
+  function entryIcon(e) { return e.action === 'pipi' ? '💧' : '💩'; }
+  function entryTitle(e) { return e.action === 'pipi' ? 'Pipi' : 'Caca'; }
+  const fmt = t => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
   let html = '';
+
   for (const [key, dayEntries] of groups) {
+    // ── Plage horaire du jour ──
+    const allMs = dayEntries.flatMap(e => {
+      const ts = [new Date(e.start_time || e.timestamp).getTime()];
+      if (e.end_time) ts.push(new Date(e.end_time).getTime());
+      else if (e.type === 'walk' && e.duration_min)
+        ts.push(new Date(e.start_time || e.timestamp).getTime() + e.duration_min * 60000);
+      return ts;
+    });
+    const rangeStartMs = Math.min(...allMs) - TL_PAD_MIN * 60000;
+    const rangeEndMs   = Math.max(...allMs) + TL_PAD_MIN * 60000;
+    const totalHeight  = Math.max(120, Math.ceil(((rangeEndMs - rangeStartMs) / 60000) * PX_PER_MIN));
+    const toTop = ms => Math.round(((ms - rangeStartMs) / 60000) * PX_PER_MIN);
+
+    // ── Intervalles des balades pour détection "pendant une balade" ──
+    const walkIntervals = dayEntries
+      .filter(w => w.type === 'walk')
+      .map(w => {
+        const s = new Date(w.start_time || w.timestamp).getTime();
+        const e = w.end_time ? new Date(w.end_time).getTime()
+                             : s + (w.duration_min || 30) * 60000;
+        return { s, e };
+      });
+    const isInWalk = ms => walkIntervals.some(({ s, e }) => ms > s && ms < e);
+
     html += `<div class="tl-day-header">${dayLabel(key, dayEntries[0])}</div>
-             <div class="tl-group">`;
+             <div class="tl-group" style="height:${totalHeight}px">`;
 
-    for (let i = 0; i < dayEntries.length; i++) {
-      const e = dayEntries[i];
-      const timeStr = new Date(e.timestamp).toLocaleTimeString('fr-FR',
-        { hour: '2-digit', minute: '2-digit' });
-      const isLast = i === dayEntries.length - 1;
-
-      const durBadge = e.type === 'walk' && e.duration_min
-        ? `<span class="tl-duration">${formatDuration(e.duration_min)}</span>` : '';
-
-      const locBadge = e.type === 'bathroom'
-        ? `<span class="entry-badge badge-${e.location}">${locLabels[e.location] || ''}</span>` : '';
-
-      const meta = entryMeta(e);
-
-      html += `
-        <div class="tl-item ${isLast ? 'tl-item-last' : ''}" data-id="${e.id}">
-          <div class="tl-time">${timeStr}</div>
-          <div class="tl-line-col">
-            <div class="tl-dot tl-dot-${e.type}"></div>
-            ${!isLast ? '<div class="tl-connector"></div>' : ''}
-          </div>
-          <div class="tl-card">
-            <div class="tl-card-icon ${e.type}">${entryIcon(e)}</div>
-            <div class="tl-card-body">
-              <div class="tl-card-title">${entryTitle(e)}</div>
-              ${meta ? `<div class="tl-card-note">${meta}</div>` : ''}
-              ${e.note ? `<div class="tl-card-note">${e.note}</div>` : ''}
-            </div>
-            ${durBadge}${locBadge}
-            <button class="entry-edit"   data-edit="${e.id}" title="Modifier">✏️</button>
-            <button class="entry-delete" data-del="${e.id}"  title="Supprimer">✕</button>
-          </div>
-        </div>`;
+    // ── Graduations horaires ──
+    const firstTickDate = new Date(rangeStartMs);
+    firstTickDate.setMinutes(0, 0, 0);
+    if (firstTickDate.getTime() <= rangeStartMs) firstTickDate.setHours(firstTickDate.getHours() + 1);
+    for (let t = firstTickDate.getTime(); t < rangeEndMs; t += 3600000) {
+      html += `<div class="tl-tick" style="top:${toTop(t)}px">
+                 <span class="tl-tick-label">${fmt(t)}</span>
+                 <div class="tl-tick-line"></div>
+               </div>`;
     }
+
+    // ── Bandes de balades ──
+    for (const walk of dayEntries.filter(e => e.type === 'walk')) {
+      const startMs = new Date(walk.start_time || walk.timestamp).getTime();
+      const endMs   = walk.end_time ? new Date(walk.end_time).getTime()
+                                    : startMs + (walk.duration_min || 30) * 60000;
+      const top     = toTop(startMs);
+      const height  = Math.max(44, toTop(endMs) - top);
+      const durStr  = walk.duration_min ? formatDuration(walk.duration_min) : '';
+      html += `<div class="tl-walk-band" style="top:${top}px;height:${height}px">
+                 <div class="tl-walk-band-inner">
+                   <span class="tl-walk-band-title">🐾 Balade</span>
+                   <span class="tl-walk-band-times">${fmt(startMs)} → ${fmt(endMs)}</span>
+                   ${durStr ? `<span class="tl-walk-band-dur">${durStr}</span>` : ''}
+                 </div>
+                 <div class="tl-walk-band-actions">
+                   <button class="entry-edit"   data-edit="${walk.id}" title="Modifier">✏️</button>
+                   <button class="entry-delete" data-del="${walk.id}"  title="Supprimer">✕</button>
+                 </div>
+               </div>`;
+    }
+
+    // ── Éléments salle de bain (positionnés + anti-overlap) ──
+    let prevBottom = -Infinity;
+    const items = dayEntries
+      .filter(e => e.type !== 'walk')
+      .map(e => {
+        const ms     = new Date(e.timestamp).getTime();
+        const rawTop = toTop(ms);
+        const top    = Math.max(rawTop, prevBottom);
+        prevBottom   = top + CARD_H;
+        return { e, top, inWalk: isInWalk(ms) };
+      });
+
+    for (const { e, top, inWalk } of items) {
+      const timeStr  = fmt(new Date(e.timestamp).getTime());
+      const locBadge = `<span class="entry-badge badge-${e.location}">${locLabels[e.location] || ''}</span>`;
+      const firmMeta = (e.action === 'caca' && e.firmness !== undefined)
+        ? `<div class="tl-card-note">Fermeté : ${e.firmness}%</div>` : '';
+      const noteMeta = e.note ? `<div class="tl-card-note">${e.note}</div>` : '';
+
+      html += `<div class="tl-item${inWalk ? ' tl-in-walk' : ''}" style="top:${top}px" data-id="${e.id}">
+                 <div class="tl-time">${timeStr}</div>
+                 <div class="tl-line-col">
+                   <div class="tl-dot tl-dot-${inWalk ? 'walk' : 'bathroom'}"></div>
+                 </div>
+                 <div class="tl-card">
+                   <div class="tl-card-icon bathroom">${entryIcon(e)}</div>
+                   <div class="tl-card-body">
+                     <div class="tl-card-title">${entryTitle(e)}</div>
+                     ${firmMeta}${noteMeta}
+                   </div>
+                   ${locBadge}
+                   <button class="entry-edit"   data-edit="${e.id}" title="Modifier">✏️</button>
+                   <button class="entry-delete" data-del="${e.id}"  title="Supprimer">✕</button>
+                 </div>
+               </div>`;
+    }
+
     html += '</div>';
   }
 
@@ -424,12 +475,8 @@ function renderHistory() {
   container.querySelectorAll('[data-del]').forEach(btn => {
     btn.addEventListener('click', async () => {
       setSyncState('pending');
-      try {
-        await deleteEntry(btn.dataset.del);
-        setSyncState('ok');
-      } catch {
-        setSyncState('error');
-      }
+      try { await deleteEntry(btn.dataset.del); setSyncState('ok'); }
+      catch { setSyncState('error'); }
       renderHistory();
     });
   });

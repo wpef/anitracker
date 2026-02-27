@@ -454,17 +454,101 @@ nav {
   border-bottom: 1px solid rgba(255,255,255,.06);
   margin-bottom: 4px;
 }
+/* ── Timeline proportionnelle ── */
 .tl-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 16px;
+  position: relative;
+  margin-bottom: 24px;
+  /* height fixé en inline par JS */
 }
+/* Trait vertical de l'axe */
+.tl-group::before {
+  content: '';
+  position: absolute;
+  left: 49px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,.06);
+  z-index: 0;
+}
+/* Graduations horaires */
+.tl-tick {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  z-index: 0;
+}
+.tl-tick-label {
+  font-size: .6rem;
+  color: rgba(255,255,255,.18);
+  width: 40px;
+  text-align: right;
+  padding-right: 6px;
+  flex-shrink: 0;
+}
+.tl-tick-line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,.05);
+  margin-left: 20px;
+}
+/* Bande de balade */
+.tl-walk-band {
+  position: absolute;
+  left: 60px;
+  right: 0;
+  background: rgba(76,201,240,.07);
+  border-left: 2px solid rgba(76,201,240,.4);
+  border-radius: 0 8px 8px 0;
+  z-index: 1;
+  padding: 6px 8px 6px 10px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+.tl-walk-band-inner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding-right: 68px;
+}
+.tl-walk-band-title {
+  font-size: .78rem;
+  font-weight: 700;
+  color: var(--walk);
+}
+.tl-walk-band-times {
+  font-size: .7rem;
+  color: var(--text2);
+}
+.tl-walk-band-dur {
+  font-size: .65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(76,201,240,.15);
+  color: var(--walk);
+}
+.tl-walk-band-actions {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+}
+/* Items positionnés absolument */
 .tl-item {
+  position: absolute;
+  left: 0;
+  right: 0;
   display: grid;
   grid-template-columns: 40px 20px 1fr;
-  align-items: flex-start;
   gap: 0 8px;
-  min-height: 52px;
+  z-index: 2;
 }
 .tl-time {
   font-size: .7rem;
@@ -484,16 +568,13 @@ nav {
   border-radius: 50%;
   margin-top: 13px;
   flex-shrink: 0;
-  z-index: 1;
+  z-index: 3;
 }
-.tl-dot-walk     { background: var(--walk); box-shadow: 0 0 6px var(--walk); }
+.tl-dot-walk     { background: var(--walk);     box-shadow: 0 0 6px var(--walk); }
 .tl-dot-bathroom { background: var(--bathroom); box-shadow: 0 0 6px var(--bathroom); }
-.tl-connector {
-  width: 2px;
-  flex: 1;
-  min-height: 10px;
-  background: rgba(255,255,255,.08);
-}
+/* Connecteur vertical – non utilisé dans la timeline proportionnelle */
+.tl-connector { display: none; }
+/* Card standard */
 .tl-card {
   background: var(--bg);
   border-radius: 10px;
@@ -503,6 +584,11 @@ nav {
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+/* Items survenus pendant une balade */
+.tl-item.tl-in-walk .tl-card {
+  background: rgba(76,201,240,.08);
+  border: 1px solid rgba(76,201,240,.18);
 }
 .tl-card-icon {
   font-size: 1.1rem;
