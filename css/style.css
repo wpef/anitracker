@@ -766,6 +766,27 @@ nav {
   box-shadow: 0 2px 8px rgba(0,0,0,.4);
   cursor: pointer;
 }
+#entry-taille, #edit-taille {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, rgba(76,201,240,.25), var(--walk));
+  outline: none;
+  margin: 8px 0 6px;
+}
+#entry-taille::-webkit-slider-thumb,
+#edit-taille::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,.4);
+  cursor: pointer;
+}
 .firmness-row {
   display: flex;
   justify-content: space-between;
