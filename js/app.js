@@ -658,8 +658,8 @@ function renderStats() {
   $('qs-walk-time').textContent  = s.todayWalkMinSince7am > 0
     ? formatDuration(s.todayWalkMinSince7am) : '0';
 
-  // Score propreté
-  renderScoreRing(s.propretScore);
+  // Score propreté du jour
+  renderScoreRing(s.todayScore);
   $('si-pipi-out').textContent = s.pipiDehors;
   $('si-pipi-in').textContent  = s.pipiDedans;
   $('si-caca-out').textContent = s.cacaDehors;
@@ -683,8 +683,8 @@ function renderStats() {
     { label: 'Propreté (%)', data: s.dailyPropretScore, color: '#4caf50' },
   ], { yMax: 100, yUnit: '%' });
 
-  // Graphique fermeté caca → courbe
-  renderLineChart('chart-firmness', s.dailyLabels, s.dailyAvgFirmness, '#ffcc80');
+  // Graphique fermeté caca → entrées individuelles sur 3 jours
+  renderLineChart('chart-firmness', s.firmnessLabels, s.firmnessData, '#ffcc80');
 }
 
 function renderScoreRing(score) {
