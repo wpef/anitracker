@@ -1,9 +1,11 @@
-const CACHE_NAME = 'anitracker-v2';
+const CACHE_NAME = 'anitracker-v3';
 const ASSETS = [
   '/index.html',
+  '/quick.html',
   '/css/style.css',
   '/js/db.js',
   '/js/app.js',
+  '/js/quick.js',
   '/manifest.json'
 ];
 

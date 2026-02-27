@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>Quick – AniTracker</title>
+  <link rel="manifest" href="manifest.json" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0f0f1a;
+      --surface: #1a1a2e;
+      --walk:    #4cc9f0;
+      --accent:  #e94560;
+      --outside: #4caf50;
+      --text:    #eaeaea;
+      --text2:   #9a9ab0;
+      --radius:  18px;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow: hidden;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100dvh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: env(safe-area-inset-top, 12px) 16px env(safe-area-inset-bottom, 12px);
+      gap: 10px;
+    }
+
+    /* ── Rows ── */
+    .row {
+      display: flex;
+      gap: 10px;
+      flex: 1;
+    }
+
+    /* ── Big toggle buttons ── */
+    .btn-toggle {
+      flex: 1;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text2);
+      font-size: clamp(1.2rem, 5vw, 1.7rem);
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background .15s, color .15s, transform .1s;
+      border: 2px solid transparent;
+    }
+    .btn-toggle .emoji { font-size: clamp(1.8rem, 8vw, 2.6rem); }
+    .btn-toggle:active { transform: scale(.96); }
+
+    /* Active states */
+    .btn-toggle.active-pipi  { background: rgba(76,201,240,.18); border-color: var(--walk); color: var(--walk); }
+    .btn-toggle.active-caca  { background: rgba(247,127,0,.18);  border-color: #f77f00;     color: #f77f00; }
+    .btn-toggle.active-dehors { background: rgba(76,175,80,.18); border-color: var(--outside); color: var(--outside); }
+    .btn-toggle.active-dedans { background: rgba(233,69,96,.18); border-color: var(--accent);  color: var(--accent); }
+
+    /* ── Gauge section ── */
+    #gauge-section {
+      flex: 0 0 auto;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .gauge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: .95rem;
+    }
+    .gauge-label { font-weight: 600; }
+    .gauge-value { color: var(--text2); font-weight: 700; font-size: 1rem; }
+
+    #quick-gauge {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+    /* Taille (pipi) – blue */
+    #quick-gauge.taille {
+      background: linear-gradient(to right, rgba(76,201,240,.25), var(--walk));
+    }
+    /* Fermété (caca) – red→green */
+    #quick-gauge.fermete {
+      background: linear-gradient(to right, #e94560, #ffcc80, #4caf50);
+    }
+
+    #quick-gauge::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.45);
+      cursor: pointer;
+    }
+
+    .gauge-ends {
+      display: flex;
+      justify-content: space-between;
+      font-size: .78rem;
+      color: var(--text2);
+    }
+
+    /* ── Save button ── */
+    #btn-save {
+      flex: 0 0 auto;
+      width: 100%;
+      padding: 0 20px;
+      height: clamp(52px, 10dvh, 68px);
+      border: none;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: #fff;
+      font-size: clamp(1rem, 4vw, 1.25rem);
+      font-weight: 700;
+      cursor: pointer;
+      transition: background .15s, transform .1s;
+    }
+    #btn-save:active { transform: scale(.97); }
+    #btn-save.success { background: var(--outside); }
+    #btn-save:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Error banner ── */
+    #error-banner {
+      display: none;
+      background: rgba(233,69,96,.15);
+      border: 1px solid var(--accent);
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: .85rem;
+      text-align: center;
+      color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Row 1: Action -->
+  <div class="row" id="row-action">
+    <button class="btn-toggle active-pipi" id="btn-pipi" data-action="pipi">
+      <span class="emoji">💧</span>PIPI
+    </button>
+    <button class="btn-toggle" id="btn-caca" data-action="caca">
+      <span class="emoji">💩</span>CACA
+    </button>
+  </div>
+
+  <!-- Row 2: Location -->
+  <div class="row" id="row-location">
+    <button class="btn-toggle active-dehors" id="btn-dehors" data-location="dehors">
+      <span class="emoji">🌿</span>DEHORS
+    </button>
+    <button class="btn-toggle" id="btn-dedans" data-location="dedans">
+      <span class="emoji">🏠</span>DEDANS
+    </button>
+  </div>
+
+  <!-- Row 3: Gauge -->
+  <div id="gauge-section">
+    <div class="gauge-header">
+      <span class="gauge-label" id="gauge-label">💧 Quantité</span>
+      <span class="gauge-value" id="gauge-val">50%</span>
+    </div>
+    <input type="range" id="quick-gauge" class="taille" min="0" max="100" value="50" step="5" />
+    <div class="gauge-ends">
+      <span id="gauge-end-left">Peu</span>
+      <span id="gauge-end-right">Beaucoup</span>
+    </div>
+  </div>
+
+  <!-- Error banner -->
+  <div id="error-banner">Firebase non configuré – ouvrez l'app principale d'abord.</div>
+
+  <!-- Row 4: Save -->
+  <button id="btn-save">Enregistrer ✓</button>
+</div>
+
+<script type="module" src="js/quick.js"></script>
+</body>
+</html>

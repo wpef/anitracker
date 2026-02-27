@@ -139,9 +139,14 @@ function initNewEntry() {
     sessionStorage.setItem('lastWalkStart', $('walk-start').value);
   });
 
-  // Firmness slider
+  // Firmness slider (caca)
   $('entry-firmness').addEventListener('input', () => {
     $('firmness-value').textContent = $('entry-firmness').value + '%';
+  });
+
+  // Taille slider (pipi)
+  $('entry-taille').addEventListener('input', () => {
+    $('taille-value').textContent = $('entry-taille').value + '%';
   });
 
   // Walk: focus → switch active anchor
@@ -222,6 +227,7 @@ function updateActionPanel() {
   updateLocationVisibility();
   updateWalkSectionVisibility();
   updateFirmnessVisibility();
+  updateTailleVisibility();
 }
 
 function updateLocationVisibility() {
@@ -237,6 +243,11 @@ function updateWalkSectionVisibility() {
 function updateFirmnessVisibility() {
   $('firmness-section').style.display =
     (currentType === 'bathroom' && currentAction === 'caca') ? 'block' : 'none';
+}
+
+function updateTailleVisibility() {
+  $('taille-section').style.display =
+    (currentType === 'bathroom' && currentAction === 'pipi') ? 'block' : 'none';
 }
 
 function getWalkDurationMin() {
@@ -281,6 +292,8 @@ async function handleAdd() {
     const timeVal = $('entry-time').value;
     const firmness = currentAction === 'caca'
       ? parseInt($('entry-firmness').value, 10) : undefined;
+    const taille = currentAction === 'pipi'
+      ? parseInt($('entry-taille').value, 10) : undefined;
     entry = {
       type:      'bathroom',
       action:    currentAction,
@@ -288,6 +301,7 @@ async function handleAdd() {
       timestamp: timeVal ? new Date(timeVal).toISOString() : new Date().toISOString(),
       note,
       ...(firmness !== undefined ? { firmness } : {}),
+      ...(taille   !== undefined ? { taille }   : {}),
     };
   }
 
@@ -305,6 +319,8 @@ async function handleAdd() {
   $('entry-note').value  = '';
   $('entry-firmness').value = '80';
   $('firmness-value').textContent = '80%';
+  $('entry-taille').value = '50';
+  $('taille-value').textContent = '50%';
   updateWalkDurationDisplay();
   document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }
@@ -445,8 +461,10 @@ function renderHistory() {
     for (const { e, top, inWalk } of items) {
       const timeStr  = fmt(new Date(e.timestamp).getTime());
       const locBadge = `<span class="entry-badge badge-${e.location}">${locLabels[e.location] || ''}</span>`;
-      const firmMeta = (e.action === 'caca' && e.firmness !== undefined)
+      const firmMeta  = (e.action === 'caca' && e.firmness !== undefined)
         ? `<div class="tl-card-note">Fermeté : ${e.firmness}%</div>` : '';
+      const tailleMeta = (e.action === 'pipi' && e.taille !== undefined)
+        ? `<div class="tl-card-note">Quantité : ${e.taille}%</div>` : '';
       const noteMeta = e.note ? `<div class="tl-card-note">${e.note}</div>` : '';
 
       html += `<div class="tl-item${inWalk ? ' tl-in-walk' : ''}" style="top:${top}px" data-id="${e.id}">
@@ -458,7 +476,7 @@ function renderHistory() {
                    <div class="tl-card-icon bathroom">${entryIcon(e)}</div>
                    <div class="tl-card-body">
                      <div class="tl-card-title">${entryTitle(e)}</div>
-                     ${firmMeta}${noteMeta}
+                     ${firmMeta}${tailleMeta}${noteMeta}
                    </div>
                    ${locBadge}
                    <button class="entry-edit"   data-edit="${e.id}" title="Modifier">✏️</button>
@@ -519,6 +537,7 @@ function openEditModal(entry) {
     const isIn    = entry.location === 'inside';
     const isCaca  = entry.action === 'caca';
     const firmness = entry.firmness !== undefined ? entry.firmness : 80;
+    const taille   = entry.taille   !== undefined ? entry.taille   : 50;
     html = `
       <div class="segment modal-segment">
         <button class="seg-btn ${!isCaca ? 'active' : ''}" data-edit-action="pipi">💧 Pipi</button>
@@ -535,6 +554,15 @@ function openEditModal(entry) {
           <span class="firmness-end">Liquide</span>
           <span id="edit-firmness-value" class="firmness-current">${firmness}%</span>
           <span class="firmness-end">Ferme</span>
+        </div>
+      </div>
+      <div id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'};margin-top:14px">
+        <label class="modal-label">💧 Quantité</label>
+        <input type="range" id="edit-taille" min="0" max="100" value="${taille}" step="5" />
+        <div class="firmness-row">
+          <span class="firmness-end">Peu</span>
+          <span id="edit-taille-value" class="firmness-current">${taille}%</span>
+          <span class="firmness-end">Beaucoup</span>
         </div>
       </div>
       <div class="modal-field" style="margin-top:14px">
@@ -572,7 +600,8 @@ function openEditModal(entry) {
         $('modal-body').querySelectorAll('[data-edit-action]').forEach(b => b.classList.remove('active'));
         aBtn.classList.add('active');
         const isCaca = aBtn.dataset.editAction === 'caca';
-        $('edit-firmness-section').style.display = isCaca ? 'block' : 'none';
+        $('edit-firmness-section').style.display = isCaca  ? 'block' : 'none';
+        $('edit-taille-section').style.display   = !isCaca ? 'block' : 'none';
       }
       const lBtn = e.target.closest('[data-edit-loc]');
       if (lBtn) {
@@ -585,6 +614,13 @@ function openEditModal(entry) {
     if (efInput) {
       efInput.addEventListener('input', () => {
         $('edit-firmness-value').textContent = efInput.value + '%';
+      });
+    }
+    // Taille live update
+    const etInput = $('edit-taille');
+    if (etInput) {
+      etInput.addEventListener('input', () => {
+        $('edit-taille-value').textContent = etInput.value + '%';
       });
     }
   }
@@ -618,13 +654,16 @@ async function saveEdit() {
     const activeAction = $('modal-body').querySelector('[data-edit-action].active')?.dataset.editAction || entry.action;
     const activeLoc    = $('modal-body').querySelector('[data-edit-loc].active')?.dataset.editLoc    || entry.location;
     const firmInput    = $('edit-firmness');
-    const firmness     = (activeAction === 'caca' && firmInput) ? parseInt(firmInput.value, 10) : undefined;
+    const tailleInput  = $('edit-taille');
+    const firmness     = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value, 10)   : undefined;
+    const taille       = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
     updated = {
       action:    activeAction,
       location:  activeLoc,
       timestamp: new Date($('edit-time').value).toISOString(),
       note:      $('edit-note').value.trim(),
       ...(firmness !== undefined ? { firmness } : {}),
+      ...(taille   !== undefined ? { taille }   : {}),
     };
   }
 
