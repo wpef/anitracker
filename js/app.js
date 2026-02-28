@@ -468,15 +468,15 @@ function openEditPage(id) {
       <div class="card">
         <div class="card-title">Action</div>
         <div class="segment">
-          <button class="seg-btn ${!isCaca ? 'active' : ''}" data-edit-action="pipi">💧 Pipi</button>
-          <button class="seg-btn ${isCaca  ? 'active' : ''}" data-edit-action="caca">💩 Caca</button>
+          <button class="seg-btn ${!isCaca ? 'active' : ''}" data-action="pipi">💧 Pipi</button>
+          <button class="seg-btn ${isCaca  ? 'active' : ''}" data-action="caca">💩 Caca</button>
         </div>
       </div>
       <div class="card">
         <div class="card-title">Lieu</div>
         <div class="segment">
-          <button class="seg-btn ${!isIn ? 'active' : ''}" data-edit-loc="outside">🌿 Dehors</button>
-          <button class="seg-btn ${isIn  ? 'active' : ''}" data-edit-loc="inside">🏠 Dedans</button>
+          <button class="seg-btn ${!isIn ? 'active' : ''}" data-loc="outside">🌿 Dehors</button>
+          <button class="seg-btn ${isIn  ? 'active' : ''}" data-loc="inside">🏠 Dedans</button>
         </div>
       </div>
       <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
@@ -519,17 +519,17 @@ function openEditPage(id) {
     $('edit-walk-end').addEventListener('change', recalcDur);
   } else {
     body.addEventListener('click', ev => {
-      const aBtn = ev.target.closest('[data-edit-action]');
+      const aBtn = ev.target.closest('[data-action]');
       if (aBtn) {
-        body.querySelectorAll('[data-edit-action]').forEach(b => b.classList.remove('active'));
+        body.querySelectorAll('[data-action]').forEach(b => b.classList.remove('active'));
         aBtn.classList.add('active');
-        const isCaca = aBtn.dataset.editAction === 'caca';
+        const isCaca = aBtn.dataset.action === 'caca';
         $('edit-firmness-section').style.display = isCaca  ? 'block' : 'none';
         $('edit-taille-section').style.display   = !isCaca ? 'block' : 'none';
       }
-      const lBtn = ev.target.closest('[data-edit-loc]');
+      const lBtn = ev.target.closest('[data-loc]');
       if (lBtn) {
-        body.querySelectorAll('[data-edit-loc]').forEach(b => b.classList.remove('active'));
+        body.querySelectorAll('[data-loc]').forEach(b => b.classList.remove('active'));
         lBtn.classList.add('active');
       }
     });
@@ -574,8 +574,8 @@ $('edit-page-save-btn').addEventListener('click', async () => {
       duration_min: dur, timestamp: new Date(startVal).toISOString(), note: $('edit-note').value.trim(),
     };
   } else {
-    const activeAction = body.querySelector('[data-edit-action].active')?.dataset.editAction || entry.action;
-    const activeLoc    = body.querySelector('[data-edit-loc].active')?.dataset.editLoc       || entry.location;
+    const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.action;
+    const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc      || entry.location;
     const firmInput    = $('edit-firmness');
     const tailleInput  = $('edit-taille');
     const firmness     = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value, 10)   : undefined;
@@ -607,12 +607,12 @@ function renderStats() {
   $('qs-walk-time').textContent  = s.todayWalkMinSince7am > 0
     ? formatDuration(s.todayWalkMinSince7am) : '0';
 
-  // Score propreté du jour
+  // Score propreté du jour (stats aujourd'hui uniquement)
   renderScoreRing(s.todayScore);
-  $('si-pipi-out').textContent = s.pipiDehors;
-  $('si-pipi-in').textContent  = s.pipiDedans;
-  $('si-caca-out').textContent = s.cacaDehors;
-  $('si-caca-in').textContent  = s.cacaDedans;
+  $('si-pipi-out').textContent = s.todayPipiDehors;
+  $('si-pipi-in').textContent  = s.todayPipiDedans_s;
+  $('si-caca-out').textContent = s.todayCacaDehors;
+  $('si-caca-in').textContent  = s.todayCacaDedans;
 
   // Balades aujourd'hui
   const walkCount     = s.todayWalks.length;
@@ -805,8 +805,11 @@ function getStats() {
   const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
 
   const todayPipi         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
-  const todayCacaDedans   = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca' && e.location === 'inside').length;
+  const todayCaca         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
+  const todayPipiDehors   = todayPipi.filter(e => e.location === 'outside').length;
   const todayPipiDedans_s = todayPipi.filter(e => e.location === 'inside').length;
+  const todayCacaDehors   = todayCaca.filter(e => e.location === 'outside').length;
+  const todayCacaDedans   = todayCaca.filter(e => e.location === 'inside').length;
   const todayBad          = todayPipiDedans_s + todayCacaDedans;
   const todayScore        = todayPipi.length > 0
     ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
@@ -856,7 +859,8 @@ function getStats() {
 
   return { total: entries.length, recent: recent.length, walkStarts: walkStarts.length, pipi: pipi.length, caca: caca.length,
     pipiDehors, pipiDedans, cacaDehors, cacaDedans, todayScore, todayWalks, todayPipiTotal, todayPipiDedans,
-    todayWalkMinSince7am, dailyLabels, dailyWalks, dailyPipi, dailyCaca, dailyInside, dailyPropretScore, firmnessLabels, firmnessData };
+    todayWalkMinSince7am, todayPipiDehors, todayPipiDedans_s, todayCacaDehors, todayCacaDedans,
+    dailyLabels, dailyWalks, dailyPipi, dailyCaca, dailyInside, dailyPropretScore, firmnessLabels, firmnessData };
 }
 
 // ===== Écran de configuration Firebase =====
