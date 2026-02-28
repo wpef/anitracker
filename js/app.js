@@ -541,12 +541,13 @@ function openEditPage(id) {
 }
 
 // Bindings de la page edit (persistent, pas recréés à chaque ouverture)
-$('edit-back-btn').addEventListener('click', () => {
+// Note: optional chaining ?. évite le crash si l'HTML en cache est une ancienne version
+$('edit-back-btn')?.addEventListener('click', () => {
   editingId = null;
   showPage('history');
 });
 
-$('edit-delete-btn').addEventListener('click', async () => {
+$('edit-delete-btn')?.addEventListener('click', async () => {
   if (!editingId) return;
   if (!confirm('Supprimer cette entrée ?')) return;
   setSyncState('pending');
@@ -557,7 +558,7 @@ $('edit-delete-btn').addEventListener('click', async () => {
   showToast('Entrée supprimée');
 });
 
-$('edit-page-save-btn').addEventListener('click', async () => {
+$('edit-page-save-btn')?.addEventListener('click', async () => {
   if (!editingId) return;
   const entry = getAllEntries().find(e => e.id === editingId);
   if (!entry) return;
@@ -885,7 +886,7 @@ $('setup-reset').addEventListener('click', () => {
   location.reload();
 });
 
-$('exit-demo-btn').addEventListener('click', () => {
+$('exit-demo-btn')?.addEventListener('click', () => {
   showSetupScreen();
 });
 
@@ -979,12 +980,16 @@ async function boot() {
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
-    // Recharge la page quand un nouveau Service Worker prend la main
-    // (évite les mélanges de versions entre anciens et nouveaux fichiers)
-    navigator.serviceWorker.addEventListener('message', event => {
-      if (event.data?.type === 'SW_UPDATED') location.reload();
-    });
   }
+}
+
+// ===== Service Worker : listener de mise à jour =====
+// Inscrit au niveau module (pas dans boot()) pour fonctionner même si
+// boot() plante sur une version HTML/JS incohérente → recharge automatique
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'SW_UPDATED') location.reload();
+  });
 }
 
 boot();
