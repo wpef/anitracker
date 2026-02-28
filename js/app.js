@@ -979,6 +979,11 @@ async function boot() {
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
+    // Recharge la page quand un nouveau Service Worker prend la main
+    // (évite les mélanges de versions entre anciens et nouveaux fichiers)
+    navigator.serviceWorker.addEventListener('message', event => {
+      if (event.data?.type === 'SW_UPDATED') location.reload();
+    });
   }
 }
 
