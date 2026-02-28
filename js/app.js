@@ -20,9 +20,13 @@ const setActive = (group, value) => {
 // ===== Navigation =====
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   $(`page-${id}`).classList.add('active');
-  $(`nav-${id}`).classList.add('active');
+  // Nav bar : pas de mise à jour pour la page edit (on reste sur "historique")
+  if (id !== 'edit') {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    const navBtn = $(`nav-${id}`);
+    if (navBtn) navBtn.classList.add('active');
+  }
   // Bouton flottant uniquement sur la page "new"
   $('btn-add').style.display = id === 'new' ? 'block' : 'none';
 
@@ -337,11 +341,7 @@ function entryLabel(entry) {
   return label;
 }
 
-// ===== History Page (Timeline proportionnelle) =====
-const PX_PER_MIN = 1.2;   // pixels par minute → 1h = 72px
-const TL_PAD_MIN = 20;    // marge haut/bas en minutes
-const CARD_H     = 54;    // hauteur estimée d'une card pour l'anti-overlap
-
+// ===== History Page (liste simple, plus récent en tête) =====
 function renderHistory() {
   const allEntries = getAllEntries()
     .filter(e => !(e.type === 'walk' && e.action === 'end'));
@@ -355,7 +355,7 @@ function renderHistory() {
     return;
   }
 
-  // Grouper par jour local, le plus récent en tête
+  // Grouper par jour local (jours les plus récents déjà en tête car allEntries est trié desc)
   const groups = new Map();
   for (const e of allEntries) {
     const key = new Date(e.timestamp).toLocaleDateString('fr-FR',
@@ -363,7 +363,7 @@ function renderHistory() {
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(e);
   }
-  for (const [, g] of groups) g.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  // Au sein de chaque jour : plus récent en premier (déjà trié desc par getAllEntries)
 
   const todayKey = new Date().toLocaleDateString('fr-FR',
     { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -371,145 +371,73 @@ function renderHistory() {
   const yesterdayKey = yest.toLocaleDateString('fr-FR',
     { year: 'numeric', month: '2-digit', day: '2-digit' });
 
-  const locLabels = { outside: 'Dehors', inside: 'Dedans' };
-
   function dayLabel(key, sample) {
     if (key === todayKey)     return "Aujourd'hui";
     if (key === yesterdayKey) return 'Hier';
     return new Date(sample.timestamp).toLocaleDateString('fr-FR',
-      { weekday: 'short', day: 'numeric', month: 'short' });
+      { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
-  function entryIcon(e) { return e.action === 'pipi' ? '💧' : '💩'; }
-  function entryTitle(e) { return e.action === 'pipi' ? 'Pipi' : 'Caca'; }
   const fmt = t => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-
   let html = '';
 
   for (const [key, dayEntries] of groups) {
-    // ── Plage horaire du jour ──
-    const allMs = dayEntries.flatMap(e => {
-      const ts = [new Date(e.start_time || e.timestamp).getTime()];
-      if (e.end_time) ts.push(new Date(e.end_time).getTime());
-      else if (e.type === 'walk' && e.duration_min)
-        ts.push(new Date(e.start_time || e.timestamp).getTime() + e.duration_min * 60000);
-      return ts;
-    });
-    const rangeStartMs = Math.min(...allMs) - TL_PAD_MIN * 60000;
-    const rangeEndMs   = Math.max(...allMs) + TL_PAD_MIN * 60000;
-    const totalHeight  = Math.max(120, Math.ceil(((rangeEndMs - rangeStartMs) / 60000) * PX_PER_MIN));
-    const toTop = ms => Math.round(((ms - rangeStartMs) / 60000) * PX_PER_MIN);
-
-    // ── Intervalles des balades pour détection "pendant une balade" ──
-    const walkIntervals = dayEntries
-      .filter(w => w.type === 'walk')
-      .map(w => {
-        const s = new Date(w.start_time || w.timestamp).getTime();
-        const e = w.end_time ? new Date(w.end_time).getTime()
-                             : s + (w.duration_min || 30) * 60000;
-        return { s, e };
-      });
-    const isInWalk = ms => walkIntervals.some(({ s, e }) => ms > s && ms < e);
-
     html += `<div class="tl-day-header">${dayLabel(key, dayEntries[0])}</div>
-             <div class="tl-group" style="height:${totalHeight}px">`;
+             <div class="tl-list">`;
 
-    // ── Graduations horaires ──
-    const firstTickDate = new Date(rangeStartMs);
-    firstTickDate.setMinutes(0, 0, 0);
-    if (firstTickDate.getTime() <= rangeStartMs) firstTickDate.setHours(firstTickDate.getHours() + 1);
-    for (let t = firstTickDate.getTime(); t < rangeEndMs; t += 3600000) {
-      html += `<div class="tl-tick" style="top:${toTop(t)}px">
-                 <span class="tl-tick-label">${fmt(t)}</span>
-                 <div class="tl-tick-line"></div>
-               </div>`;
-    }
-
-    // ── Bandes de balades ──
-    for (const walk of dayEntries.filter(e => e.type === 'walk')) {
-      const startMs = new Date(walk.start_time || walk.timestamp).getTime();
-      const endMs   = walk.end_time ? new Date(walk.end_time).getTime()
-                                    : startMs + (walk.duration_min || 30) * 60000;
-      const top     = toTop(startMs);
-      const height  = Math.max(44, toTop(endMs) - top);
-      const durStr  = walk.duration_min ? formatDuration(walk.duration_min) : '';
-      html += `<div class="tl-walk-band" style="top:${top}px;height:${height}px">
-                 <div class="tl-walk-band-inner">
-                   <span class="tl-walk-band-title">🐾 Balade</span>
-                   <span class="tl-walk-band-times">${fmt(startMs)} → ${fmt(endMs)}</span>
-                   ${durStr ? `<span class="tl-walk-band-dur">${durStr}</span>` : ''}
-                 </div>
-                 <div class="tl-walk-band-actions">
-                   <button class="entry-edit"   data-edit="${walk.id}" title="Modifier">✏️</button>
-                   <button class="entry-delete" data-del="${walk.id}"  title="Supprimer">✕</button>
-                 </div>
-               </div>`;
-    }
-
-    // ── Éléments salle de bain (positionnés + anti-overlap) ──
-    let prevBottom = -Infinity;
-    const items = dayEntries
-      .filter(e => e.type !== 'walk')
-      .map(e => {
-        const ms     = new Date(e.timestamp).getTime();
-        const rawTop = toTop(ms);
-        const top    = Math.max(rawTop, prevBottom);
-        prevBottom   = top + CARD_H;
-        return { e, top, inWalk: isInWalk(ms) };
-      });
-
-    for (const { e, top, inWalk } of items) {
-      const timeStr  = fmt(new Date(e.timestamp).getTime());
-      const locBadge = `<span class="entry-badge badge-${e.location}">${locLabels[e.location] || ''}</span>`;
-      const firmMeta  = (e.action === 'caca' && e.firmness !== undefined)
-        ? `<div class="tl-card-note">Fermeté : ${e.firmness}%</div>` : '';
-      const tailleMeta = (e.action === 'pipi' && e.taille !== undefined)
-        ? `<div class="tl-card-note">Quantité : ${e.taille}%</div>` : '';
-      const noteMeta = e.note ? `<div class="tl-card-note">${e.note}</div>` : '';
-
-      html += `<div class="tl-item${inWalk ? ' tl-in-walk' : ''}" style="top:${top}px" data-id="${e.id}">
-                 <div class="tl-time">${timeStr}</div>
-                 <div class="tl-line-col">
-                   <div class="tl-dot tl-dot-${inWalk ? 'walk' : 'bathroom'}"></div>
-                 </div>
-                 <div class="tl-card">
-                   <div class="tl-card-icon bathroom">${entryIcon(e)}</div>
-                   <div class="tl-card-body">
-                     <div class="tl-card-title">${entryTitle(e)}</div>
-                     ${firmMeta}${tailleMeta}${noteMeta}
+    for (const e of dayEntries) {
+      if (e.type === 'walk') {
+        const dur      = e.duration_min ? formatDuration(e.duration_min) : '';
+        const startStr = fmt(e.start_time || e.timestamp);
+        const endStr   = e.end_time ? fmt(e.end_time) : '';
+        const range    = endStr ? `${startStr} → ${endStr}` : startStr;
+        const meta     = [range, e.note].filter(Boolean).join(' · ');
+        html += `<div class="tl-entry tl-entry-walk" data-id="${e.id}">
+                   <div class="tl-entry-time">${startStr}</div>
+                   <div class="tl-entry-icon">🐾</div>
+                   <div class="tl-entry-body">
+                     <div class="tl-entry-title">Balade${dur ? ' · ' + dur : ''}</div>
+                     ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
                    </div>
-                   ${locBadge}
-                   <button class="entry-edit"   data-edit="${e.id}" title="Modifier">✏️</button>
-                   <button class="entry-delete" data-del="${e.id}"  title="Supprimer">✕</button>
-                 </div>
-               </div>`;
+                 </div>`;
+      } else {
+        const icon     = e.action === 'pipi' ? '💧' : '💩';
+        const title    = e.action === 'pipi' ? 'Pipi' : 'Caca';
+        const locClass = e.location === 'inside' ? 'inside' : 'outside';
+        const locLabel = e.location === 'inside' ? 'Dedans' : 'Dehors';
+        const parts    = [];
+        if (e.action === 'caca' && e.firmness !== undefined) parts.push(`Fermeté ${e.firmness}%`);
+        if (e.action === 'pipi' && e.taille   !== undefined) parts.push(`Quantité ${e.taille}%`);
+        if (e.note) parts.push(e.note);
+        const meta = parts.join(' · ');
+        html += `<div class="tl-entry tl-entry-bathroom tl-entry-${locClass}" data-id="${e.id}">
+                   <div class="tl-entry-time">${fmt(e.timestamp)}</div>
+                   <div class="tl-entry-icon">${icon}</div>
+                   <div class="tl-entry-body">
+                     <div class="tl-entry-title">${title}</div>
+                     ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
+                   </div>
+                   <span class="entry-badge badge-${e.location}">${locLabel}</span>
+                 </div>`;
+      }
     }
-
     html += '</div>';
   }
 
   container.innerHTML = html;
 
-  container.querySelectorAll('[data-del]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      setSyncState('pending');
-      try { await deleteEntry(btn.dataset.del); setSyncState('ok'); }
-      catch { setSyncState('error'); }
-      renderHistory();
-    });
-  });
-
-  container.querySelectorAll('[data-edit]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const entry = getAllEntries().find(e => e.id === btn.dataset.edit);
-      if (entry) openEditModal(entry);
-    });
+  container.querySelectorAll('.tl-entry[data-id]').forEach(el => {
+    el.addEventListener('click', () => openEditPage(el.dataset.id));
   });
 }
 
-// ===== Edit Modal =====
-function openEditModal(entry) {
-  editingId = entry.id;
+// ===== Page d'édition =====
+function openEditPage(id) {
+  const entry = getAllEntries().find(e => e.id === id);
+  if (!entry) return;
+  editingId = id;
+
+  const body = $('edit-page-body');
   let html = '';
 
   if (entry.type === 'walk') {
@@ -517,38 +445,42 @@ function openEditModal(entry) {
     const endVal   = entry.end_time ? toLocalISO(entry.end_time) : '';
     const dur      = entry.duration_min || 0;
     html = `
-      <div class="modal-field-group">
-        <div class="modal-field">
-          <label class="modal-label">🚶 Début</label>
-          <input type="datetime-local" id="edit-walk-start" value="${startVal}" class="modal-input" />
-        </div>
-        <div class="modal-field">
-          <label class="modal-label">🏠 Fin</label>
-          <input type="datetime-local" id="edit-walk-end" value="${endVal}" class="modal-input" />
-        </div>
+      <div class="card">
+        <div class="card-title">🚶 Début</div>
+        <input type="datetime-local" id="edit-walk-start" value="${startVal}" class="modal-input" />
       </div>
-      <div id="edit-dur-display" class="walk-duration-display">${dur > 0 ? formatDuration(dur) : '— min'}</div>
-      <div class="modal-field">
-        <label class="modal-label">📝 Note</label>
+      <div class="card">
+        <div class="card-title">🏠 Fin</div>
+        <input type="datetime-local" id="edit-walk-end" value="${endVal}" class="modal-input" />
+      </div>
+      <div id="edit-dur-display" class="walk-duration-display">${dur > 0 ? formatDuration(dur) : '—'}</div>
+      <div class="card">
+        <div class="card-title">📝 Note</div>
         <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
       </div>`;
   } else {
-    const timeVal = toLocalISO(entry.timestamp);
-    const isIn    = entry.location === 'inside';
-    const isCaca  = entry.action === 'caca';
+    const timeVal  = toLocalISO(entry.timestamp);
+    const isIn     = entry.location === 'inside';
+    const isCaca   = entry.action === 'caca';
     const firmness = entry.firmness !== undefined ? entry.firmness : 80;
     const taille   = entry.taille   !== undefined ? entry.taille   : 50;
     html = `
-      <div class="segment modal-segment">
-        <button class="seg-btn ${!isCaca ? 'active' : ''}" data-edit-action="pipi">💧 Pipi</button>
-        <button class="seg-btn ${isCaca  ? 'active' : ''}" data-edit-action="caca">💩 Caca</button>
+      <div class="card">
+        <div class="card-title">Action</div>
+        <div class="segment">
+          <button class="seg-btn ${!isCaca ? 'active' : ''}" data-action="pipi">💧 Pipi</button>
+          <button class="seg-btn ${isCaca  ? 'active' : ''}" data-action="caca">💩 Caca</button>
+        </div>
       </div>
-      <div class="segment modal-segment" style="margin-top:10px">
-        <button class="seg-btn ${!isIn ? 'active' : ''}" data-edit-loc="outside">🌿 Dehors</button>
-        <button class="seg-btn ${isIn  ? 'active' : ''}" data-edit-loc="inside">🏠 Dedans</button>
+      <div class="card">
+        <div class="card-title">Lieu</div>
+        <div class="segment">
+          <button class="seg-btn ${!isIn ? 'active' : ''}" data-loc="outside">🌿 Dehors</button>
+          <button class="seg-btn ${isIn  ? 'active' : ''}" data-loc="inside">🏠 Dedans</button>
+        </div>
       </div>
-      <div id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'};margin-top:14px">
-        <label class="modal-label">💩 Fermeté</label>
+      <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
+        <div class="card-title">💩 Fermeté</div>
         <input type="range" id="edit-firmness" min="0" max="100" value="${firmness}" step="5" />
         <div class="firmness-row">
           <span class="firmness-end">Liquide</span>
@@ -556,8 +488,8 @@ function openEditModal(entry) {
           <span class="firmness-end">Ferme</span>
         </div>
       </div>
-      <div id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'};margin-top:14px">
-        <label class="modal-label">💧 Quantité</label>
+      <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
+        <div class="card-title">💧 Quantité</div>
         <input type="range" id="edit-taille" min="0" max="100" value="${taille}" step="5" />
         <div class="firmness-row">
           <span class="firmness-end">Peu</span>
@@ -565,126 +497,104 @@ function openEditModal(entry) {
           <span class="firmness-end">Beaucoup</span>
         </div>
       </div>
-      <div class="modal-field" style="margin-top:14px">
-        <label class="modal-label">🕐 Date &amp; heure</label>
+      <div class="card">
+        <div class="card-title">🕐 Date &amp; heure</div>
         <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
       </div>
-      <div class="modal-field" style="margin-top:10px">
-        <label class="modal-label">📝 Note</label>
+      <div class="card">
+        <div class="card-title">📝 Note</div>
         <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
       </div>`;
   }
 
-  $('modal-body').innerHTML = html;
-  $('edit-modal').style.display = 'flex';
+  body.innerHTML = html;
+  showPage('edit');
 
-  // Walk: link start ↔ end ↔ duration
   if (entry.type === 'walk') {
-    $('edit-walk-start').addEventListener('change', () => {
+    const recalcDur = () => {
       const dur = Math.round((new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000);
-      if ($('edit-walk-end').value && dur > 0) {
-        $('edit-dur-display').textContent = formatDuration(dur);
-      }
-    });
-    $('edit-walk-end').addEventListener('change', () => {
-      const dur = Math.round((new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000);
-      $('edit-dur-display').textContent = dur > 0 ? formatDuration(dur) : '— min';
-    });
-  }
-
-  // Bathroom: action toggle
-  if (entry.type === 'bathroom') {
-    $('modal-body').addEventListener('click', e => {
-      const aBtn = e.target.closest('[data-edit-action]');
+      $('edit-dur-display').textContent = (dur > 0 && $('edit-walk-end').value) ? formatDuration(dur) : '—';
+    };
+    $('edit-walk-start').addEventListener('change', recalcDur);
+    $('edit-walk-end').addEventListener('change', recalcDur);
+  } else {
+    body.addEventListener('click', ev => {
+      const aBtn = ev.target.closest('[data-action]');
       if (aBtn) {
-        $('modal-body').querySelectorAll('[data-edit-action]').forEach(b => b.classList.remove('active'));
+        body.querySelectorAll('[data-action]').forEach(b => b.classList.remove('active'));
         aBtn.classList.add('active');
-        const isCaca = aBtn.dataset.editAction === 'caca';
+        const isCaca = aBtn.dataset.action === 'caca';
         $('edit-firmness-section').style.display = isCaca  ? 'block' : 'none';
         $('edit-taille-section').style.display   = !isCaca ? 'block' : 'none';
       }
-      const lBtn = e.target.closest('[data-edit-loc]');
+      const lBtn = ev.target.closest('[data-loc]');
       if (lBtn) {
-        $('modal-body').querySelectorAll('[data-edit-loc]').forEach(b => b.classList.remove('active'));
+        body.querySelectorAll('[data-loc]').forEach(b => b.classList.remove('active'));
         lBtn.classList.add('active');
       }
     });
-    // Firmness live update
     const efInput = $('edit-firmness');
-    if (efInput) {
-      efInput.addEventListener('input', () => {
-        $('edit-firmness-value').textContent = efInput.value + '%';
-      });
-    }
-    // Taille live update
+    if (efInput) efInput.addEventListener('input', () => { $('edit-firmness-value').textContent = efInput.value + '%'; });
     const etInput = $('edit-taille');
-    if (etInput) {
-      etInput.addEventListener('input', () => {
-        $('edit-taille-value').textContent = etInput.value + '%';
-      });
-    }
+    if (etInput) etInput.addEventListener('input', () => { $('edit-taille-value').textContent = etInput.value + '%'; });
   }
 }
 
-function closeEditModal() {
-  $('edit-modal').style.display = 'none';
+// Bindings de la page edit (persistent, pas recréés à chaque ouverture)
+$('edit-back-btn').addEventListener('click', () => {
   editingId = null;
-}
+  showPage('history');
+});
 
-async function saveEdit() {
+$('edit-delete-btn').addEventListener('click', async () => {
+  if (!editingId) return;
+  if (!confirm('Supprimer cette entrée ?')) return;
+  setSyncState('pending');
+  try { await deleteEntry(editingId); setSyncState('ok'); }
+  catch { setSyncState('error'); }
+  editingId = null;
+  showPage('history');
+  showToast('Entrée supprimée');
+});
+
+$('edit-page-save-btn').addEventListener('click', async () => {
   if (!editingId) return;
   const entry = getAllEntries().find(e => e.id === editingId);
   if (!entry) return;
 
+  const body = $('edit-page-body');
   let updated = {};
 
   if (entry.type === 'walk') {
     const startVal = $('edit-walk-start').value;
     const endVal   = $('edit-walk-end').value;
-    const dur      = endVal
-      ? Math.round((new Date(endVal) - new Date(startVal)) / 60000) : (entry.duration_min || 0);
+    const dur      = endVal ? Math.round((new Date(endVal) - new Date(startVal)) / 60000) : (entry.duration_min || 0);
     updated = {
-      start_time:   new Date(startVal).toISOString(),
-      end_time:     endVal ? new Date(endVal).toISOString() : null,
-      duration_min: dur,
-      timestamp:    new Date(startVal).toISOString(),
-      note:         $('edit-note').value.trim(),
+      start_time: new Date(startVal).toISOString(), end_time: endVal ? new Date(endVal).toISOString() : null,
+      duration_min: dur, timestamp: new Date(startVal).toISOString(), note: $('edit-note').value.trim(),
     };
   } else {
-    const activeAction = $('modal-body').querySelector('[data-edit-action].active')?.dataset.editAction || entry.action;
-    const activeLoc    = $('modal-body').querySelector('[data-edit-loc].active')?.dataset.editLoc    || entry.location;
+    const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.action;
+    const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc      || entry.location;
     const firmInput    = $('edit-firmness');
     const tailleInput  = $('edit-taille');
     const firmness     = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value, 10)   : undefined;
     const taille       = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
     updated = {
-      action:    activeAction,
-      location:  activeLoc,
+      action: activeAction, location: activeLoc,
       timestamp: new Date($('edit-time').value).toISOString(),
-      note:      $('edit-note').value.trim(),
+      note: $('edit-note').value.trim(),
       ...(firmness !== undefined ? { firmness } : {}),
       ...(taille   !== undefined ? { taille }   : {}),
     };
   }
 
   setSyncState('pending');
-  try {
-    await updateEntry(editingId, updated);
-    setSyncState('ok');
-  } catch {
-    setSyncState('error');
-  }
-  closeEditModal();
-  renderHistory();
+  try { await updateEntry(editingId, updated); setSyncState('ok'); }
+  catch { setSyncState('error'); }
+  editingId = null;
+  showPage('history');
   showToast('Entrée modifiée ✓');
-}
-
-// Modal bindings
-$('modal-close').addEventListener('click', closeEditModal);
-$('modal-cancel').addEventListener('click', closeEditModal);
-$('modal-save').addEventListener('click', saveEdit);
-$('edit-modal').addEventListener('click', e => {
-  if (e.target === $('edit-modal')) closeEditModal(); // tap outside
 });
 
 // ===== Stats Page =====
@@ -697,12 +607,12 @@ function renderStats() {
   $('qs-walk-time').textContent  = s.todayWalkMinSince7am > 0
     ? formatDuration(s.todayWalkMinSince7am) : '0';
 
-  // Score propreté du jour
+  // Score propreté du jour (stats aujourd'hui uniquement)
   renderScoreRing(s.todayScore);
-  $('si-pipi-out').textContent = s.pipiDehors;
-  $('si-pipi-in').textContent  = s.pipiDedans;
-  $('si-caca-out').textContent = s.cacaDehors;
-  $('si-caca-in').textContent  = s.cacaDedans;
+  $('si-pipi-out').textContent = s.todayPipiDehors;
+  $('si-pipi-in').textContent  = s.todayPipiDedans_s;
+  $('si-caca-out').textContent = s.todayCacaDehors;
+  $('si-caca-in').textContent  = s.todayCacaDedans;
 
   // Balades aujourd'hui
   const walkCount     = s.todayWalks.length;
@@ -850,9 +760,8 @@ function renderLineChart(canvasId, labels, data, color) {
   });
 }
 
-// ===== Chargement dynamique de db.js (après config Firebase) =====
-// Ces variables sont initialisées par loadDb()
-let initDB, saveEntry, deleteEntry, updateEntry, getStats, getAllEntries;
+// ===== Chargement dynamique de db.js / demo-db.js =====
+let initDB, saveEntry, deleteEntry, updateEntry, getAllEntries;
 
 async function loadDb() {
   const db = await import('./db.js');
@@ -860,8 +769,98 @@ async function loadDb() {
   saveEntry    = db.saveEntry;
   deleteEntry  = db.deleteEntry;
   updateEntry  = db.updateEntry;
-  getStats     = db.getStats;
   getAllEntries = db.getAllEntries;
+}
+
+async function loadDemoDb() {
+  const db = await import('./demo-db.js');
+  initDB       = db.initDB;
+  saveEntry    = db.saveEntry;
+  deleteEntry  = db.deleteEntry;
+  updateEntry  = db.updateEntry;
+  getAllEntries = db.getAllEntries;
+}
+
+// ===== getStats (utilise getAllEntries assigné par loadDb/loadDemoDb) =====
+function getStats() {
+  const entries = getAllEntries();
+  const now     = new Date();
+  const isWalk  = e => e.type === 'walk' && e.action !== 'end';
+
+  const sevenDaysAgo = new Date(now);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  const recent = entries.filter(e => new Date(e.timestamp) >= sevenDaysAgo);
+
+  const walkStarts = recent.filter(isWalk);
+  const pipi       = recent.filter(e => e.type === 'bathroom' && e.action === 'pipi');
+  const caca       = recent.filter(e => e.type === 'bathroom' && e.action === 'caca');
+  const pipiDehors = pipi.filter(e => e.location === 'outside').length;
+  const pipiDedans = pipi.filter(e => e.location === 'inside').length;
+  const cacaDehors = caca.filter(e => e.location === 'outside').length;
+  const cacaDedans = caca.filter(e => e.location === 'inside').length;
+
+  const todayStart = new Date(now);
+  todayStart.setHours(0, 0, 0, 0);
+  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
+
+  const todayPipi         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
+  const todayCaca         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
+  const todayPipiDehors   = todayPipi.filter(e => e.location === 'outside').length;
+  const todayPipiDedans_s = todayPipi.filter(e => e.location === 'inside').length;
+  const todayCacaDehors   = todayCaca.filter(e => e.location === 'outside').length;
+  const todayCacaDedans   = todayCaca.filter(e => e.location === 'inside').length;
+  const todayBad          = todayPipiDedans_s + todayCacaDedans;
+  const todayScore        = todayPipi.length > 0
+    ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
+
+  const statsFrom7am = new Date(now);
+  if (now.getHours() < 7) statsFrom7am.setDate(statsFrom7am.getDate() - 1);
+  statsFrom7am.setHours(7, 0, 0, 0);
+  const quickEntries = entries.filter(e => new Date(e.timestamp) >= statsFrom7am);
+
+  const todayPipiTotal       = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi').length;
+  const todayPipiDedans      = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi' && e.location === 'inside').length;
+  const todayWalkMinSince7am = quickEntries.filter(isWalk).reduce((s, e) => s + (e.duration_min || 0), 0);
+
+  const todayWalks = todayEntries
+    .filter(isWalk)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
+    .map(e => ({ id: e.id, startTime: e.start_time || e.timestamp, endTime: e.end_time || null, durationMin: e.duration_min || null }));
+
+  const dailyLabels = [], dailyWalks = [], dailyPipi = [], dailyCaca = [], dailyInside = [], dailyPropretScore = [];
+  for (let i = 6; i >= 0; i--) {
+    const day = new Date(now); day.setDate(day.getDate() - i); day.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
+    const dayEntries = entries.filter(e => { const t = new Date(e.timestamp); return t >= day && t <= dayEnd; });
+    dailyLabels.push(day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }));
+    dailyWalks.push(dayEntries.filter(isWalk).length);
+    const dayPipi = dayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
+    const dayCaca = dayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
+    dailyPipi.push(dayPipi.length);
+    dailyCaca.push(dayCaca.length);
+    dailyInside.push(dayEntries.filter(e => e.location === 'inside').length);
+    const dayBad = dayPipi.filter(e => e.location === 'inside').length + dayCaca.filter(e => e.location === 'inside').length;
+    dailyPropretScore.push(dayPipi.length > 0 ? Math.max(0, Math.round(100 - (dayBad / dayPipi.length * 100))) : null);
+  }
+
+  const threeDaysAgo = new Date(now); threeDaysAgo.setDate(threeDaysAgo.getDate() - 2); threeDaysAgo.setHours(0, 0, 0, 0);
+  const recentCacas = entries
+    .filter(e => e.type === 'bathroom' && e.action === 'caca' && e.firmness !== undefined)
+    .filter(e => new Date(e.timestamp) >= threeDaysAgo)
+    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  const todayStr       = now.toDateString();
+  const firmnessLabels = recentCacas.map(e => {
+    const d = new Date(e.timestamp);
+    const s = d.toDateString() === todayStr ? 'Auj.' : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+    return s + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  });
+  const firmnessData = recentCacas.map(e => e.firmness);
+
+  return { total: entries.length, recent: recent.length, walkStarts: walkStarts.length, pipi: pipi.length, caca: caca.length,
+    pipiDehors, pipiDedans, cacaDehors, cacaDedans, todayScore, todayWalks, todayPipiTotal, todayPipiDedans,
+    todayWalkMinSince7am, todayPipiDehors, todayPipiDedans_s, todayCacaDehors, todayCacaDedans,
+    dailyLabels, dailyWalks, dailyPipi, dailyCaca, dailyInside, dailyPropretScore, firmnessLabels, firmnessData };
 }
 
 // ===== Écran de configuration Firebase =====
@@ -884,6 +883,10 @@ $('setup-save').addEventListener('click', () => {
 $('setup-reset').addEventListener('click', () => {
   clearFirebaseConfig();
   location.reload();
+});
+
+$('exit-demo-btn').addEventListener('click', () => {
+  showSetupScreen();
 });
 
 // ===== Quick Entry (raccourcis URL) =====
@@ -922,6 +925,21 @@ async function boot() {
   // Vérifie si Firebase est configuré
   if (!getFirebaseConfig()) {
     showSetupScreen();
+
+    // Bouton mode démo
+    $('btn-demo').addEventListener('click', async () => {
+      $('setup-overlay').style.display = 'none';
+      await loadDemoDb();
+      initDB(() => {
+        const active = document.querySelector('.page.active');
+        if (active?.id === 'page-stats')   renderStats();
+        if (active?.id === 'page-history') renderHistory();
+      });
+      $('demo-banner').style.display = 'flex';
+      setSyncState('ok');
+      initNewEntry();
+      showPage('new');
+    });
     return;
   }
 
@@ -930,6 +948,19 @@ async function boot() {
     await loadDb();
   } catch {
     showSetupScreen();
+    $('btn-demo').addEventListener('click', async () => {
+      $('setup-overlay').style.display = 'none';
+      await loadDemoDb();
+      initDB(() => {
+        const active = document.querySelector('.page.active');
+        if (active?.id === 'page-stats')   renderStats();
+        if (active?.id === 'page-history') renderHistory();
+      });
+      $('demo-banner').style.display = 'flex';
+      setSyncState('ok');
+      initNewEntry();
+      showPage('new');
+    });
     return;
   }
 
