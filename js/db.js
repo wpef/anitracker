@@ -102,18 +102,18 @@ export function getStats() {
   const cacaDedans = caca.filter(e => e.location === 'inside').length;
 
   // ── Score de propreté du JOUR (pour le ring) ─────────────────────────────
-  // Formule : pipiDehors / (pipi + cacaDedans) × 100
+  // Formule : 100 - (pipiDedans + cacaDedans) / total_pipis × 100
   // Caca dehors = neutre, exclu du calcul
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
 
-  const todayPipi       = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
-  const todayCacaDedans = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca' && e.location === 'inside').length;
-  const todayPipiDehors = todayPipi.filter(e => e.location === 'outside').length;
-  const todayScoreTotal = todayPipi.length + todayCacaDedans;
-  const todayScore      = todayScoreTotal > 0
-    ? Math.round(todayPipiDehors / todayScoreTotal * 100) : null;
+  const todayPipi         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
+  const todayCacaDedans   = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca' && e.location === 'inside').length;
+  const todayPipiDedans_s = todayPipi.filter(e => e.location === 'inside').length;
+  const todayBad          = todayPipiDedans_s + todayCacaDedans;
+  const todayScore        = todayPipi.length > 0
+    ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
 
   // ── Quick-stats : depuis 7h (ou hier 7h si avant 7h) ────────────────────
   const statsFrom7am = new Date(now);
@@ -167,11 +167,11 @@ export function getStats() {
     dailyCaca.push(dayCaca.length);
     dailyInside.push(dayEntries.filter(e => e.location === 'inside').length);
 
-    // Même formule : pipiDehors / (pipi + cacaDedans)
-    const dayPipiDehors = dayPipi.filter(e => e.location === 'outside').length;
+    // Même formule : 100 - (pipiDedans + cacaDedans) / total_pipis
+    const dayPipiDedans = dayPipi.filter(e => e.location === 'inside').length;
     const dayCacaDedans = dayCaca.filter(e => e.location === 'inside').length;
-    const dayTotal      = dayPipi.length + dayCacaDedans;
-    dailyPropretScore.push(dayTotal > 0 ? Math.round(dayPipiDehors / dayTotal * 100) : null);
+    const dayBad        = dayPipiDedans + dayCacaDedans;
+    dailyPropretScore.push(dayPipi.length > 0 ? Math.max(0, Math.round(100 - (dayBad / dayPipi.length * 100))) : null);
   }
 
   // ── Fermeté des cacas – 3 derniers jours, entrées individuelles ──────────
