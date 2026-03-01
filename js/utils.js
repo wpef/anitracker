@@ -112,15 +112,18 @@ export function normalizeEntry(e) {
   if (!e) return null;
   if (e.type === 'walk' && e.action === 'end') return null;
   if (e.type === 'pipi' || e.type === 'caca') return e;  // déjà BaseEntry
-  if (e.type === 'bathroom') {
+  if (e.type === 'walk') {
+    return { ...e, timestamp: e.timestamp || e.start_time };
+  }
+  // Entrées legacy type:'bathroom' ET entrées sans type (type absent/null/undefined)
+  if (e.type === 'bathroom' || !e.type) {
+    // Si action manquante, on l'infère : firmness → caca, taille → pipi, sinon pipi par défaut
+    const action = e.action || (e.firmness !== undefined ? 'caca' : 'pipi');
     return { ...e,
-      type:     e.action,
+      type:     action,
       text_val: e.text_val ?? e.location,
       num_val:  e.num_val  ?? e.firmness ?? e.taille,
     };
-  }
-  if (e.type === 'walk') {
-    return { ...e, timestamp: e.timestamp || e.start_time };
   }
   return e; // types futurs passent sans modification
 }
