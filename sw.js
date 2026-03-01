@@ -1,5 +1,5 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v12';
+const CACHE_NAME = 'anitracker-v13';
 const ASSETS = [
   '/index.html',
   '/quick.html',
@@ -14,6 +14,7 @@ const ASSETS = [
   '/js/charts.js',
   '/js/stats.js',
   '/js/ui-new-entry.js',
+  '/js/ui-gauge.js',
   '/js/ui-history.js',
   '/js/ui-edit.js',
   '/js/ui-stats.js',

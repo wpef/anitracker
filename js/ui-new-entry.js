@@ -5,11 +5,15 @@
  * raccourcis temporels, et soumission vers la base de données.
  */
 
-import { $, setActive, toLocalISO, localNow, formatDuration, formatWalkTime, pipiLabel, cacaLabel } from './utils.js';
+import { $, setActive, toLocalISO, localNow, formatDuration, formatWalkTime } from './utils.js';
+import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
 
 // ── État local ─────────────────────────────────────────────────────────────
+
+let gaugeF = null; // jauge fermeté caca
+let gaugeT = null; // jauge quantité pipi
 
 let currentType     = 'bathroom'; // 'bathroom' | 'walk'
 let currentAction   = 'pipi';     // 'pipi' | 'caca'
@@ -80,15 +84,9 @@ export function initNewEntry() {
     sessionStorage.setItem('lastWalkStart', $('walk-start').value);
   });
 
-  // Curseur fermeté (caca)
-  $('entry-firmness').addEventListener('input', () => {
-    $('firmness-value').textContent = cacaLabel(parseInt($('entry-firmness').value, 10));
-  });
-
-  // Curseur quantité (pipi)
-  $('entry-taille').addEventListener('input', () => {
-    $('taille-value').textContent = pipiLabel(parseInt($('entry-taille').value, 10));
-  });
+  // Jauges (composant partagé)
+  gaugeF = initGauge($('entry-firmness'), $('firmness-value'), 'caca');
+  gaugeT = initGauge($('entry-taille'),   $('taille-value'),   'pipi');
 
   // Ancre de la balade : le champ focalisé en dernier est l'ancre fixe
   $('walk-start').addEventListener('focus', () => { walkAnchor = 'start'; _updateWalkAnchorUI(); });
@@ -225,9 +223,7 @@ async function _handleAdd() {
     };
   } else {
     const timeVal = $('entry-time').value;
-    const numVal  = currentAction === 'caca'
-      ? parseInt($('entry-firmness').value, 10)
-      : parseInt($('entry-taille').value,   10);
+    const numVal  = currentAction === 'caca' ? gaugeF.getValue() : gaugeT.getValue();
     entry = {
       type:      currentAction,
       text_val:  currentLocation,
@@ -247,12 +243,10 @@ async function _handleAdd() {
   showToast(entryLabel(entry) + ' enregistré ✓');
 
   // Réinitialise le formulaire sans toucher aux champs temporels
-  $('walk-end').value           = '';
-  $('entry-note').value         = '';
-  $('entry-firmness').value     = '1';
-  $('firmness-value').textContent = cacaLabel(1);
-  $('entry-taille').value       = '2';
-  $('taille-value').textContent = pipiLabel(2);
+  $('walk-end').value   = '';
+  $('entry-note').value = '';
+  gaugeF.setValue(25); // Mou
+  gaugeT.setValue(50); // Normal
   _updateWalkDurationDisplay();
   document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }

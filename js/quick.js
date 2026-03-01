@@ -2,9 +2,7 @@
  * quick.js – Saisie rapide (page standalone pour raccourci Android)
  */
 
-// ── Paliers (cohérents avec app.js) ────────────────────────────────────────
-const TAILLE_LABELS   = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];  // index 0-4
-const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Pateux', 'Ferme', 'Solide'];  // index 0-4
+import { initGauge, GAUGE_CONFIG } from './ui-gauge.js';
 
 // ── State ──────────────────────────────────────────────────────────────────
 // NOTE: on n'utilise pas 'location' (conflits avec window.location dans certains navigateurs)
@@ -16,7 +14,7 @@ const btnPipi     = document.getElementById('btn-pipi');
 const btnCaca     = document.getElementById('btn-caca');
 const btnDehors   = document.getElementById('btn-dehors');
 const btnDedans   = document.getElementById('btn-dedans');
-const gauge       = document.getElementById('quick-gauge');
+const gaugeInput  = document.getElementById('quick-gauge');
 const gaugeVal    = document.getElementById('gauge-val');
 const gaugeLabel  = document.getElementById('gauge-label');
 const gaugeEndL   = document.getElementById('gauge-end-left');
@@ -24,42 +22,25 @@ const gaugeEndR   = document.getElementById('gauge-end-right');
 const btnSave     = document.getElementById('btn-save');
 const errorBanner = document.getElementById('error-banner');
 
-// ── Gauge setup (appelée lors du changement d'action) ──────────────────────
+// ── Composant jauge (partagé avec l'app principale) ────────────────────────
+const gauge = initGauge(gaugeInput, gaugeVal, 'pipi');
+
+// ── Mise à jour apparence de la jauge lors du changement de type ───────────
 function setupGauge() {
-  if (selectedAction === 'pipi') {
-    gauge.min = 0; gauge.max = 4; gauge.step = 1;
-    gauge.className        = 'taille';
-    gaugeLabel.textContent = '💧 Quantité';
-    gaugeEndL.textContent  = 'Gouttes';
-    gaugeEndR.textContent  = 'Énorme';
-  } else {
-    gauge.min = 0; gauge.max = 4; gauge.step = 1;
-    gauge.className        = 'fermete';
-    gaugeLabel.textContent = '💩 Fermeté';
-    gaugeEndL.textContent  = 'Liquide';
-    gaugeEndR.textContent  = 'Solide';
-  }
-  updateGaugeLabel();
+  const cfg = GAUGE_CONFIG[selectedAction];
+  gaugeEndL.textContent  = cfg.ends[0];
+  gaugeEndR.textContent  = cfg.ends[1];
+  gaugeLabel.textContent = selectedAction === 'pipi' ? '💧 ' + cfg.title : '💩 ' + cfg.title;
+  gaugeInput.className   = selectedAction === 'pipi' ? 'taille' : 'fermete';
+  gauge.setType(selectedAction);
 }
-
-// ── Mise à jour du label seulement (appelée lors du drag) ──────────────────
-function updateGaugeLabel() {
-  const v = parseInt(gauge.value, 10);
-  if (selectedAction === 'pipi') {
-    gaugeVal.textContent = TAILLE_LABELS[v] || String(v);
-  } else {
-    gaugeVal.textContent = FIRMNESS_LABELS[v] || String(v);
-  }
-}
-
-gauge.addEventListener('input', updateGaugeLabel);
 
 // ── Action buttons ─────────────────────────────────────────────────────────
 btnPipi.addEventListener('click', () => {
   selectedAction = 'pipi';
   btnPipi.className = 'btn-toggle active-pipi';
   btnCaca.className = 'btn-toggle';
-  gauge.value = 2; // Normal
+  gauge.setValue(50); // Normal
   setupGauge();
 });
 
@@ -67,7 +48,7 @@ btnCaca.addEventListener('click', () => {
   selectedAction = 'caca';
   btnCaca.className = 'btn-toggle active-caca';
   btnPipi.className = 'btn-toggle';
-  gauge.value = 1; // Mou
+  gauge.setValue(25); // Mou
   setupGauge();
 });
 
@@ -106,13 +87,10 @@ btnSave.addEventListener('click', async () => {
 
   btnSave.disabled = true;
 
-  // Lire la valeur de la jauge AVANT tout reset
-  const gaugeIndex = parseInt(gauge.value, 10);
-
   const entry = {
     type:      selectedAction,
     text_val:  selectedLocation,
-    num_val:   parseInt(gauge.value),
+    num_val:   gauge.getValue(),
     timestamp: new Date().toISOString(),
   };
 
@@ -134,7 +112,7 @@ btnSave.addEventListener('click', async () => {
       btnCaca.className   = 'btn-toggle';
       btnDehors.className = 'btn-toggle active-dehors';
       btnDedans.className = 'btn-toggle';
-      gauge.value = 2; // Normal
+      gauge.setValue(50); // Normal
       setupGauge();
     }, 1200);
   } catch {
