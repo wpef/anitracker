@@ -1,6 +1,21 @@
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
 
+// ===== Paliers nommés =====
+const TAILLE_LABELS   = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];   // index 0-4
+const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Ferme', 'Dur'];                 // index 0-3
+
+function taillePalierLabel(val) {
+  if (val === undefined || val === null) return '';
+  const idx = val <= 4 ? Math.round(val) : Math.min(Math.round(val / 25), 4);
+  return TAILLE_LABELS[idx] || String(val);
+}
+function firmnessPalierLabel(val) {
+  if (val === undefined || val === null) return '';
+  const idx = val <= 3 ? Math.round(val) : Math.min(Math.round(val / 33), 3);
+  return FIRMNESS_LABELS[idx] || String(val);
+}
+
 // ===== State =====
 let currentType     = 'bathroom';
 let currentAction   = 'pipi';
@@ -21,13 +36,23 @@ const setActive = (group, value) => {
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   $(`page-${id}`).classList.add('active');
-  // Nav bar : pas de mise à jour pour la page edit (on reste sur "historique")
-  if (id !== 'edit') {
+
+  const nav = document.querySelector('nav');
+  const fab = $('btn-quick-fab');
+
+  if (id === 'edit') {
+    // Page edit : cacher nav + FAB pour que le bouton Enregistrer soit visible
+    nav.style.display = 'none';
+    if (fab) fab.style.display = 'none';
+  } else {
+    nav.style.display = '';
+    if (fab) fab.style.display = '';
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const navBtn = $(`nav-${id}`);
     if (navBtn) navBtn.classList.add('active');
   }
-  // Bouton flottant uniquement sur la page "new"
+
+  // Bouton flottant d'ajout uniquement sur la page "new"
   $('btn-add').style.display = id === 'new' ? 'block' : 'none';
 
   if (id === 'stats')   renderStats();
@@ -37,6 +62,7 @@ function showPage(id) {
 document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
+
 
 // ===== Utilities =====
 function formatDuration(totalMin) {
@@ -106,6 +132,7 @@ function initNewEntry() {
     setActive('action', currentAction);
     updateLocationVisibility();
     updateFirmnessVisibility();
+    updateTailleVisibility();
   });
 
   // Location selector
@@ -143,14 +170,14 @@ function initNewEntry() {
     sessionStorage.setItem('lastWalkStart', $('walk-start').value);
   });
 
-  // Firmness slider (caca)
+  // Firmness slider (caca) — paliers nommés
   $('entry-firmness').addEventListener('input', () => {
-    $('firmness-value').textContent = $('entry-firmness').value + '%';
+    $('firmness-value').textContent = FIRMNESS_LABELS[+$('entry-firmness').value] || '';
   });
 
-  // Taille slider (pipi)
+  // Taille slider (pipi) — paliers nommés
   $('entry-taille').addEventListener('input', () => {
-    $('taille-value').textContent = $('entry-taille').value + '%';
+    $('taille-value').textContent = TAILLE_LABELS[+$('entry-taille').value] || '';
   });
 
   // Walk: focus → switch active anchor
@@ -319,12 +346,11 @@ async function handleAdd() {
   showToast(entryLabel(entry) + ' enregistré ✓');
 
   // Reset form — le temps reste inchangé, seuls les champs non-temporels se réinitialisent
-  $('walk-end').value    = '';
-  $('entry-note').value  = '';
-  $('entry-firmness').value = '80';
-  $('firmness-value').textContent = '80%';
-  $('entry-taille').value = '50';
-  $('taille-value').textContent = '50%';
+  $('walk-end').value   = '';
+  $('entry-note').value = '';
+  // Reset sliders aux défauts
+  $('entry-firmness').value = '1'; $('firmness-value').textContent = FIRMNESS_LABELS[1];
+  $('entry-taille').value   = '2'; $('taille-value').textContent   = TAILLE_LABELS[2];
   updateWalkDurationDisplay();
   document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }
@@ -406,8 +432,8 @@ function renderHistory() {
         const locClass = e.location === 'inside' ? 'inside' : 'outside';
         const locLabel = e.location === 'inside' ? 'Dedans' : 'Dehors';
         const parts    = [];
-        if (e.action === 'caca' && e.firmness !== undefined) parts.push(`Fermeté ${e.firmness}%`);
-        if (e.action === 'pipi' && e.taille   !== undefined) parts.push(`Quantité ${e.taille}%`);
+        if (e.action === 'caca' && e.firmness !== undefined) parts.push(firmnessPalierLabel(e.firmness));
+        if (e.action === 'pipi' && e.taille   !== undefined) parts.push(taillePalierLabel(e.taille));
         if (e.note) parts.push(e.note);
         const meta = parts.join(' · ');
         html += `<div class="tl-entry tl-entry-bathroom tl-entry-${locClass}" data-id="${e.id}">
@@ -462,8 +488,11 @@ function openEditPage(id) {
     const timeVal  = toLocalISO(entry.timestamp);
     const isIn     = entry.location === 'inside';
     const isCaca   = entry.action === 'caca';
-    const firmness = entry.firmness !== undefined ? entry.firmness : 80;
-    const taille   = entry.taille   !== undefined ? entry.taille   : 50;
+    // Convertir anciens % (>3 pour firmness, >4 pour taille) en index
+    const fRaw = entry.firmness !== undefined ? entry.firmness : 1;
+    const tRaw = entry.taille   !== undefined ? entry.taille   : 2;
+    const fIdx = fRaw <= 3 ? Math.round(fRaw) : Math.min(Math.round(fRaw / 33), 3);
+    const tIdx = tRaw <= 4 ? Math.round(tRaw) : Math.min(Math.round(tRaw / 25), 4);
     html = `
       <div class="card">
         <div class="card-title">Action</div>
@@ -481,20 +510,20 @@ function openEditPage(id) {
       </div>
       <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
         <div class="card-title">💩 Fermeté</div>
-        <input type="range" id="edit-firmness" min="0" max="100" value="${firmness}" step="5" />
+        <input type="range" id="edit-firmness" min="0" max="3" value="${fIdx}" step="1" />
         <div class="firmness-row">
           <span class="firmness-end">Liquide</span>
-          <span id="edit-firmness-value" class="firmness-current">${firmness}%</span>
-          <span class="firmness-end">Ferme</span>
+          <span id="edit-firmness-value" class="firmness-current">${FIRMNESS_LABELS[fIdx]}</span>
+          <span class="firmness-end">Dur</span>
         </div>
       </div>
       <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
         <div class="card-title">💧 Quantité</div>
-        <input type="range" id="edit-taille" min="0" max="100" value="${taille}" step="5" />
+        <input type="range" id="edit-taille" min="0" max="4" value="${tIdx}" step="1" />
         <div class="firmness-row">
-          <span class="firmness-end">Peu</span>
-          <span id="edit-taille-value" class="firmness-current">${taille}%</span>
-          <span class="firmness-end">Beaucoup</span>
+          <span class="firmness-end">Gouttes</span>
+          <span id="edit-taille-value" class="firmness-current">${TAILLE_LABELS[tIdx]}</span>
+          <span class="firmness-end">Énorme</span>
         </div>
       </div>
       <div class="card">
@@ -518,6 +547,7 @@ function openEditPage(id) {
     $('edit-walk-start').addEventListener('change', recalcDur);
     $('edit-walk-end').addEventListener('change', recalcDur);
   } else {
+    // Basculement action / lieu
     body.addEventListener('click', ev => {
       const aBtn = ev.target.closest('[data-action]');
       if (aBtn) {
@@ -533,10 +563,15 @@ function openEditPage(id) {
         lBtn.classList.add('active');
       }
     });
-    const efInput = $('edit-firmness');
-    if (efInput) efInput.addEventListener('input', () => { $('edit-firmness-value').textContent = efInput.value + '%'; });
-    const etInput = $('edit-taille');
-    if (etInput) etInput.addEventListener('input', () => { $('edit-taille-value').textContent = etInput.value + '%'; });
+    // Labels sliders fermeté / taille
+    const fSlider = $('edit-firmness');
+    if (fSlider) fSlider.addEventListener('input', () => {
+      $('edit-firmness-value').textContent = FIRMNESS_LABELS[+fSlider.value] || '';
+    });
+    const tSlider = $('edit-taille');
+    if (tSlider) tSlider.addEventListener('input', () => {
+      $('edit-taille-value').textContent = TAILLE_LABELS[+tSlider.value] || '';
+    });
   }
 }
 
@@ -577,10 +612,10 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
   } else {
     const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.action;
     const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc      || entry.location;
-    const firmInput    = $('edit-firmness');
-    const tailleInput  = $('edit-taille');
-    const firmness     = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value, 10)   : undefined;
-    const taille       = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
+    const firmInput  = $('edit-firmness');
+    const tailleInput= $('edit-taille');
+    const firmness   = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value,  10) : undefined;
+    const taille     = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
     updated = {
       action: activeAction, location: activeLoc,
       timestamp: new Date($('edit-time').value).toISOString(),
@@ -634,7 +669,10 @@ function renderStats() {
   ], { yMax: 100, yUnit: '%' });
 
   // Graphique fermeté caca → entrées individuelles sur 3 jours
-  renderLineChart('chart-firmness', s.firmnessLabels, s.firmnessData, '#ffcc80');
+  renderLineChart('chart-firmness', s.firmnessLabels, s.firmnessData, '#ffcc80', { yMax: 100, yUnit: '%' });
+
+  // Graphique balades → minutes par jour sur 7 jours
+  renderLineChart('chart-walks', s.dailyLabels, s.dailyWalkMin, '#4cc9f0', { yUnit: 'min' });
 }
 
 function renderScoreRing(score) {
@@ -709,11 +747,12 @@ function renderBarChart(canvasId, labels, datasets, opts = {}) {
   });
 }
 
-function renderLineChart(canvasId, labels, data, color) {
+function renderLineChart(canvasId, labels, data, color, opts = {}) {
   const ctx = $(canvasId);
   if (!ctx) return;
   if (charts[canvasId]) charts[canvasId].destroy();
 
+  const unit    = opts.yUnit ?? '%';
   const cleaned = data.map(v => (v === null ? NaN : v));
 
   charts[canvasId] = new Chart(ctx, {
@@ -721,7 +760,6 @@ function renderLineChart(canvasId, labels, data, color) {
     data: {
       labels,
       datasets: [{
-        label:              'Fermeté (%)',
         data:               cleaned,
         borderColor:        color,
         backgroundColor:    color + '22',
@@ -741,7 +779,7 @@ function renderLineChart(canvasId, labels, data, color) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => isNaN(ctx.parsed.y) ? 'Pas de données' : ctx.parsed.y + '%',
+            label: ctx => isNaN(ctx.parsed.y) ? 'Pas de données' : ctx.parsed.y + unit,
           },
         },
       },
@@ -752,8 +790,8 @@ function renderLineChart(canvasId, labels, data, color) {
         },
         y: {
           min: 0,
-          max: 100,
-          ticks: { color: '#9a9ab0', font: { size: 10 }, callback: v => v + '%' },
+          ...(opts.yMax !== undefined ? { max: opts.yMax } : {}),
+          ticks: { color: '#9a9ab0', font: { size: 10 }, callback: v => v + unit },
           grid:  { color: 'rgba(255,255,255,.06)' },
         },
       },
@@ -801,24 +839,26 @@ function getStats() {
   const cacaDehors = caca.filter(e => e.location === 'outside').length;
   const cacaDedans = caca.filter(e => e.location === 'inside').length;
 
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
-
-  const todayPipi         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
-  const todayCaca         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
-  const todayPipiDehors   = todayPipi.filter(e => e.location === 'outside').length;
-  const todayPipiDedans_s = todayPipi.filter(e => e.location === 'inside').length;
-  const todayCacaDehors   = todayCaca.filter(e => e.location === 'outside').length;
-  const todayCacaDedans   = todayCaca.filter(e => e.location === 'inside').length;
-  const todayBad          = todayPipiDedans_s + todayCacaDedans;
-  const todayScore        = todayPipi.length > 0
-    ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
-
+  // Fenêtre 7AM (ou 7AM hier si < 7AM) — même base pour quick-stats ET score propreté
   const statsFrom7am = new Date(now);
   if (now.getHours() < 7) statsFrom7am.setDate(statsFrom7am.getDate() - 1);
   statsFrom7am.setHours(7, 0, 0, 0);
   const quickEntries = entries.filter(e => new Date(e.timestamp) >= statsFrom7am);
+
+  // Score propreté aligné sur la même fenêtre 7AM que les quick-stats
+  const scorePipi         = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
+  const scoreCaca         = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
+  const todayPipiDehors   = scorePipi.filter(e => e.location === 'outside').length;
+  const todayPipiDedans_s = scorePipi.filter(e => e.location === 'inside').length;
+  const todayCacaDehors   = scoreCaca.filter(e => e.location === 'outside').length;
+  const todayCacaDedans   = scoreCaca.filter(e => e.location === 'inside').length;
+  const todayBad          = todayPipiDedans_s + todayCacaDedans;
+  const todayScore        = scorePipi.length > 0
+    ? Math.max(0, Math.round(100 - (todayBad / scorePipi.length * 100))) : null;
+
+  // Fenêtre midnight → utilisée uniquement pour todayWalks (détails balades du jour)
+  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0);
+  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
 
   const todayPipiTotal       = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi').length;
   const todayPipiDedans      = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi' && e.location === 'inside').length;
@@ -829,13 +869,14 @@ function getStats() {
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     .map(e => ({ id: e.id, startTime: e.start_time || e.timestamp, endTime: e.end_time || null, durationMin: e.duration_min || null }));
 
-  const dailyLabels = [], dailyWalks = [], dailyPipi = [], dailyCaca = [], dailyInside = [], dailyPropretScore = [];
+  const dailyLabels = [], dailyWalkMin = [], dailyPipi = [], dailyCaca = [], dailyInside = [], dailyPropretScore = [];
   for (let i = 6; i >= 0; i--) {
     const day = new Date(now); day.setDate(day.getDate() - i); day.setHours(0, 0, 0, 0);
     const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
     const dayEntries = entries.filter(e => { const t = new Date(e.timestamp); return t >= day && t <= dayEnd; });
     dailyLabels.push(day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }));
-    dailyWalks.push(dayEntries.filter(isWalk).length);
+    const dayWalkMin = dayEntries.filter(isWalk).reduce((s, e) => s + (e.duration_min || 0), 0);
+    dailyWalkMin.push(dayWalkMin > 0 ? dayWalkMin : null);
     const dayPipi = dayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
     const dayCaca = dayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
     dailyPipi.push(dayPipi.length);
@@ -861,7 +902,7 @@ function getStats() {
   return { total: entries.length, recent: recent.length, walkStarts: walkStarts.length, pipi: pipi.length, caca: caca.length,
     pipiDehors, pipiDedans, cacaDehors, cacaDedans, todayScore, todayWalks, todayPipiTotal, todayPipiDedans,
     todayWalkMinSince7am, todayPipiDehors, todayPipiDedans_s, todayCacaDehors, todayCacaDedans,
-    dailyLabels, dailyWalks, dailyPipi, dailyCaca, dailyInside, dailyPropretScore, firmnessLabels, firmnessData };
+    dailyLabels, dailyWalkMin, dailyPipi, dailyCaca, dailyInside, dailyPropretScore, firmnessLabels, firmnessData };
 }
 
 // ===== Écran de configuration Firebase =====
