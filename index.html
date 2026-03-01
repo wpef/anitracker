@@ -30,7 +30,6 @@
       <div class="header-sub">Journal de mon chien</div>
     </div>
     <div class="header-right">
-      <a href="quick.html" class="quick-shortcut-btn" title="Saisie rapide">⚡ Rapide</a>
       <div id="sync-indicator" class="sync-dot sync-pending" title="Synchronisation…"></div>
     </div>
   </header>
@@ -58,22 +57,23 @@
     <!-- Fermeté caca (visible uniquement quand action = caca) -->
     <div class="card" id="firmness-section" style="display:none">
       <div class="card-title">💩 Fermeté</div>
-      <input type="range" id="entry-firmness" min="0" max="100" value="80" step="5" />
-      <div class="firmness-row">
-        <span class="firmness-end">Liquide</span>
-        <span id="firmness-value" class="firmness-current">80%</span>
-        <span class="firmness-end">Ferme</span>
+      <div class="palier-row" id="firmness-paliers">
+        <button class="palier-btn" data-firmness="10">Liquide</button>
+        <button class="palier-btn active" data-firmness="35">Mou</button>
+        <button class="palier-btn" data-firmness="65">Ferme</button>
+        <button class="palier-btn" data-firmness="90">Dur</button>
       </div>
     </div>
 
     <!-- Quantité pipi (visible uniquement quand action = pipi) -->
     <div class="card" id="taille-section" style="display:none">
       <div class="card-title">💧 Quantité</div>
-      <input type="range" id="entry-taille" min="0" max="100" value="50" step="5" />
-      <div class="firmness-row">
-        <span class="firmness-end">Peu</span>
-        <span id="taille-value" class="firmness-current">50%</span>
-        <span class="firmness-end">Beaucoup</span>
+      <div class="palier-row" id="taille-paliers">
+        <button class="palier-btn" data-taille="10">Gouttes</button>
+        <button class="palier-btn" data-taille="30">Petit</button>
+        <button class="palier-btn active" data-taille="50">Normal</button>
+        <button class="palier-btn" data-taille="70">Gros</button>
+        <button class="palier-btn" data-taille="90">Énorme</button>
       </div>
     </div>
 
@@ -219,9 +219,12 @@
       </div>
     </div>
 
-    <!-- Balades aujourd'hui -->
+    <!-- Balades 7 jours -->
     <div class="card">
-      <div class="card-title">🦮 Balades aujourd'hui</div>
+      <div class="card-title">🦮 Balades – 7 jours</div>
+      <div class="chart-wrap">
+        <canvas id="chart-walks"></canvas>
+      </div>
       <div class="today-walks-summary" id="today-walks-summary">—</div>
     </div>
 
@@ -331,6 +334,9 @@
     </button>
   </div>
 </div>
+
+<!-- ===== FAB Quick Entry ===== -->
+<a href="quick.html" id="btn-quick-fab" class="quick-fab" title="Saisie rapide">＋</a>
 
 <!-- Toast -->
 <div id="toast"></div>
