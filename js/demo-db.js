@@ -1,6 +1,12 @@
 /**
- * demo-db.js – Données fictives pour le mode démo (pas de Firebase)
- * Même interface que db.js : initDB, getAllEntries, saveEntry, deleteEntry, updateEntry
+ * demo-db.js – Données fictives pour le mode démo (sans Firebase)
+ *
+ * Expose la même interface que db.js afin que app.js puisse charger
+ * l'un ou l'autre de façon transparente via import() dynamique :
+ *   initDB, getAllEntries, saveEntry, deleteEntry, updateEntry
+ *
+ * Les données couvrent 7 jours glissants et sont regénérées à chaque
+ * démarrage de session démo.
  */
 
 let entriesCache = [];
@@ -23,13 +29,13 @@ function generateDemoData() {
     d.setHours(hour, minute, 0, 0);
     return d.toISOString();
   };
-  const pipi  = (d, h, m, loc, taille = 50)   => ({ id: mkId(), type: 'bathroom', action: 'pipi', location: loc, timestamp: at(d,h,m), taille });
-  const caca  = (d, h, m, loc, firmness = 70)  => ({ id: mkId(), type: 'bathroom', action: 'caca', location: loc, timestamp: at(d,h,m), firmness });
-  const cacan = (d, h, m, loc, firmness, note) => ({ ...caca(d,h,m,loc,firmness), note });
+  const pipi  = (d, h, m, loc, num_val = 50)  => ({ id: mkId(), type: 'pipi', text_val: loc, num_val, timestamp: at(d,h,m) });
+  const caca  = (d, h, m, loc, num_val = 70)  => ({ id: mkId(), type: 'caca', text_val: loc, num_val, timestamp: at(d,h,m) });
+  const cacan = (d, h, m, loc, num_val, note) => ({ ...caca(d,h,m,loc,num_val), note });
   const walk  = (d, h, m, dur) => {
     const ts  = at(d, h, m);
     const end = new Date(new Date(ts).getTime() + dur * 60000).toISOString();
-    return { id: mkId(), type: 'walk', anchor: 'start', start_time: ts, end_time: end, duration_min: dur, timestamp: ts };
+    return { id: mkId(), type: 'walk', timestamp: ts, end_time: end, duration_min: dur };
   };
 
   // ── Aujourd'hui (jour 0) ─────────────────────────────────────────────────
@@ -103,6 +109,11 @@ function generateDemoData() {
 }
 
 // ── API publique ──────────────────────────────────────────────────────────
+/**
+ * Initialise le cache avec des données de démo et appelle onUpdate.
+ *
+ * @param {() => void} onUpdate  Callback déclenché après chaque mutation
+ */
 export function initDB(onUpdate) {
   _onUpdate    = onUpdate;
   entriesCache = generateDemoData();
@@ -110,10 +121,15 @@ export function initDB(onUpdate) {
   if (typeof onUpdate === 'function') onUpdate();
 }
 
+/** @returns {object[]} Copie du cache trié par timestamp décroissant */
 export function getAllEntries() {
   return [...entriesCache];
 }
 
+/**
+ * @param {object} entry  Entrée sans id
+ * @returns {Promise<object>}
+ */
 export async function saveEntry(entry) {
   entry.id        = mkId();
   entry.timestamp = entry.timestamp || new Date().toISOString();
@@ -123,11 +139,13 @@ export async function saveEntry(entry) {
   return entry;
 }
 
+/** @param {string} id @returns {Promise<void>} */
 export async function deleteEntry(id) {
   entriesCache = entriesCache.filter(e => e.id !== id);
   if (_onUpdate) _onUpdate();
 }
 
+/** @param {string} id @param {object} data @returns {Promise<void>} */
 export async function updateEntry(id, data) {
   entriesCache = entriesCache.map(e => e.id === id ? { ...e, ...data } : e);
   entriesCache.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));

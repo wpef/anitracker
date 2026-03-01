@@ -110,17 +110,11 @@ btnSave.addEventListener('click', async () => {
   const gaugeIndex = parseInt(gauge.value, 10);
 
   const entry = {
-    type:      'bathroom',
-    action:    selectedAction,
-    location:  selectedLocation,     // 'outside' | 'inside'
+    type:      selectedAction,
+    text_val:  selectedLocation,
+    num_val:   parseInt(gauge.value),
     timestamp: new Date().toISOString(),
   };
-
-  if (selectedAction === 'pipi') {
-    entry.taille   = gaugeIndex;  // index 0-4
-  } else {
-    entry.firmness = gaugeIndex;  // index 0-3
-  }
 
   try {
     await saveEntryFn(entry);
