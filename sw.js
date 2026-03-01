@@ -1,5 +1,5 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v5';
+const CACHE_NAME = 'anitracker-v6';
 const ASSETS = [
   '/index.html',
   '/quick.html',
@@ -29,10 +29,13 @@ self.addEventListener('activate', e => {
     // 2. Prend le contrôle de tous les onglets ouverts
     await self.clients.claim();
 
-    // 3. Demande à toutes les pages ouvertes de se recharger pour
-    //    utiliser les nouveaux fichiers (évite les mélanges de versions)
-    const clients = await self.clients.matchAll({ type: 'window' });
-    clients.forEach(client => client.postMessage({ type: 'SW_UPDATED' }));
+    // 3. Force le rechargement de toutes les pages ouvertes via navigate()
+    //    (action navigateur, fonctionne même si le JS de la page est cassé)
+    const allClients = await self.clients.matchAll({ type: 'window' });
+    for (const client of allClients) {
+      try { await client.navigate(client.url); }
+      catch { client.postMessage({ type: 'SW_UPDATED' }); } // fallback JS
+    }
   })());
 });
 

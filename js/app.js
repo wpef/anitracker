@@ -872,7 +872,7 @@ function showSetupScreen() {
   }
 }
 
-$('setup-save').addEventListener('click', () => {
+$('setup-save')?.addEventListener('click', () => {
   const text = $('setup-input').value.trim();
   const config = parseConfigInput(text);
   $('setup-error').style.display = config ? 'none' : 'block';
@@ -881,7 +881,7 @@ $('setup-save').addEventListener('click', () => {
   location.reload();
 });
 
-$('setup-reset').addEventListener('click', () => {
+$('setup-reset')?.addEventListener('click', () => {
   clearFirebaseConfig();
   location.reload();
 });
@@ -979,7 +979,10 @@ async function boot() {
   showPage('new');
 
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+    // register + vérification immédiate de mise à jour à chaque démarrage
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => reg.update())
+      .catch(() => {});
   }
 }
 
