@@ -12,7 +12,7 @@
  */
 
 // ── Prédicat balade ────────────────────────────────────────────────────────
-// Une balade valide a type='walk' et n'est pas un ancien enregistrement "end".
+// Les entrées walk.action='end' (format v1) sont filtrées par normalizeEntry() en amont.
 const isWalk = e => e.type === 'walk';
 
 /**
