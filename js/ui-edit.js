@@ -1,0 +1,217 @@
+/**
+ * ui-edit.js – Page d'édition d'une entrée existante.
+ *
+ * openEditPage(id) construit le formulaire d'édition dans #edit-page-body
+ * et navigue vers la page 'edit'. Les boutons persistants (retour, supprimer,
+ * enregistrer) sont enregistrés une seule fois au chargement du module.
+ */
+
+import { $, toLocalISO, formatDuration, formatWalkTime } from './utils.js';
+import { showToast, setSyncState } from './toast.js';
+import { showPage } from './navigation.js';
+import { db } from './db-context.js';
+
+// ── État local ─────────────────────────────────────────────────────────────
+
+let editingId = null;
+
+// ── Boutons persistants (enregistrés une fois à l'import) ─────────────────
+
+$('edit-back-btn')?.addEventListener('click', () => {
+  editingId = null;
+  showPage('history');
+});
+
+$('edit-delete-btn')?.addEventListener('click', async () => {
+  if (!editingId) return;
+  if (!confirm('Supprimer cette entrée ?')) return;
+  setSyncState('pending');
+  try {
+    await db.deleteEntry(editingId);
+    setSyncState('ok');
+  } catch {
+    setSyncState('error');
+  }
+  editingId = null;
+  showPage('history');
+  showToast('Entrée supprimée');
+});
+
+$('edit-page-save-btn')?.addEventListener('click', async () => {
+  if (!editingId) return;
+  const entry = db.getAllEntries().find(e => e.id === editingId);
+  if (!entry) return;
+
+  const body    = $('edit-page-body');
+  let updated   = {};
+
+  if (entry.type === 'walk') {
+    const startVal = $('edit-walk-start').value;
+    const endVal   = $('edit-walk-end').value;
+    const dur      = endVal
+      ? Math.round((new Date(endVal) - new Date(startVal)) / 60000)
+      : (entry.duration_min || 0);
+    updated = {
+      start_time:   new Date(startVal).toISOString(),
+      end_time:     endVal ? new Date(endVal).toISOString() : null,
+      duration_min: dur,
+      timestamp:    new Date(startVal).toISOString(),
+      note:         $('edit-note').value.trim(),
+    };
+  } else {
+    const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.action;
+    const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc       || entry.location;
+    const firmInput    = $('edit-firmness');
+    const tailleInput  = $('edit-taille');
+    const firmness     = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value, 10)   : undefined;
+    const taille       = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
+    updated = {
+      action:    activeAction,
+      location:  activeLoc,
+      timestamp: new Date($('edit-time').value).toISOString(),
+      note:      $('edit-note').value.trim(),
+      ...(firmness !== undefined ? { firmness } : {}),
+      ...(taille   !== undefined ? { taille }   : {}),
+    };
+  }
+
+  setSyncState('pending');
+  try {
+    await db.updateEntry(editingId, updated);
+    setSyncState('ok');
+  } catch {
+    setSyncState('error');
+  }
+  editingId = null;
+  showPage('history');
+  showToast('Entrée modifiée ✓');
+});
+
+// ── Ouverture de la page d'édition ────────────────────────────────────────
+
+/**
+ * Construit le formulaire d'édition pour l'entrée donnée et affiche la page.
+ *
+ * @param {string} id  Identifiant de l'entrée à éditer
+ */
+export function openEditPage(id) {
+  const entry = db.getAllEntries().find(e => e.id === id);
+  if (!entry) return;
+  editingId = id;
+
+  const body = $('edit-page-body');
+  body.innerHTML = entry.type === 'walk'
+    ? _buildWalkForm(entry)
+    : _buildBathroomForm(entry);
+
+  showPage('edit');
+  _attachEditListeners(entry);
+}
+
+// ── Construction des formulaires ───────────────────────────────────────────
+
+function _buildWalkForm(entry) {
+  const startVal = toLocalISO(entry.start_time || entry.timestamp);
+  const endVal   = entry.end_time ? toLocalISO(entry.end_time) : '';
+  const dur      = entry.duration_min || 0;
+  return `
+    <div class="card">
+      <div class="card-title">🚶 Début</div>
+      <input type="datetime-local" id="edit-walk-start" value="${startVal}" class="modal-input" />
+    </div>
+    <div class="card">
+      <div class="card-title">🏠 Fin</div>
+      <input type="datetime-local" id="edit-walk-end" value="${endVal}" class="modal-input" />
+    </div>
+    <div id="edit-dur-display" class="walk-duration-display">${dur > 0 ? formatDuration(dur) : '—'}</div>
+    <div class="card">
+      <div class="card-title">📝 Note</div>
+      <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+    </div>`;
+}
+
+function _buildBathroomForm(entry) {
+  const timeVal  = toLocalISO(entry.timestamp);
+  const isIn     = entry.location === 'inside';
+  const isCaca   = entry.action   === 'caca';
+  const firmness = entry.firmness !== undefined ? entry.firmness : 80;
+  const taille   = entry.taille   !== undefined ? entry.taille   : 50;
+  return `
+    <div class="card">
+      <div class="card-title">Action</div>
+      <div class="segment">
+        <button class="seg-btn ${!isCaca ? 'active' : ''}" data-action="pipi">💧 Pipi</button>
+        <button class="seg-btn ${isCaca  ? 'active' : ''}" data-action="caca">💩 Caca</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Lieu</div>
+      <div class="segment">
+        <button class="seg-btn ${!isIn ? 'active' : ''}" data-loc="outside">🌿 Dehors</button>
+        <button class="seg-btn ${isIn  ? 'active' : ''}" data-loc="inside">🏠 Dedans</button>
+      </div>
+    </div>
+    <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
+      <div class="card-title">💩 Fermeté</div>
+      <input type="range" id="edit-firmness" min="0" max="100" value="${firmness}" step="5" />
+      <div class="firmness-row">
+        <span class="firmness-end">Liquide</span>
+        <span id="edit-firmness-value" class="firmness-current">${firmness}%</span>
+        <span class="firmness-end">Ferme</span>
+      </div>
+    </div>
+    <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
+      <div class="card-title">💧 Quantité</div>
+      <input type="range" id="edit-taille" min="0" max="100" value="${taille}" step="5" />
+      <div class="firmness-row">
+        <span class="firmness-end">Peu</span>
+        <span id="edit-taille-value" class="firmness-current">${taille}%</span>
+        <span class="firmness-end">Beaucoup</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🕐 Date &amp; heure</div>
+      <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
+    </div>
+    <div class="card">
+      <div class="card-title">📝 Note</div>
+      <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+    </div>`;
+}
+
+// ── Listeners dynamiques (recréés à chaque ouverture) ─────────────────────
+
+function _attachEditListeners(entry) {
+  if (entry.type === 'walk') {
+    const recalc = () => {
+      const dur = Math.round(
+        (new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000
+      );
+      $('edit-dur-display').textContent =
+        (dur > 0 && $('edit-walk-end').value) ? formatDuration(dur) : '—';
+    };
+    $('edit-walk-start').addEventListener('change', recalc);
+    $('edit-walk-end').addEventListener('change',   recalc);
+  } else {
+    const body = $('edit-page-body');
+    body.addEventListener('click', ev => {
+      const aBtn = ev.target.closest('[data-action]');
+      if (aBtn) {
+        body.querySelectorAll('[data-action]').forEach(b => b.classList.remove('active'));
+        aBtn.classList.add('active');
+        const isCaca = aBtn.dataset.action === 'caca';
+        $('edit-firmness-section').style.display = isCaca  ? 'block' : 'none';
+        $('edit-taille-section').style.display   = !isCaca ? 'block' : 'none';
+      }
+      const lBtn = ev.target.closest('[data-loc]');
+      if (lBtn) {
+        body.querySelectorAll('[data-loc]').forEach(b => b.classList.remove('active'));
+        lBtn.classList.add('active');
+      }
+    });
+    const firmInput  = $('edit-firmness');
+    const tailleInput = $('edit-taille');
+    if (firmInput)   firmInput.addEventListener('input',  () => { $('edit-firmness-value').textContent = firmInput.value + '%'; });
+    if (tailleInput) tailleInput.addEventListener('input', () => { $('edit-taille-value').textContent  = tailleInput.value + '%'; });
+  }
+}

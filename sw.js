@@ -1,16 +1,26 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v7';
+const CACHE_NAME = 'anitracker-v8';
 const ASSETS = [
   '/index.html',
   '/quick.html',
   '/css/style.css',
+  '/manifest.json',
+  // ── Modules JS ──────────────────────────────────────────────────────────
   '/js/app.js',
+  '/js/utils.js',
+  '/js/toast.js',
+  '/js/db-context.js',
+  '/js/navigation.js',
+  '/js/charts.js',
+  '/js/stats.js',
+  '/js/ui-new-entry.js',
+  '/js/ui-history.js',
+  '/js/ui-edit.js',
+  '/js/ui-stats.js',
   '/js/db.js',
   '/js/demo-db.js',
   '/js/quick.js',
   '/js/firebase-config.js',
-  '/js/stats.js',
-  '/manifest.json'
 ];
 
 self.addEventListener('install', e => {
