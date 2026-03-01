@@ -57,23 +57,22 @@
     <!-- Fermeté caca (visible uniquement quand action = caca) -->
     <div class="card" id="firmness-section" style="display:none">
       <div class="card-title">💩 Fermeté</div>
-      <div class="palier-row" id="firmness-paliers">
-        <button class="palier-btn" data-firmness="10">Liquide</button>
-        <button class="palier-btn active" data-firmness="35">Mou</button>
-        <button class="palier-btn" data-firmness="65">Ferme</button>
-        <button class="palier-btn" data-firmness="90">Dur</button>
+      <input type="range" id="entry-firmness" min="0" max="3" value="1" step="1" />
+      <div class="firmness-row">
+        <span class="firmness-end">Liquide</span>
+        <span id="firmness-value" class="firmness-current">Mou</span>
+        <span class="firmness-end">Dur</span>
       </div>
     </div>
 
     <!-- Quantité pipi (visible uniquement quand action = pipi) -->
     <div class="card" id="taille-section" style="display:none">
       <div class="card-title">💧 Quantité</div>
-      <div class="palier-row" id="taille-paliers">
-        <button class="palier-btn" data-taille="10">Gouttes</button>
-        <button class="palier-btn" data-taille="30">Petit</button>
-        <button class="palier-btn active" data-taille="50">Normal</button>
-        <button class="palier-btn" data-taille="70">Gros</button>
-        <button class="palier-btn" data-taille="90">Énorme</button>
+      <input type="range" id="entry-taille" min="0" max="4" value="2" step="1" />
+      <div class="firmness-row">
+        <span class="firmness-end">Gouttes</span>
+        <span id="taille-value" class="firmness-current">Normal</span>
+        <span class="firmness-end">Énorme</span>
       </div>
     </div>
 

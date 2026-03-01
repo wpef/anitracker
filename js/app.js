@@ -1,6 +1,21 @@
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
 
+// ===== Paliers nommés =====
+const TAILLE_LABELS   = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];   // index 0-4
+const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Ferme', 'Dur'];                 // index 0-3
+
+function taillePalierLabel(val) {
+  if (val === undefined || val === null) return '';
+  const idx = val <= 4 ? Math.round(val) : Math.min(Math.round(val / 25), 4);
+  return TAILLE_LABELS[idx] || String(val);
+}
+function firmnessPalierLabel(val) {
+  if (val === undefined || val === null) return '';
+  const idx = val <= 3 ? Math.round(val) : Math.min(Math.round(val / 33), 3);
+  return FIRMNESS_LABELS[idx] || String(val);
+}
+
 // ===== State =====
 let currentType     = 'bathroom';
 let currentAction   = 'pipi';
@@ -21,13 +36,23 @@ const setActive = (group, value) => {
 function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   $(`page-${id}`).classList.add('active');
-  // Nav bar : pas de mise à jour pour la page edit (on reste sur "historique")
-  if (id !== 'edit') {
+
+  const nav = document.querySelector('nav');
+  const fab = $('btn-quick-fab');
+
+  if (id === 'edit') {
+    // Page edit : cacher nav + FAB pour que le bouton Enregistrer soit visible
+    nav.style.display = 'none';
+    if (fab) fab.style.display = 'none';
+  } else {
+    nav.style.display = '';
+    if (fab) fab.style.display = '';
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     const navBtn = $(`nav-${id}`);
     if (navBtn) navBtn.classList.add('active');
   }
-  // Bouton flottant uniquement sur la page "new"
+
+  // Bouton flottant d'ajout uniquement sur la page "new"
   $('btn-add').style.display = id === 'new' ? 'block' : 'none';
 
   if (id === 'stats')   renderStats();
@@ -38,18 +63,6 @@ document.querySelectorAll('.nav-btn').forEach(btn => {
   btn.addEventListener('click', () => showPage(btn.dataset.page));
 });
 
-// ===== Paliers pipi / caca =====
-const TAILLE_PALIERS   = [[10,'gouttes'],[30,'petit'],[50,'normal'],[70,'gros'],[90,'énorme']];
-const FIRMNESS_PALIERS = [[10,'liquide'],[35,'mou'],[65,'ferme'],[90,'dur']];
-
-function taillePalierLabel(val) {
-  if (val === undefined || val === null) return '';
-  return TAILLE_PALIERS.reduce((a,b) => Math.abs(b[0]-val) < Math.abs(a[0]-val) ? b : a)[1];
-}
-function firmnessPalierLabel(val) {
-  if (val === undefined || val === null) return '';
-  return FIRMNESS_PALIERS.reduce((a,b) => Math.abs(b[0]-val) < Math.abs(a[0]-val) ? b : a)[1];
-}
 
 // ===== Utilities =====
 function formatDuration(totalMin) {
@@ -119,6 +132,7 @@ function initNewEntry() {
     setActive('action', currentAction);
     updateLocationVisibility();
     updateFirmnessVisibility();
+    updateTailleVisibility();
   });
 
   // Location selector
@@ -156,20 +170,14 @@ function initNewEntry() {
     sessionStorage.setItem('lastWalkStart', $('walk-start').value);
   });
 
-  // Fermeté paliers (caca)
-  $('firmness-paliers').addEventListener('click', e => {
-    const btn = e.target.closest('[data-firmness]');
-    if (!btn) return;
-    $('firmness-paliers').querySelectorAll('.palier-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  // Firmness slider (caca) — paliers nommés
+  $('entry-firmness').addEventListener('input', () => {
+    $('firmness-value').textContent = FIRMNESS_LABELS[+$('entry-firmness').value] || '';
   });
 
-  // Taille paliers (pipi)
-  $('taille-paliers').addEventListener('click', e => {
-    const btn = e.target.closest('[data-taille]');
-    if (!btn) return;
-    $('taille-paliers').querySelectorAll('.palier-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
+  // Taille slider (pipi) — paliers nommés
+  $('entry-taille').addEventListener('input', () => {
+    $('taille-value').textContent = TAILLE_LABELS[+$('entry-taille').value] || '';
   });
 
   // Walk: focus → switch active anchor
@@ -314,9 +322,9 @@ async function handleAdd() {
   } else {
     const timeVal = $('entry-time').value;
     const firmness = currentAction === 'caca'
-      ? parseInt($('firmness-paliers').querySelector('.active')?.dataset.firmness ?? 35, 10) : undefined;
+      ? parseInt($('entry-firmness').value, 10) : undefined;
     const taille = currentAction === 'pipi'
-      ? parseInt($('taille-paliers').querySelector('.active')?.dataset.taille ?? 50, 10) : undefined;
+      ? parseInt($('entry-taille').value, 10) : undefined;
     entry = {
       type:      'bathroom',
       action:    currentAction,
@@ -340,11 +348,9 @@ async function handleAdd() {
   // Reset form — le temps reste inchangé, seuls les champs non-temporels se réinitialisent
   $('walk-end').value   = '';
   $('entry-note').value = '';
-  // Reset paliers to defaults
-  $('firmness-paliers').querySelectorAll('.palier-btn').forEach(b => b.classList.remove('active'));
-  $('firmness-paliers').querySelector('[data-firmness="35"]').classList.add('active');
-  $('taille-paliers').querySelectorAll('.palier-btn').forEach(b => b.classList.remove('active'));
-  $('taille-paliers').querySelector('[data-taille="50"]').classList.add('active');
+  // Reset sliders aux défauts
+  $('entry-firmness').value = '1'; $('firmness-value').textContent = FIRMNESS_LABELS[1];
+  $('entry-taille').value   = '2'; $('taille-value').textContent   = TAILLE_LABELS[2];
   updateWalkDurationDisplay();
   document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }
@@ -482,14 +488,11 @@ function openEditPage(id) {
     const timeVal  = toLocalISO(entry.timestamp);
     const isIn     = entry.location === 'inside';
     const isCaca   = entry.action === 'caca';
-    const firmnessVal = entry.firmness !== undefined ? entry.firmness : 35;
-    const tailleVal   = entry.taille   !== undefined ? entry.taille   : 50;
-    const nearFirmness = FIRMNESS_PALIERS.reduce((a,b) => Math.abs(b[0]-firmnessVal)<Math.abs(a[0]-firmnessVal)?b:a)[0];
-    const nearTaille   = TAILLE_PALIERS.reduce((a,b)   => Math.abs(b[0]-tailleVal)  <Math.abs(a[0]-tailleVal)  ?b:a)[0];
-    const firmnessHtml = FIRMNESS_PALIERS.map(([v,l]) =>
-      `<button class="palier-btn ${v===nearFirmness?'active':''}" data-firmness="${v}">${l.charAt(0).toUpperCase()+l.slice(1)}</button>`).join('');
-    const tailleHtml = TAILLE_PALIERS.map(([v,l]) =>
-      `<button class="palier-btn ${v===nearTaille?'active':''}" data-taille="${v}">${l.charAt(0).toUpperCase()+l.slice(1)}</button>`).join('');
+    // Convertir anciens % (>3 pour firmness, >4 pour taille) en index
+    const fRaw = entry.firmness !== undefined ? entry.firmness : 1;
+    const tRaw = entry.taille   !== undefined ? entry.taille   : 2;
+    const fIdx = fRaw <= 3 ? Math.round(fRaw) : Math.min(Math.round(fRaw / 33), 3);
+    const tIdx = tRaw <= 4 ? Math.round(tRaw) : Math.min(Math.round(tRaw / 25), 4);
     html = `
       <div class="card">
         <div class="card-title">Action</div>
@@ -507,11 +510,21 @@ function openEditPage(id) {
       </div>
       <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
         <div class="card-title">💩 Fermeté</div>
-        <div class="palier-row">${firmnessHtml}</div>
+        <input type="range" id="edit-firmness" min="0" max="3" value="${fIdx}" step="1" />
+        <div class="firmness-row">
+          <span class="firmness-end">Liquide</span>
+          <span id="edit-firmness-value" class="firmness-current">${FIRMNESS_LABELS[fIdx]}</span>
+          <span class="firmness-end">Dur</span>
+        </div>
       </div>
       <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
         <div class="card-title">💧 Quantité</div>
-        <div class="palier-row">${tailleHtml}</div>
+        <input type="range" id="edit-taille" min="0" max="4" value="${tIdx}" step="1" />
+        <div class="firmness-row">
+          <span class="firmness-end">Gouttes</span>
+          <span id="edit-taille-value" class="firmness-current">${TAILLE_LABELS[tIdx]}</span>
+          <span class="firmness-end">Énorme</span>
+        </div>
       </div>
       <div class="card">
         <div class="card-title">🕐 Date &amp; heure</div>
@@ -534,6 +547,7 @@ function openEditPage(id) {
     $('edit-walk-start').addEventListener('change', recalcDur);
     $('edit-walk-end').addEventListener('change', recalcDur);
   } else {
+    // Basculement action / lieu
     body.addEventListener('click', ev => {
       const aBtn = ev.target.closest('[data-action]');
       if (aBtn) {
@@ -548,16 +562,15 @@ function openEditPage(id) {
         body.querySelectorAll('[data-loc]').forEach(b => b.classList.remove('active'));
         lBtn.classList.add('active');
       }
-      const fBtn = ev.target.closest('[data-firmness]');
-      if (fBtn) {
-        body.querySelectorAll('[data-firmness]').forEach(b => b.classList.remove('active'));
-        fBtn.classList.add('active');
-      }
-      const tBtn = ev.target.closest('[data-taille]');
-      if (tBtn) {
-        body.querySelectorAll('[data-taille]').forEach(b => b.classList.remove('active'));
-        tBtn.classList.add('active');
-      }
+    });
+    // Labels sliders fermeté / taille
+    const fSlider = $('edit-firmness');
+    if (fSlider) fSlider.addEventListener('input', () => {
+      $('edit-firmness-value').textContent = FIRMNESS_LABELS[+fSlider.value] || '';
+    });
+    const tSlider = $('edit-taille');
+    if (tSlider) tSlider.addEventListener('input', () => {
+      $('edit-taille-value').textContent = TAILLE_LABELS[+tSlider.value] || '';
     });
   }
 }
@@ -599,10 +612,10 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
   } else {
     const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.action;
     const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc      || entry.location;
-    const firmness = activeAction === 'caca'
-      ? parseInt(body.querySelector('[data-firmness].active')?.dataset.firmness ?? 35, 10) : undefined;
-    const taille = activeAction === 'pipi'
-      ? parseInt(body.querySelector('[data-taille].active')?.dataset.taille ?? 50, 10) : undefined;
+    const firmInput  = $('edit-firmness');
+    const tailleInput= $('edit-taille');
+    const firmness   = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value,  10) : undefined;
+    const taille     = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
     updated = {
       action: activeAction, location: activeLoc,
       timestamp: new Date($('edit-time').value).toISOString(),

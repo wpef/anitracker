@@ -982,33 +982,6 @@ nav {
   box-shadow: 0 2px 10px rgba(233,69,96,.35);
 }
 
-/* ===== Paliers (pipi taille / caca fermeté) ===== */
-.palier-row {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-.palier-btn {
-  flex: 1;
-  min-width: 0;
-  padding: 9px 4px;
-  border: 1.5px solid rgba(255,255,255,.1);
-  border-radius: 10px;
-  background: var(--surface2);
-  color: var(--text2);
-  font-size: .8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, border-color .15s, color .15s;
-  white-space: nowrap;
-  text-align: center;
-}
-.palier-btn.active {
-  background: rgba(76,201,240,.2);
-  border-color: var(--walk);
-  color: var(--walk);
-}
-.palier-btn:active { transform: scale(.95); }
 
 /* ===== Page d'édition ===== */
 /* overflow: hidden → le scroll se fait uniquement dans .edit-page-body,
