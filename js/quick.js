@@ -3,8 +3,8 @@
  */
 
 // ── State ──────────────────────────────────────────────────────────────────
-let action   = 'pipi';   // 'pipi' | 'caca'
-let location = 'dehors'; // 'dehors' | 'dedans'
+let action   = 'pipi';    // 'pipi' | 'caca'
+let location = 'outside'; // 'outside' | 'inside'
 
 // ── Elements ───────────────────────────────────────────────────────────────
 const btnPipi   = document.getElementById('btn-pipi');
@@ -60,13 +60,13 @@ btnCaca.addEventListener('click', () => {
 
 // ── Location buttons ───────────────────────────────────────────────────────
 btnDehors.addEventListener('click', () => {
-  location = 'dehors';
+  location = 'outside';
   btnDehors.className = 'btn-toggle active-dehors';
   btnDedans.className = 'btn-toggle';
 });
 
 btnDedans.addEventListener('click', () => {
-  location = 'dedans';
+  location = 'inside';
   btnDedans.className = 'btn-toggle active-dedans';
   btnDehors.className = 'btn-toggle';
 });
@@ -94,6 +94,7 @@ btnSave.addEventListener('click', async () => {
   btnSave.disabled = true;
 
   const entry = {
+    type: 'bathroom',
     action,
     location,
     timestamp: new Date().toISOString(),
@@ -119,7 +120,7 @@ btnSave.addEventListener('click', async () => {
       btnSave.disabled = false;
       // Reset to defaults
       action   = 'pipi';
-      location = 'dehors';
+      location = 'outside';
       btnPipi.className   = 'btn-toggle active-pipi';
       btnCaca.className   = 'btn-toggle';
       btnDehors.className = 'btn-toggle active-dehors';

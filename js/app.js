@@ -1,5 +1,6 @@
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
+import { getStats } from './stats.js';
 
 // ===== State =====
 let currentType     = 'bathroom';
@@ -600,7 +601,7 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
 
 // ===== Stats Page =====
 function renderStats() {
-  const s = getStats();
+  const s = getStats(getAllEntries());
 
   // Quick-stats
   $('qs-pipi-in').textContent    = s.todayPipiDedans;
@@ -780,88 +781,6 @@ async function loadDemoDb() {
   deleteEntry  = db.deleteEntry;
   updateEntry  = db.updateEntry;
   getAllEntries = db.getAllEntries;
-}
-
-// ===== getStats (utilise getAllEntries assigné par loadDb/loadDemoDb) =====
-function getStats() {
-  const entries = getAllEntries();
-  const now     = new Date();
-  const isWalk  = e => e.type === 'walk' && e.action !== 'end';
-
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
-  const recent = entries.filter(e => new Date(e.timestamp) >= sevenDaysAgo);
-
-  const walkStarts = recent.filter(isWalk);
-  const pipi       = recent.filter(e => e.type === 'bathroom' && e.action === 'pipi');
-  const caca       = recent.filter(e => e.type === 'bathroom' && e.action === 'caca');
-  const pipiDehors = pipi.filter(e => e.location === 'outside').length;
-  const pipiDedans = pipi.filter(e => e.location === 'inside').length;
-  const cacaDehors = caca.filter(e => e.location === 'outside').length;
-  const cacaDedans = caca.filter(e => e.location === 'inside').length;
-
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
-
-  const todayPipi         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
-  const todayCaca         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
-  const todayPipiDehors   = todayPipi.filter(e => e.location === 'outside').length;
-  const todayPipiDedans_s = todayPipi.filter(e => e.location === 'inside').length;
-  const todayCacaDehors   = todayCaca.filter(e => e.location === 'outside').length;
-  const todayCacaDedans   = todayCaca.filter(e => e.location === 'inside').length;
-  const todayBad          = todayPipiDedans_s + todayCacaDedans;
-  const todayScore        = todayPipi.length > 0
-    ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
-
-  const statsFrom7am = new Date(now);
-  if (now.getHours() < 7) statsFrom7am.setDate(statsFrom7am.getDate() - 1);
-  statsFrom7am.setHours(7, 0, 0, 0);
-  const quickEntries = entries.filter(e => new Date(e.timestamp) >= statsFrom7am);
-
-  const todayPipiTotal       = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi').length;
-  const todayPipiDedans      = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi' && e.location === 'inside').length;
-  const todayWalkMinSince7am = quickEntries.filter(isWalk).reduce((s, e) => s + (e.duration_min || 0), 0);
-
-  const todayWalks = todayEntries
-    .filter(isWalk)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(e => ({ id: e.id, startTime: e.start_time || e.timestamp, endTime: e.end_time || null, durationMin: e.duration_min || null }));
-
-  const dailyLabels = [], dailyWalks = [], dailyPipi = [], dailyCaca = [], dailyInside = [], dailyPropretScore = [];
-  for (let i = 6; i >= 0; i--) {
-    const day = new Date(now); day.setDate(day.getDate() - i); day.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(day); dayEnd.setHours(23, 59, 59, 999);
-    const dayEntries = entries.filter(e => { const t = new Date(e.timestamp); return t >= day && t <= dayEnd; });
-    dailyLabels.push(day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }));
-    dailyWalks.push(dayEntries.filter(isWalk).length);
-    const dayPipi = dayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
-    const dayCaca = dayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
-    dailyPipi.push(dayPipi.length);
-    dailyCaca.push(dayCaca.length);
-    dailyInside.push(dayEntries.filter(e => e.location === 'inside').length);
-    const dayBad = dayPipi.filter(e => e.location === 'inside').length + dayCaca.filter(e => e.location === 'inside').length;
-    dailyPropretScore.push(dayPipi.length > 0 ? Math.max(0, Math.round(100 - (dayBad / dayPipi.length * 100))) : null);
-  }
-
-  const threeDaysAgo = new Date(now); threeDaysAgo.setDate(threeDaysAgo.getDate() - 2); threeDaysAgo.setHours(0, 0, 0, 0);
-  const recentCacas = entries
-    .filter(e => e.type === 'bathroom' && e.action === 'caca' && e.firmness !== undefined)
-    .filter(e => new Date(e.timestamp) >= threeDaysAgo)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  const todayStr       = now.toDateString();
-  const firmnessLabels = recentCacas.map(e => {
-    const d = new Date(e.timestamp);
-    const s = d.toDateString() === todayStr ? 'Auj.' : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
-    return s + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  });
-  const firmnessData = recentCacas.map(e => e.firmness);
-
-  return { total: entries.length, recent: recent.length, walkStarts: walkStarts.length, pipi: pipi.length, caca: caca.length,
-    pipiDehors, pipiDedans, cacaDehors, cacaDedans, todayScore, todayWalks, todayPipiTotal, todayPipiDedans,
-    todayWalkMinSince7am, todayPipiDehors, todayPipiDedans_s, todayCacaDehors, todayCacaDedans,
-    dailyLabels, dailyWalks, dailyPipi, dailyCaca, dailyInside, dailyPropretScore, firmnessLabels, firmnessData };
 }
 
 // ===== Écran de configuration Firebase =====
