@@ -1,5 +1,63 @@
 /**
- * utils.js – Utilitaires partagés : helpers DOM et formatage de dates/durées.
+ * utils.js – Utilitaires partagés : typedefs Entry, helpers DOM, formatage.
+ */
+
+// ── Schéma de données Entry ────────────────────────────────────────────────
+
+/**
+ * Structure cible pour tout nouveau type d'entrée.
+ *
+ * Les champs `text_val` / `num_val` remplacent les champs nommés spécifiques
+ * afin de rester extensible sans migration de données ni modification des modules
+ * génériques (historique, stats, édition).
+ *
+ * Correspondances avec les types legacy :
+ *  - text_val ≈ location ('outside'|'inside') pour BathroomEntry
+ *  - num_val  ≈ firmness ou taille (0–100)    pour BathroomEntry
+ *
+ * @typedef {object} BaseEntry
+ * @property {string}  type           Discriminant du type d'entrée (extensible)
+ * @property {string}  timestamp      Date-heure de début ISO 8601 — clé de tri universelle
+ * @property {string}  [end_time]     Date-heure de fin ISO 8601
+ * @property {number}  [duration_min] Durée pré-calculée en minutes (évite le recalcul)
+ * @property {string}  [text_val]     Valeur textuelle propre au type
+ *                                    (ex: lieu 'outside'|'inside', catégorie…)
+ * @property {number}  [num_val]      Valeur numérique 0–100 propre au type
+ *                                    (ex: fermeté, quantité, intensité…)
+ * @property {string}  [note]         Note libre de l'utilisateur
+ * @property {string}  [id]           Identifiant unique assigné par la DB
+ */
+
+/**
+ * Type legacy — antérieur au schéma BaseEntry.
+ * Utilise des champs nommés à la place de text_val/num_val.
+ *   location  = text_val
+ *   firmness  = num_val (pour action='caca')
+ *   taille    = num_val (pour action='pipi')
+ *
+ * @typedef {BaseEntry & {
+ *   action:    'pipi'|'caca',
+ *   location:  'outside'|'inside',
+ *   firmness?: number,
+ *   taille?:   number,
+ * }} BathroomEntry
+ */
+
+/**
+ * Type legacy — antérieur au schéma BaseEntry.
+ * Utilise start_time (alias de timestamp) + end_time + duration_min.
+ *
+ * @typedef {BaseEntry & {
+ *   anchor:     'start',
+ *   start_time: string,
+ * }} WalkEntry
+ */
+
+/**
+ * Union de tous les types d'entrée connus.
+ * Utiliser ce type pour les paramètres qui acceptent n'importe quelle entrée.
+ *
+ * @typedef {BathroomEntry|WalkEntry|BaseEntry} Entry
  */
 
 // ── Helpers DOM ────────────────────────────────────────────────────────────

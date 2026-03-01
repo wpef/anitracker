@@ -14,7 +14,11 @@ import { db } from './db-context.js';
 let currentType     = 'bathroom'; // 'bathroom' | 'walk'
 let currentAction   = 'pipi';     // 'pipi' | 'caca'
 let currentLocation = 'outside';  // 'outside' | 'inside'
-let walkAnchor      = 'start';    // 'start' | 'end'  — ancre pour les presets de durée
+// walkAnchor détermine quel côté de la balade reste fixe quand on applique un preset de durée.
+//   'start' → le départ est connu, on calcule end = start + durée  (ex: je pars maintenant)
+//   'end'   → le retour est connu, on remonte start = end − durée  (ex: je viens de rentrer)
+// L'ancre bascule automatiquement sur le champ <input> focalisé en dernier par l'utilisateur.
+let walkAnchor = 'start';
 
 // ── Initialisation ─────────────────────────────────────────────────────────
 

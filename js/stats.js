@@ -3,6 +3,12 @@
  *
  * Pas de dépendance sur le DOM ni sur la couche DB : reçoit les entrées
  * en paramètre et retourne un objet de métriques prêtes à l'affichage.
+ *
+ * Deux fenêtres temporelles :
+ *  - 7 jours glissants  → tendance long terme (graphiques, compteurs globaux)
+ *  - Depuis 7h du matin → toutes les stats "du jour" (score ring, quick-stats, balades)
+ *    Le reset à 7h (et non à minuit) évite que les accidents nocturnes soient
+ *    attribués à la journée suivante. Avant 7h, la fenêtre démarre à 7h la veille.
  */
 
 // ── Prédicat balade ────────────────────────────────────────────────────────
@@ -59,12 +65,13 @@ export function getStats(entries) {
   const cacaDehors = caca.filter(e => e.location === 'outside').length;
   const cacaDedans = caca.filter(e => e.location === 'inside').length;
 
-  // ── Score de propreté du JOUR (ring SVG) ──────────────────────────────────
-  // Formule : 100 − (pipiDedans + cacaDedans) / total_pipis × 100
-  // Caca dehors est neutre et exclu du dénominateur.
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayStart);
+  // ── Fenêtre "du jour" : depuis 7h (source unique pour score + quick-stats) ─
+  // Reset à 7h (et non à minuit) pour que les accidents nocturnes soient attribués
+  // à la journée précédente. Avant 7h, la fenêtre démarre à 7h la veille.
+  const todayFrom = new Date(now);
+  if (now.getHours() < 7) todayFrom.setDate(todayFrom.getDate() - 1);
+  todayFrom.setHours(7, 0, 0, 0);
+  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayFrom);
 
   const todayPipi         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi');
   const todayCaca         = todayEntries.filter(e => e.type === 'bathroom' && e.action === 'caca');
@@ -72,21 +79,19 @@ export function getStats(entries) {
   const todayPipiDedans_s = todayPipi.filter(e => e.location === 'inside').length;
   const todayCacaDehors   = todayCaca.filter(e => e.location === 'outside').length;
   const todayCacaDedans   = todayCaca.filter(e => e.location === 'inside').length;
-  const todayBad          = todayPipiDedans_s + todayCacaDedans;
-  const todayScore        = todayPipi.length > 0
+
+  // Score de propreté — formule : 100 − (accidents / total_pipis × 100)
+  // Caca dehors est neutre, exclu du dénominateur (on ne peut pas "forcer" un caca dehors).
+  const todayBad   = todayPipiDedans_s + todayCacaDedans;
+  const todayScore = todayPipi.length > 0
     ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
 
-  // ── Quick-stats : depuis 7h (ou hier 7h si avant 7h) ─────────────────────
-  const statsFrom7am = new Date(now);
-  if (now.getHours() < 7) statsFrom7am.setDate(statsFrom7am.getDate() - 1);
-  statsFrom7am.setHours(7, 0, 0, 0);
-  const quickEntries = entries.filter(e => new Date(e.timestamp) >= statsFrom7am);
+  // Dérivés directs — même fenêtre, pas de second filtre
+  const todayPipiTotal       = todayPipi.length;
+  const todayPipiDedans      = todayPipiDedans_s; // alias — deux consommateurs dans ui-stats.js
+  const todayWalkMinSince7am = todayEntries.filter(isWalk)
+    .reduce((s, e) => s + (e.duration_min || 0), 0);
 
-  const todayPipiTotal       = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi').length;
-  const todayPipiDedans      = quickEntries.filter(e => e.type === 'bathroom' && e.action === 'pipi' && e.location === 'inside').length;
-  const todayWalkMinSince7am = quickEntries.filter(isWalk).reduce((s, e) => s + (e.duration_min || 0), 0);
-
-  // Balades du jour avec horaires détaillés
   const todayWalks = todayEntries
     .filter(isWalk)
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))

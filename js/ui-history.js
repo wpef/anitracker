@@ -13,7 +13,10 @@ import { openEditPage } from './ui-edit.js';
 
 /** Restitue la liste de l'historique dans le conteneur #entry-list. */
 export function renderHistory() {
-  // On exclut les anciens enregistrements "end" de balade (format legacy)
+  // Filtre les enregistrements walk.action='end' — format v1 où chaque balade générait
+  // deux documents (un 'start' + un 'end'). Depuis v2, une balade = un seul document
+  // avec start_time / end_time / duration_min. Les 'end' restent dans Firebase pour
+  // les utilisateurs ayant des données v1, d'où ce filtre de compatibilité.
   const allEntries = db.getAllEntries().filter(e => !(e.type === 'walk' && e.action === 'end'));
   const container  = $('entry-list');
 
