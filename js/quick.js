@@ -4,7 +4,7 @@
 
 // ── Paliers (cohérents avec app.js) ────────────────────────────────────────
 const TAILLE_LABELS   = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];  // index 0-4
-const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Ferme', 'Dur'];                // index 0-3
+const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Pateux', 'Ferme', 'Solide'];  // index 0-4
 
 // ── State ──────────────────────────────────────────────────────────────────
 // NOTE: on n'utilise pas 'location' (conflits avec window.location dans certains navigateurs)
@@ -33,11 +33,11 @@ function setupGauge() {
     gaugeEndL.textContent  = 'Gouttes';
     gaugeEndR.textContent  = 'Énorme';
   } else {
-    gauge.min = 0; gauge.max = 3; gauge.step = 1;
+    gauge.min = 0; gauge.max = 4; gauge.step = 1;
     gauge.className        = 'fermete';
     gaugeLabel.textContent = '💩 Fermeté';
     gaugeEndL.textContent  = 'Liquide';
-    gaugeEndR.textContent  = 'Dur';
+    gaugeEndR.textContent  = 'Solide';
   }
   updateGaugeLabel();
 }

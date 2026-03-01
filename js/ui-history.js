@@ -5,7 +5,7 @@
  * Un clic sur une entrée ouvre la page d'édition.
  */
 
-import { $, formatDuration, TYPE_DEF } from './utils.js';
+import { $, formatDuration, TYPE_DEF, pipiLabel, cacaLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 
@@ -96,13 +96,15 @@ function _walkRow(e, fmt) {
 }
 
 function _bathroomRow(e, fmt) {
-  const def      = TYPE_DEF[e.type] || { label: e.type, icon: '?' };
+  const def      = TYPE_DEF[e.type] || { label: e.type || '?', icon: '?' };
   const icon     = def.icon;
-  const title    = def.label;
+  const title    = def.label ?? '?';
   const locClass = e.text_val === 'inside' ? 'inside' : 'outside';
-  const locLabel = def.textLabel?.(e.text_val) ?? e.text_val;
+  const locLabel = e.text_val ? (def.textLabel?.(e.text_val) ?? e.text_val) : '';
   const parts    = [];
-  if (e.num_val !== undefined && def.numLabel) parts.push(`${def.numLabel} ${e.num_val}%`);
+  if (e.num_val !== undefined && (e.type === 'pipi' || e.type === 'caca')) {
+    parts.push(e.type === 'caca' ? cacaLabel(e.num_val) : pipiLabel(e.num_val));
+  }
   if (e.note) parts.push(e.note);
   const meta = parts.join(' · ');
   return `<div class="tl-entry tl-entry-bathroom tl-entry-${locClass}" data-id="${e.id}">
@@ -112,6 +114,6 @@ function _bathroomRow(e, fmt) {
               <div class="tl-entry-title">${title}</div>
               ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
             </div>
-            <span class="entry-badge badge-${e.text_val}">${locLabel}</span>
+            ${locLabel ? `<span class="entry-badge badge-${e.text_val}">${locLabel}</span>` : ''}
           </div>`;
 }

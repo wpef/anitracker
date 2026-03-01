@@ -30,6 +30,70 @@
 
 /** @typedef {BaseEntry} Entry */
 
+// ── Labels de valeur pipi / caca ───────────────────────────────────────────
+
+const _PIPI_LABELS = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];
+const _CACA_LABELS = ['Liquide', 'Mou', 'Pateux', 'Ferme', 'Solide'];
+
+/**
+ * Retourne le label textuel pour une valeur pipi.
+ * Accepte 0–4 (nouveau format) ou 0–100 (legacy).
+ * @param {number} val
+ * @returns {string}
+ */
+export function pipiLabel(val) {
+  if (val === undefined || val === null) return 'Normal';
+  if (val <= 4) return _PIPI_LABELS[Math.round(val)] ?? 'Normal';
+  // legacy 0–100
+  if (val < 10) return 'Gouttes';
+  if (val < 30) return 'Petit';
+  if (val < 60) return 'Normal';
+  if (val < 85) return 'Gros';
+  return 'Énorme';
+}
+
+/**
+ * Retourne le label textuel pour une valeur caca.
+ * Accepte 0–4 (nouveau format) ou 0–100 (legacy).
+ * @param {number} val
+ * @returns {string}
+ */
+export function cacaLabel(val) {
+  if (val === undefined || val === null) return 'Mou';
+  if (val <= 4) return _CACA_LABELS[Math.round(val)] ?? 'Mou';
+  // legacy 0–100
+  if (val < 10) return 'Liquide';
+  if (val < 30) return 'Mou';
+  if (val < 50) return 'Pateux';
+  if (val < 85) return 'Ferme';
+  return 'Solide';
+}
+
+/**
+ * Convertit un num_val legacy (0–100) vers un index 0–4.
+ * Retourne la valeur telle quelle si déjà dans 0–4.
+ * @param {number|undefined} val
+ * @param {boolean} isCaca
+ * @returns {number}
+ */
+export function toNumIndex(val, isCaca) {
+  if (val === undefined || val === null) return isCaca ? 1 : 2;
+  if (val <= 4) return val;
+  if (isCaca) {
+    if (val < 10) return 0;
+    if (val < 30) return 1;
+    if (val < 50) return 2;
+    if (val < 85) return 3;
+    return 4;
+  } else {
+    if (val < 10) return 0;
+    if (val < 30) return 1;
+    if (val < 60) return 2;
+    if (val < 85) return 3;
+    return 4;
+  }
+}
+
 // ── Normalisation des entrées legacy ───────────────────────────────────────
 
 /**
@@ -48,15 +112,18 @@ export function normalizeEntry(e) {
   if (!e) return null;
   if (e.type === 'walk' && e.action === 'end') return null;
   if (e.type === 'pipi' || e.type === 'caca') return e;  // déjà BaseEntry
-  if (e.type === 'bathroom') {
+  if (e.type === 'walk') {
+    return { ...e, timestamp: e.timestamp || e.start_time };
+  }
+  // Entrées legacy type:'bathroom' ET entrées sans type (type absent/null/undefined)
+  if (e.type === 'bathroom' || !e.type) {
+    // Si action manquante, on l'infère : firmness → caca, taille → pipi, sinon pipi par défaut
+    const action = e.action || (e.firmness !== undefined ? 'caca' : 'pipi');
     return { ...e,
-      type:     e.action,
+      type:     action,
       text_val: e.text_val ?? e.location,
       num_val:  e.num_val  ?? e.firmness ?? e.taille,
     };
-  }
-  if (e.type === 'walk') {
-    return { ...e, timestamp: e.timestamp || e.start_time };
   }
   return e; // types futurs passent sans modification
 }

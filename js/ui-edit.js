@@ -6,7 +6,7 @@
  * enregistrer) sont enregistrés une seule fois au chargement du module.
  */
 
-import { $, toLocalISO, formatDuration, formatWalkTime } from './utils.js';
+import { $, toLocalISO, formatDuration, formatWalkTime, pipiLabel, cacaLabel, toNumIndex } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
 import { db } from './db-context.js';
@@ -130,10 +130,12 @@ function _buildWalkForm(entry) {
 }
 
 function _buildBathroomForm(entry) {
-  const timeVal = toLocalISO(entry.timestamp);
-  const isCaca  = entry.type === 'caca';
-  const isIn    = entry.text_val === 'inside';
-  const numVal  = entry.num_val ?? (isCaca ? 80 : 50);
+  const timeVal    = toLocalISO(entry.timestamp);
+  const isCaca     = entry.type === 'caca';
+  const isIn       = entry.text_val === 'inside';
+  const numVal     = toNumIndex(entry.num_val, isCaca);
+  const firmnLabel = cacaLabel(numVal);
+  const tailleLabel = pipiLabel(numVal);
   return `
     <div class="card">
       <div class="card-title">Action</div>
@@ -151,20 +153,20 @@ function _buildBathroomForm(entry) {
     </div>
     <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
       <div class="card-title">💩 Fermeté</div>
-      <input type="range" id="edit-firmness" min="0" max="100" value="${numVal}" step="5" />
+      <input type="range" id="edit-firmness" min="0" max="4" value="${numVal}" step="1" />
       <div class="firmness-row">
         <span class="firmness-end">Liquide</span>
-        <span id="edit-firmness-value" class="firmness-current">${numVal}%</span>
-        <span class="firmness-end">Ferme</span>
+        <span id="edit-firmness-value" class="firmness-current">${firmnLabel}</span>
+        <span class="firmness-end">Solide</span>
       </div>
     </div>
     <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
       <div class="card-title">💧 Quantité</div>
-      <input type="range" id="edit-taille" min="0" max="100" value="${numVal}" step="5" />
+      <input type="range" id="edit-taille" min="0" max="4" value="${numVal}" step="1" />
       <div class="firmness-row">
-        <span class="firmness-end">Peu</span>
-        <span id="edit-taille-value" class="firmness-current">${numVal}%</span>
-        <span class="firmness-end">Beaucoup</span>
+        <span class="firmness-end">Gouttes</span>
+        <span id="edit-taille-value" class="firmness-current">${tailleLabel}</span>
+        <span class="firmness-end">Énorme</span>
       </div>
     </div>
     <div class="card">
@@ -209,7 +211,7 @@ function _attachEditListeners(entry) {
     });
     const firmInput  = $('edit-firmness');
     const tailleInput = $('edit-taille');
-    if (firmInput)   firmInput.addEventListener('input',  () => { $('edit-firmness-value').textContent = firmInput.value + '%'; });
-    if (tailleInput) tailleInput.addEventListener('input', () => { $('edit-taille-value').textContent  = tailleInput.value + '%'; });
+    if (firmInput)   firmInput.addEventListener('input',  () => { $('edit-firmness-value').textContent = cacaLabel(parseInt(firmInput.value, 10)); });
+    if (tailleInput) tailleInput.addEventListener('input', () => { $('edit-taille-value').textContent  = pipiLabel(parseInt(tailleInput.value, 10)); });
   }
 }
