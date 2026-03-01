@@ -2,7 +2,8 @@
  * quick.js – Saisie rapide (page standalone pour raccourci Android)
  */
 
-import { initGauge, GAUGE_CONFIG } from './ui-gauge.js';
+import { initGauge } from './ui-gauge.js';
+import { TYPE_DEF } from './utils.js';
 
 // ── State ──────────────────────────────────────────────────────────────────
 // NOTE: on n'utilise pas 'location' (conflits avec window.location dans certains navigateurs)
@@ -27,10 +28,10 @@ const gauge = initGauge(gaugeInput, gaugeVal, 'pipi');
 
 // ── Mise à jour apparence de la jauge lors du changement de type ───────────
 function setupGauge() {
-  const cfg = GAUGE_CONFIG[selectedAction];
+  const cfg = TYPE_DEF[selectedAction].gauge;
   gaugeEndL.textContent  = cfg.ends[0];
   gaugeEndR.textContent  = cfg.ends[1];
-  gaugeLabel.textContent = selectedAction === 'pipi' ? '💧 ' + cfg.title : '💩 ' + cfg.title;
+  gaugeLabel.textContent = TYPE_DEF[selectedAction].icon + ' ' + cfg.title;
   gaugeInput.className   = selectedAction === 'pipi' ? 'taille' : 'fermete';
   gauge.setType(selectedAction);
 }

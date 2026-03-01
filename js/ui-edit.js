@@ -6,8 +6,8 @@
  * enregistrer) sont enregistrés une seule fois au chargement du module.
  */
 
-import { $, toLocalISO, formatDuration, formatWalkTime } from './utils.js';
-import { initGauge, GAUGE_CONFIG } from './ui-gauge.js';
+import { $, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
+import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
 import { db } from './db-context.js';
@@ -134,9 +134,9 @@ function _buildBathroomForm(entry) {
   const timeVal  = toLocalISO(entry.timestamp);
   const isCaca   = entry.type === 'caca';
   const isIn     = entry.text_val === 'inside';
-  const numVal   = entry.num_val ?? (isCaca ? GAUGE_CONFIG.caca.def : GAUGE_CONFIG.pipi.def);
-  const cfgF     = GAUGE_CONFIG.caca;
-  const cfgT     = GAUGE_CONFIG.pipi;
+  const cfgF     = TYPE_DEF.caca.gauge;
+  const cfgT     = TYPE_DEF.pipi.gauge;
+  const numVal   = entry.num_val ?? (isCaca ? cfgF.def : cfgT.def);
   return `
     <div class="card">
       <div class="card-title">Action</div>

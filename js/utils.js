@@ -97,24 +97,47 @@ export function normalizeEntry(e) {
 // ── Registre des types d'entrée ────────────────────────────────────────────
 
 /**
- * Registre des types d'entrée connus.
- * Pour ajouter un type : une entrée ici suffit — pas de modification des modules génériques.
+ * Source de vérité unique pour tous les types d'entrée.
+ * Pour ajouter un nouveau type : une seule entrée ici, aucun autre fichier à toucher.
  *
- * @type {Record<string, {label:string, icon:string, numLabel?:string,
- *                        textLabel?:(v:string)=>string}>}
+ * Champs communs :
+ *   label      {string}   - Libellé affiché (historique, toast)
+ *   icon       {string}   - Emoji
+ *   textLabel  {fn}       - Transforme text_val → label lisible (ex: 'outside' → 'Dehors')
+ *
+ * Champs optionnels (types avec jauge) :
+ *   gauge.title    {string}         - Titre de la section jauge
+ *   gauge.color    {string}         - Gradient CSS du track
+ *   gauge.ends     {[string,string]}- Labels extrémités [gauche, droite]
+ *   gauge.getLabel {fn}             - (val: 0-100) → label courant
+ *   gauge.def      {number}         - Valeur par défaut (0-100)
+ *
+ * @type {Record<string, object>}
  */
 export const TYPE_DEF = {
   pipi: {
     label:     'Pipi',
     icon:      '💧',
-    numLabel:  'Quantité',
     textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+    gauge: {
+      title:    'Quantité',
+      color:    'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
+      ends:     ['Gouttes', 'Énorme'],
+      getLabel: pipiLabel,
+      def:      50,
+    },
   },
   caca: {
     label:     'Caca',
     icon:      '💩',
-    numLabel:  'Fermeté',
     textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+    gauge: {
+      title:    'Fermeté',
+      color:    'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
+      ends:     ['Liquide', 'Solide'],
+      getLabel: cacaLabel,
+      def:      25,
+    },
   },
   walk: {
     label: 'Balade',
