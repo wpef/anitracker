@@ -28,37 +28,66 @@
  * @property {string}  [id]           Identifiant unique assigné par la DB
  */
 
-/**
- * Type legacy — antérieur au schéma BaseEntry.
- * Utilise des champs nommés à la place de text_val/num_val.
- *   location  = text_val
- *   firmness  = num_val (pour action='caca')
- *   taille    = num_val (pour action='pipi')
- *
- * @typedef {BaseEntry & {
- *   action:    'pipi'|'caca',
- *   location:  'outside'|'inside',
- *   firmness?: number,
- *   taille?:   number,
- * }} BathroomEntry
- */
+/** @typedef {BaseEntry} Entry */
+
+// ── Normalisation des entrées legacy ───────────────────────────────────────
 
 /**
- * Type legacy — antérieur au schéma BaseEntry.
- * Utilise start_time (alias de timestamp) + end_time + duration_min.
+ * Normalise une entrée depuis le format legacy vers BaseEntry.
+ * Appelée dans app.js pour wrapper db.getAllEntries().
  *
- * @typedef {BaseEntry & {
- *   anchor:     'start',
- *   start_time: string,
- * }} WalkEntry
+ * Correspondances legacy :
+ *  {type:'bathroom', action:'pipi', location:'outside', taille:50}
+ *    → {type:'pipi', text_val:'outside', num_val:50}
+ *  walk + action='end' → null  (format v1 obsolète, deux docs par balade)
+ *
+ * @param {object} e
+ * @returns {BaseEntry|null}
  */
+export function normalizeEntry(e) {
+  if (!e) return null;
+  if (e.type === 'walk' && e.action === 'end') return null;
+  if (e.type === 'pipi' || e.type === 'caca') return e;  // déjà BaseEntry
+  if (e.type === 'bathroom') {
+    return { ...e,
+      type:     e.action,
+      text_val: e.text_val ?? e.location,
+      num_val:  e.num_val  ?? e.firmness ?? e.taille,
+    };
+  }
+  if (e.type === 'walk') {
+    return { ...e, timestamp: e.timestamp || e.start_time };
+  }
+  return e; // types futurs passent sans modification
+}
+
+// ── Registre des types d'entrée ────────────────────────────────────────────
 
 /**
- * Union de tous les types d'entrée connus.
- * Utiliser ce type pour les paramètres qui acceptent n'importe quelle entrée.
+ * Registre des types d'entrée connus.
+ * Pour ajouter un type : une entrée ici suffit — pas de modification des modules génériques.
  *
- * @typedef {BathroomEntry|WalkEntry|BaseEntry} Entry
+ * @type {Record<string, {label:string, icon:string, numLabel?:string,
+ *                        textLabel?:(v:string)=>string}>}
  */
+export const TYPE_DEF = {
+  pipi: {
+    label:     'Pipi',
+    icon:      '💧',
+    numLabel:  'Quantité',
+    textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+  },
+  caca: {
+    label:     'Caca',
+    icon:      '💩',
+    numLabel:  'Fermeté',
+    textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+  },
+  walk: {
+    label: 'Balade',
+    icon:  '🐾',
+  },
+};
 
 // ── Helpers DOM ────────────────────────────────────────────────────────────
 

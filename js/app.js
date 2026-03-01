@@ -13,7 +13,7 @@
 
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
-import { $ } from './utils.js';
+import { $, normalizeEntry } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage, onShowPage } from './navigation.js';
 import { db } from './db-context.js';
@@ -27,11 +27,15 @@ import { renderStats } from './ui-stats.js';
 async function loadDb() {
   const module = await import('./db.js');
   Object.assign(db, module);
+  const rawGetAll = db.getAllEntries;
+  db.getAllEntries = () => rawGetAll().map(normalizeEntry).filter(Boolean);
 }
 
 async function loadDemoDb() {
   const module = await import('./demo-db.js');
   Object.assign(db, module);
+  const rawGetAll = db.getAllEntries;
+  db.getAllEntries = () => rawGetAll().map(normalizeEntry).filter(Boolean);
 }
 
 // ── Renderers de navigation ────────────────────────────────────────────────
@@ -91,14 +95,14 @@ async function handleQuickEntry() {
     const start = new Date();
     const end   = new Date(start.getTime() + durationMin * 60000);
     entry = {
-      type: 'walk', anchor: 'start',
-      start_time: start.toISOString(), end_time: end.toISOString(),
-      duration_min: durationMin, timestamp: start.toISOString(), note: '',
+      type: 'walk',
+      timestamp: start.toISOString(), end_time: end.toISOString(),
+      duration_min: durationMin, note: '',
     };
   } else if (quick === 'pipi' || quick === 'caca') {
     entry = {
-      type: 'bathroom', action: quick,
-      location: params.get('loc') || 'outside',
+      type: quick,
+      text_val: params.get('loc') || 'outside',
       timestamp: new Date().toISOString(), note: '',
     };
   } else {

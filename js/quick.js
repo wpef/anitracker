@@ -94,17 +94,11 @@ btnSave.addEventListener('click', async () => {
   btnSave.disabled = true;
 
   const entry = {
-    type: 'bathroom',
-    action,
-    location,
+    type:      action,
+    text_val:  location,
+    num_val:   parseInt(gauge.value),
     timestamp: new Date().toISOString(),
   };
-
-  if (action === 'pipi') {
-    entry.taille = parseInt(gauge.value);
-  } else {
-    entry.firmness = parseInt(gauge.value);
-  }
 
   try {
     await saveEntryFn(entry);

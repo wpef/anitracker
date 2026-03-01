@@ -5,7 +5,7 @@
  * Un clic sur une entrée ouvre la page d'édition.
  */
 
-import { $, formatDuration } from './utils.js';
+import { $, formatDuration, TYPE_DEF } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 
@@ -13,11 +13,9 @@ import { openEditPage } from './ui-edit.js';
 
 /** Restitue la liste de l'historique dans le conteneur #entry-list. */
 export function renderHistory() {
-  // Filtre les enregistrements walk.action='end' — format v1 où chaque balade générait
-  // deux documents (un 'start' + un 'end'). Depuis v2, une balade = un seul document
-  // avec start_time / end_time / duration_min. Les 'end' restent dans Firebase pour
-  // les utilisateurs ayant des données v1, d'où ce filtre de compatibilité.
-  const allEntries = db.getAllEntries().filter(e => !(e.type === 'walk' && e.action === 'end'));
+  // Les enregistrements walk.action='end' (format v1) sont filtrés par normalizeEntry()
+  // dans app.js — aucun filtre supplémentaire nécessaire ici.
+  const allEntries = db.getAllEntries();
   const container  = $('entry-list');
 
   if (!allEntries.length) {
@@ -83,7 +81,7 @@ function _dayLabel(key, sample, todayKey, yestKey) {
 
 function _walkRow(e, fmt) {
   const dur      = e.duration_min ? formatDuration(e.duration_min) : '';
-  const startStr = fmt(e.start_time || e.timestamp);
+  const startStr = fmt(e.timestamp);
   const endStr   = e.end_time ? fmt(e.end_time) : '';
   const range    = endStr ? `${startStr} → ${endStr}` : startStr;
   const meta     = [range, e.note].filter(Boolean).join(' · ');
@@ -98,13 +96,13 @@ function _walkRow(e, fmt) {
 }
 
 function _bathroomRow(e, fmt) {
-  const icon     = e.action === 'pipi' ? '💧' : '💩';
-  const title    = e.action === 'pipi' ? 'Pipi' : 'Caca';
-  const locClass = e.location === 'inside' ? 'inside' : 'outside';
-  const locLabel = e.location === 'inside' ? 'Dedans' : 'Dehors';
+  const def      = TYPE_DEF[e.type] || { label: e.type, icon: '?' };
+  const icon     = def.icon;
+  const title    = def.label;
+  const locClass = e.text_val === 'inside' ? 'inside' : 'outside';
+  const locLabel = def.textLabel?.(e.text_val) ?? e.text_val;
   const parts    = [];
-  if (e.action === 'caca' && e.firmness !== undefined) parts.push(`Fermeté ${e.firmness}%`);
-  if (e.action === 'pipi' && e.taille   !== undefined) parts.push(`Quantité ${e.taille}%`);
+  if (e.num_val !== undefined && def.numLabel) parts.push(`${def.numLabel} ${e.num_val}%`);
   if (e.note) parts.push(e.note);
   const meta = parts.join(' · ');
   return `<div class="tl-entry tl-entry-bathroom tl-entry-${locClass}" data-id="${e.id}">
@@ -114,6 +112,6 @@ function _bathroomRow(e, fmt) {
               <div class="tl-entry-title">${title}</div>
               ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
             </div>
-            <span class="entry-badge badge-${e.location}">${locLabel}</span>
+            <span class="entry-badge badge-${e.text_val}">${locLabel}</span>
           </div>`;
 }

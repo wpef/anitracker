@@ -52,26 +52,25 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
       ? Math.round((new Date(endVal) - new Date(startVal)) / 60000)
       : (entry.duration_min || 0);
     updated = {
-      start_time:   new Date(startVal).toISOString(),
+      timestamp:    new Date(startVal).toISOString(),
       end_time:     endVal ? new Date(endVal).toISOString() : null,
       duration_min: dur,
-      timestamp:    new Date(startVal).toISOString(),
       note:         $('edit-note').value.trim(),
     };
   } else {
-    const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.action;
-    const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc       || entry.location;
+    const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.type;
+    const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc       || entry.text_val;
     const firmInput    = $('edit-firmness');
     const tailleInput  = $('edit-taille');
-    const firmness     = (activeAction === 'caca' && firmInput)   ? parseInt(firmInput.value, 10)   : undefined;
-    const taille       = (activeAction === 'pipi' && tailleInput) ? parseInt(tailleInput.value, 10) : undefined;
+    const numVal = activeAction === 'caca'
+      ? (firmInput  ? parseInt(firmInput.value,  10) : undefined)
+      : (tailleInput ? parseInt(tailleInput.value, 10) : undefined);
     updated = {
-      action:    activeAction,
-      location:  activeLoc,
+      type:      activeAction,
+      text_val:  activeLoc,
       timestamp: new Date($('edit-time').value).toISOString(),
       note:      $('edit-note').value.trim(),
-      ...(firmness !== undefined ? { firmness } : {}),
-      ...(taille   !== undefined ? { taille }   : {}),
+      ...(numVal !== undefined ? { num_val: numVal } : {}),
     };
   }
 
@@ -111,7 +110,7 @@ export function openEditPage(id) {
 // ── Construction des formulaires ───────────────────────────────────────────
 
 function _buildWalkForm(entry) {
-  const startVal = toLocalISO(entry.start_time || entry.timestamp);
+  const startVal = toLocalISO(entry.timestamp);
   const endVal   = entry.end_time ? toLocalISO(entry.end_time) : '';
   const dur      = entry.duration_min || 0;
   return `
@@ -131,11 +130,10 @@ function _buildWalkForm(entry) {
 }
 
 function _buildBathroomForm(entry) {
-  const timeVal  = toLocalISO(entry.timestamp);
-  const isIn     = entry.location === 'inside';
-  const isCaca   = entry.action   === 'caca';
-  const firmness = entry.firmness !== undefined ? entry.firmness : 80;
-  const taille   = entry.taille   !== undefined ? entry.taille   : 50;
+  const timeVal = toLocalISO(entry.timestamp);
+  const isCaca  = entry.type === 'caca';
+  const isIn    = entry.text_val === 'inside';
+  const numVal  = entry.num_val ?? (isCaca ? 80 : 50);
   return `
     <div class="card">
       <div class="card-title">Action</div>
@@ -153,19 +151,19 @@ function _buildBathroomForm(entry) {
     </div>
     <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
       <div class="card-title">💩 Fermeté</div>
-      <input type="range" id="edit-firmness" min="0" max="100" value="${firmness}" step="5" />
+      <input type="range" id="edit-firmness" min="0" max="100" value="${numVal}" step="5" />
       <div class="firmness-row">
         <span class="firmness-end">Liquide</span>
-        <span id="edit-firmness-value" class="firmness-current">${firmness}%</span>
+        <span id="edit-firmness-value" class="firmness-current">${numVal}%</span>
         <span class="firmness-end">Ferme</span>
       </div>
     </div>
     <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
       <div class="card-title">💧 Quantité</div>
-      <input type="range" id="edit-taille" min="0" max="100" value="${taille}" step="5" />
+      <input type="range" id="edit-taille" min="0" max="100" value="${numVal}" step="5" />
       <div class="firmness-row">
         <span class="firmness-end">Peu</span>
-        <span id="edit-taille-value" class="firmness-current">${taille}%</span>
+        <span id="edit-taille-value" class="firmness-current">${numVal}%</span>
         <span class="firmness-end">Beaucoup</span>
       </div>
     </div>

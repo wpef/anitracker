@@ -23,7 +23,7 @@ Remplacer `BRANCH_NAME` par le nom de la branche courante (ex: `claude/dog-habit
 | `app.js`          | Boot, setup Firebase, quick-entry URL (`?quick=`), orchestration |
 | `db-context.js`   | Singleton `db` populé après dynamic import — partagé par tous les modules |
 | `navigation.js`   | `showPage()` + registre de renderers `onShowPage()` |
-| `utils.js`        | Helpers DOM (`$`, `setActive`), formatters, **typedefs `Entry`** |
+| `utils.js`        | Helpers DOM (`$`, `setActive`), formatters, **typedefs `Entry`**, `normalizeEntry`, `TYPE_DEF` |
 | `toast.js`        | `showToast()`, `setSyncState()` |
 | `stats.js`        | `getStats(entries)` — logique pure, zéro DOM, zéro DB |
 | `charts.js`       | `renderScoreRing/BarChart/LineChart` — wrapper Chart.js |
@@ -61,6 +61,6 @@ mais peuplées avant tout interaction utilisateur (garantie par boot).
 
 ### Schéma de données
 
-Voir `js/utils.js` — typedefs `BaseEntry`, `BathroomEntry`, `WalkEntry`, `Entry`.
+Voir `js/utils.js` — typedefs `BaseEntry`.
 Pour tout nouveau type d'entrée, suivre `BaseEntry` (champs `text_val` / `num_val`).
 Les types `bathroom` et `walk` sont legacy (champs nommés spécifiques).

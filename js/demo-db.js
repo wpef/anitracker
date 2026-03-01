@@ -29,13 +29,13 @@ function generateDemoData() {
     d.setHours(hour, minute, 0, 0);
     return d.toISOString();
   };
-  const pipi  = (d, h, m, loc, taille = 50)   => ({ id: mkId(), type: 'bathroom', action: 'pipi', location: loc, timestamp: at(d,h,m), taille });
-  const caca  = (d, h, m, loc, firmness = 70)  => ({ id: mkId(), type: 'bathroom', action: 'caca', location: loc, timestamp: at(d,h,m), firmness });
-  const cacan = (d, h, m, loc, firmness, note) => ({ ...caca(d,h,m,loc,firmness), note });
+  const pipi  = (d, h, m, loc, num_val = 50)  => ({ id: mkId(), type: 'pipi', text_val: loc, num_val, timestamp: at(d,h,m) });
+  const caca  = (d, h, m, loc, num_val = 70)  => ({ id: mkId(), type: 'caca', text_val: loc, num_val, timestamp: at(d,h,m) });
+  const cacan = (d, h, m, loc, num_val, note) => ({ ...caca(d,h,m,loc,num_val), note });
   const walk  = (d, h, m, dur) => {
     const ts  = at(d, h, m);
     const end = new Date(new Date(ts).getTime() + dur * 60000).toISOString();
-    return { id: mkId(), type: 'walk', anchor: 'start', start_time: ts, end_time: end, duration_min: dur, timestamp: ts };
+    return { id: mkId(), type: 'walk', timestamp: ts, end_time: end, duration_min: dur };
   };
 
   // ── Aujourd'hui (jour 0) ─────────────────────────────────────────────────

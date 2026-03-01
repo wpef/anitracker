@@ -218,25 +218,22 @@ async function _handleAdd() {
     }
     entry = {
       type:         'walk',
-      anchor:       'start',
-      start_time:   new Date(startVal).toISOString(),
+      timestamp:    new Date(startVal).toISOString(),
       end_time:     endVal ? new Date(endVal).toISOString() : null,
       duration_min: durationMin,
-      timestamp:    new Date(startVal).toISOString(),
       note,
     };
   } else {
-    const timeVal  = $('entry-time').value;
-    const firmness = currentAction === 'caca' ? parseInt($('entry-firmness').value, 10) : undefined;
-    const taille   = currentAction === 'pipi' ? parseInt($('entry-taille').value, 10)   : undefined;
+    const timeVal = $('entry-time').value;
+    const numVal  = currentAction === 'caca'
+      ? parseInt($('entry-firmness').value, 10)
+      : parseInt($('entry-taille').value,   10);
     entry = {
-      type:      'bathroom',
-      action:    currentAction,
-      location:  currentLocation,
+      type:      currentAction,
+      text_val:  currentLocation,
+      num_val:   numVal,
       timestamp: timeVal ? new Date(timeVal).toISOString() : new Date().toISOString(),
       note,
-      ...(firmness !== undefined ? { firmness } : {}),
-      ...(taille   !== undefined ? { taille }   : {}),
     };
   }
 
@@ -275,7 +272,7 @@ export function entryLabel(entry) {
   }
   const actions = { pipi: 'Pipi', caca: 'Caca' };
   const locs    = { outside: 'dehors', inside: 'dedans' };
-  let label = '🚽 ' + (actions[entry.action] || entry.action);
-  if (entry.location) label += ' ' + (locs[entry.location] || '');
+  let label = '🚽 ' + (actions[entry.type] || entry.type);
+  if (entry.text_val) label += ' ' + (locs[entry.text_val] || '');
   return label;
 }
