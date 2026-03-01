@@ -5,7 +5,7 @@
  * raccourcis temporels, et soumission vers la base de données.
  */
 
-import { $, setActive, toLocalISO, localNow, formatDuration, formatWalkTime } from './utils.js';
+import { $, setActive, toLocalISO, localNow, formatDuration, formatWalkTime, pipiLabel, cacaLabel } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
 
@@ -82,12 +82,12 @@ export function initNewEntry() {
 
   // Curseur fermeté (caca)
   $('entry-firmness').addEventListener('input', () => {
-    $('firmness-value').textContent = $('entry-firmness').value + '%';
+    $('firmness-value').textContent = cacaLabel(parseInt($('entry-firmness').value, 10));
   });
 
   // Curseur quantité (pipi)
   $('entry-taille').addEventListener('input', () => {
-    $('taille-value').textContent = $('entry-taille').value + '%';
+    $('taille-value').textContent = pipiLabel(parseInt($('entry-taille').value, 10));
   });
 
   // Ancre de la balade : le champ focalisé en dernier est l'ancre fixe
@@ -249,10 +249,10 @@ async function _handleAdd() {
   // Réinitialise le formulaire sans toucher aux champs temporels
   $('walk-end').value           = '';
   $('entry-note').value         = '';
-  $('entry-firmness').value     = '80';
-  $('firmness-value').textContent = '80%';
-  $('entry-taille').value       = '50';
-  $('taille-value').textContent = '50%';
+  $('entry-firmness').value     = '1';
+  $('firmness-value').textContent = cacaLabel(1);
+  $('entry-taille').value       = '2';
+  $('taille-value').textContent = pipiLabel(2);
   _updateWalkDurationDisplay();
   document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }
