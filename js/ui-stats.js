@@ -45,6 +45,11 @@ export function renderStats() {
     { label: 'Propreté (%)', data: s.dailyPropretScore, color: '#4caf50' },
   ], { yMax: 100, yUnit: '%' });
 
+  // ── Graphique balades (7 jours) ───────────────────────────────────────
+  renderBarChart('chart-walks', s.dailyLabels, [
+    { label: 'Balades', data: s.dailyWalks, color: '#4caf50' },
+  ]);
+
   // ── Graphique fermeté des cacas (3 jours, points individuels) ─────────
   renderLineChart('chart-firmness', s.firmnessLabels, s.firmnessData, '#ffcc80');
 }

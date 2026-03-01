@@ -6,7 +6,8 @@
  * enregistrer) sont enregistrés une seule fois au chargement du module.
  */
 
-import { $, toLocalISO, formatDuration, formatWalkTime, pipiLabel, cacaLabel, toNumIndex } from './utils.js';
+import { $, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
+import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
 import { db } from './db-context.js';
@@ -130,12 +131,12 @@ function _buildWalkForm(entry) {
 }
 
 function _buildBathroomForm(entry) {
-  const timeVal    = toLocalISO(entry.timestamp);
-  const isCaca     = entry.type === 'caca';
-  const isIn       = entry.text_val === 'inside';
-  const numVal     = toNumIndex(entry.num_val, isCaca);
-  const firmnLabel = cacaLabel(numVal);
-  const tailleLabel = pipiLabel(numVal);
+  const timeVal  = toLocalISO(entry.timestamp);
+  const isCaca   = entry.type === 'caca';
+  const isIn     = entry.text_val === 'inside';
+  const cfgF     = TYPE_DEF.caca.gauge;
+  const cfgT     = TYPE_DEF.pipi.gauge;
+  const numVal   = entry.num_val ?? (isCaca ? cfgF.def : cfgT.def);
   return `
     <div class="card">
       <div class="card-title">Action</div>
@@ -152,21 +153,21 @@ function _buildBathroomForm(entry) {
       </div>
     </div>
     <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
-      <div class="card-title">💩 Fermeté</div>
-      <input type="range" id="edit-firmness" min="0" max="4" value="${numVal}" step="1" />
-      <div class="firmness-row">
-        <span class="firmness-end">Liquide</span>
-        <span id="edit-firmness-value" class="firmness-current">${firmnLabel}</span>
-        <span class="firmness-end">Solide</span>
+      <div class="card-title">💩 ${cfgF.title}</div>
+      <div class="gauge-current-label" id="edit-firmness-value">${cfgF.getLabel(numVal)}</div>
+      <input type="range" id="edit-firmness" min="0" max="100" value="${numVal}" step="1" />
+      <div class="gauge-ends-row">
+        <span>${cfgF.ends[0]}</span>
+        <span>${cfgF.ends[1]}</span>
       </div>
     </div>
     <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
-      <div class="card-title">💧 Quantité</div>
-      <input type="range" id="edit-taille" min="0" max="4" value="${numVal}" step="1" />
-      <div class="firmness-row">
-        <span class="firmness-end">Gouttes</span>
-        <span id="edit-taille-value" class="firmness-current">${tailleLabel}</span>
-        <span class="firmness-end">Énorme</span>
+      <div class="card-title">💧 ${cfgT.title}</div>
+      <div class="gauge-current-label" id="edit-taille-value">${cfgT.getLabel(numVal)}</div>
+      <input type="range" id="edit-taille" min="0" max="100" value="${numVal}" step="1" />
+      <div class="gauge-ends-row">
+        <span>${cfgT.ends[0]}</span>
+        <span>${cfgT.ends[1]}</span>
       </div>
     </div>
     <div class="card">
@@ -209,9 +210,7 @@ function _attachEditListeners(entry) {
         lBtn.classList.add('active');
       }
     });
-    const firmInput  = $('edit-firmness');
-    const tailleInput = $('edit-taille');
-    if (firmInput)   firmInput.addEventListener('input',  () => { $('edit-firmness-value').textContent = cacaLabel(parseInt(firmInput.value, 10)); });
-    if (tailleInput) tailleInput.addEventListener('input', () => { $('edit-taille-value').textContent  = pipiLabel(parseInt(tailleInput.value, 10)); });
+    if ($('edit-firmness'))  initGauge($('edit-firmness'),  $('edit-firmness-value'), 'caca');
+    if ($('edit-taille'))   initGauge($('edit-taille'),    $('edit-taille-value'),   'pipi');
   }
 }
