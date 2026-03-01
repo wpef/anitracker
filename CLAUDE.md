@@ -1,5 +1,22 @@
 # Instructions pour Claude Code
 
+## ⚠️ Règle OBLIGATOIRE — Service Worker / Cache
+
+**Le hook `pre-commit` bumpe automatiquement `CACHE_NAME` dans `sw.js` à chaque commit.**
+
+- Hook installé dans `.githooks/pre-commit`
+- Git configuré avec `git config core.hooksPath .githooks` (config locale du repo)
+- Le hook incrémente `anitracker-vN` → `anitracker-v(N+1)` et re-stage `sw.js`
+
+**Si tu travailles sur une nouvelle machine / session :** relancer une seule fois :
+```
+git config core.hooksPath .githooks
+```
+
+Ne jamais modifier `CACHE_NAME` à la main — le hook s'en charge.
+
+---
+
 ## Après chaque push
 
 Toujours afficher le lien de création de PR sous forme de bouton markdown :

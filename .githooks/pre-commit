@@ -1,0 +1,14 @@
+#!/bin/sh
+# Auto-incrémente CACHE_NAME dans sw.js avant chaque commit.
+# Installé via : git config core.hooksPath .githooks
+
+current=$(grep -oP "anitracker-v\K[0-9]+" sw.js 2>/dev/null)
+if [ -z "$current" ]; then
+  echo "⚠️  pre-commit: CACHE_NAME introuvable dans sw.js — mise à jour ignorée"
+  exit 0
+fi
+
+next=$((current + 1))
+sed -i "s/anitracker-v${current}/anitracker-v${next}/" sw.js
+git add sw.js
+echo "→ sw.js: cache bumped anitracker-v${current} → anitracker-v${next}"
