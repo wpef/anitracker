@@ -7,8 +7,9 @@ const TAILLE_LABELS   = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];  // i
 const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Ferme', 'Dur'];                // index 0-3
 
 // ── State ──────────────────────────────────────────────────────────────────
-let action   = 'pipi';     // 'pipi' | 'caca'
-let location = 'outside';  // 'outside' | 'inside'  ← valeurs Firebase (pas FR)
+// NOTE: on n'utilise pas 'location' (conflits avec window.location dans certains navigateurs)
+let selectedAction   = 'pipi';    // 'pipi' | 'caca'
+let selectedLocation = 'outside'; // 'outside' | 'inside'  ← valeurs Firebase
 
 // ── Elements ───────────────────────────────────────────────────────────────
 const btnPipi     = document.getElementById('btn-pipi');
@@ -23,53 +24,62 @@ const gaugeEndR   = document.getElementById('gauge-end-right');
 const btnSave     = document.getElementById('btn-save');
 const errorBanner = document.getElementById('error-banner');
 
-// ── Gauge update ───────────────────────────────────────────────────────────
-function updateGauge() {
-  if (action === 'pipi') {
+// ── Gauge setup (appelée lors du changement d'action) ──────────────────────
+function setupGauge() {
+  if (selectedAction === 'pipi') {
     gauge.min = 0; gauge.max = 4; gauge.step = 1;
-    gauge.className          = 'taille';
-    gaugeLabel.textContent   = '💧 Quantité';
-    gaugeEndL.textContent    = 'Gouttes';
-    gaugeEndR.textContent    = 'Énorme';
-    gaugeVal.textContent     = TAILLE_LABELS[+gauge.value] || '';
+    gauge.className        = 'taille';
+    gaugeLabel.textContent = '💧 Quantité';
+    gaugeEndL.textContent  = 'Gouttes';
+    gaugeEndR.textContent  = 'Énorme';
   } else {
     gauge.min = 0; gauge.max = 3; gauge.step = 1;
-    gauge.className          = 'fermete';
-    gaugeLabel.textContent   = '💩 Fermeté';
-    gaugeEndL.textContent    = 'Liquide';
-    gaugeEndR.textContent    = 'Dur';
-    gaugeVal.textContent     = FIRMNESS_LABELS[+gauge.value] || '';
+    gauge.className        = 'fermete';
+    gaugeLabel.textContent = '💩 Fermeté';
+    gaugeEndL.textContent  = 'Liquide';
+    gaugeEndR.textContent  = 'Dur';
+  }
+  updateGaugeLabel();
+}
+
+// ── Mise à jour du label seulement (appelée lors du drag) ──────────────────
+function updateGaugeLabel() {
+  const v = parseInt(gauge.value, 10);
+  if (selectedAction === 'pipi') {
+    gaugeVal.textContent = TAILLE_LABELS[v] || String(v);
+  } else {
+    gaugeVal.textContent = FIRMNESS_LABELS[v] || String(v);
   }
 }
 
-gauge.addEventListener('input', updateGauge);
+gauge.addEventListener('input', updateGaugeLabel);
 
 // ── Action buttons ─────────────────────────────────────────────────────────
 btnPipi.addEventListener('click', () => {
-  action = 'pipi';
+  selectedAction = 'pipi';
   btnPipi.className = 'btn-toggle active-pipi';
   btnCaca.className = 'btn-toggle';
   gauge.value = 2; // Normal
-  updateGauge();
+  setupGauge();
 });
 
 btnCaca.addEventListener('click', () => {
-  action = 'caca';
+  selectedAction = 'caca';
   btnCaca.className = 'btn-toggle active-caca';
   btnPipi.className = 'btn-toggle';
   gauge.value = 1; // Mou
-  updateGauge();
+  setupGauge();
 });
 
 // ── Location buttons ───────────────────────────────────────────────────────
 btnDehors.addEventListener('click', () => {
-  location = 'outside';                            // ← 'outside', pas 'dehors'
+  selectedLocation = 'outside';
   btnDehors.className = 'btn-toggle active-dehors';
   btnDedans.className = 'btn-toggle';
 });
 
 btnDedans.addEventListener('click', () => {
-  location = 'inside';                             // ← 'inside', pas 'dedans'
+  selectedLocation = 'inside';
   btnDedans.className = 'btn-toggle active-dedans';
   btnDehors.className = 'btn-toggle';
 });
@@ -96,17 +106,20 @@ btnSave.addEventListener('click', async () => {
 
   btnSave.disabled = true;
 
+  // Lire la valeur de la jauge AVANT tout reset
+  const gaugeIndex = parseInt(gauge.value, 10);
+
   const entry = {
-    type:      'bathroom',   // ← champ manquant dans l'ancienne version
-    action,
-    location,                // 'outside' | 'inside'
+    type:      'bathroom',
+    action:    selectedAction,
+    location:  selectedLocation,     // 'outside' | 'inside'
     timestamp: new Date().toISOString(),
   };
 
-  if (action === 'pipi') {
-    entry.taille   = parseInt(gauge.value, 10);  // index 0-4
+  if (selectedAction === 'pipi') {
+    entry.taille   = gaugeIndex;  // index 0-4
   } else {
-    entry.firmness = parseInt(gauge.value, 10);  // index 0-3
+    entry.firmness = gaugeIndex;  // index 0-3
   }
 
   try {
@@ -121,14 +134,14 @@ btnSave.addEventListener('click', async () => {
       btnSave.textContent = orig;
       btnSave.disabled = false;
       // Reset aux défauts
-      action   = 'pipi';
-      location = 'outside';
+      selectedAction   = 'pipi';
+      selectedLocation = 'outside';
       btnPipi.className   = 'btn-toggle active-pipi';
       btnCaca.className   = 'btn-toggle';
       btnDehors.className = 'btn-toggle active-dehors';
       btnDedans.className = 'btn-toggle';
       gauge.value = 2; // Normal
-      updateGauge();
+      setupGauge();
     }, 1200);
   } catch {
     btnSave.textContent = '✗ Erreur';
@@ -140,5 +153,5 @@ btnSave.addEventListener('click', async () => {
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-updateGauge();
+setupGauge();
 initFirebase();
