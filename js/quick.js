@@ -2,71 +2,84 @@
  * quick.js – Saisie rapide (page standalone pour raccourci Android)
  */
 
+// ── Paliers (cohérents avec app.js) ────────────────────────────────────────
+const TAILLE_LABELS   = ['Gouttes', 'Petit', 'Normal', 'Gros', 'Énorme'];  // index 0-4
+const FIRMNESS_LABELS = ['Liquide', 'Mou', 'Ferme', 'Dur'];                // index 0-3
+
 // ── State ──────────────────────────────────────────────────────────────────
-let action   = 'pipi';    // 'pipi' | 'caca'
-let location = 'outside'; // 'outside' | 'inside'
+// NOTE: on n'utilise pas 'location' (conflits avec window.location dans certains navigateurs)
+let selectedAction   = 'pipi';    // 'pipi' | 'caca'
+let selectedLocation = 'outside'; // 'outside' | 'inside'  ← valeurs Firebase
 
 // ── Elements ───────────────────────────────────────────────────────────────
-const btnPipi   = document.getElementById('btn-pipi');
-const btnCaca   = document.getElementById('btn-caca');
-const btnDehors = document.getElementById('btn-dehors');
-const btnDedans = document.getElementById('btn-dedans');
-const gauge     = document.getElementById('quick-gauge');
-const gaugeVal  = document.getElementById('gauge-val');
-const gaugeLabel = document.getElementById('gauge-label');
-const gaugeEndL = document.getElementById('gauge-end-left');
-const gaugeEndR = document.getElementById('gauge-end-right');
-const btnSave   = document.getElementById('btn-save');
+const btnPipi     = document.getElementById('btn-pipi');
+const btnCaca     = document.getElementById('btn-caca');
+const btnDehors   = document.getElementById('btn-dehors');
+const btnDedans   = document.getElementById('btn-dedans');
+const gauge       = document.getElementById('quick-gauge');
+const gaugeVal    = document.getElementById('gauge-val');
+const gaugeLabel  = document.getElementById('gauge-label');
+const gaugeEndL   = document.getElementById('gauge-end-left');
+const gaugeEndR   = document.getElementById('gauge-end-right');
+const btnSave     = document.getElementById('btn-save');
 const errorBanner = document.getElementById('error-banner');
 
-// ── Gauge update ───────────────────────────────────────────────────────────
-function updateGauge() {
-  if (action === 'pipi') {
-    gauge.className = 'taille';
+// ── Gauge setup (appelée lors du changement d'action) ──────────────────────
+function setupGauge() {
+  if (selectedAction === 'pipi') {
+    gauge.min = 0; gauge.max = 4; gauge.step = 1;
+    gauge.className        = 'taille';
     gaugeLabel.textContent = '💧 Quantité';
-    gaugeEndL.textContent  = 'Peu';
-    gaugeEndR.textContent  = 'Beaucoup';
-    gaugeVal.textContent   = gauge.value + '%';
+    gaugeEndL.textContent  = 'Gouttes';
+    gaugeEndR.textContent  = 'Énorme';
   } else {
-    gauge.className = 'fermete';
+    gauge.min = 0; gauge.max = 3; gauge.step = 1;
+    gauge.className        = 'fermete';
     gaugeLabel.textContent = '💩 Fermeté';
-    gaugeEndL.textContent  = 'Mou';
+    gaugeEndL.textContent  = 'Liquide';
     gaugeEndR.textContent  = 'Dur';
-    const v = parseInt(gauge.value);
-    const labels = ['', 'Très mou', 'Mou', 'Normal', 'Dur', 'Très dur'];
-    const idx = Math.round(v / 25); // 0-4
-    gaugeVal.textContent = labels[Math.min(idx + 1, 5)] || v + '%';
+  }
+  updateGaugeLabel();
+}
+
+// ── Mise à jour du label seulement (appelée lors du drag) ──────────────────
+function updateGaugeLabel() {
+  const v = parseInt(gauge.value, 10);
+  if (selectedAction === 'pipi') {
+    gaugeVal.textContent = TAILLE_LABELS[v] || String(v);
+  } else {
+    gaugeVal.textContent = FIRMNESS_LABELS[v] || String(v);
   }
 }
 
-gauge.addEventListener('input', updateGauge);
+gauge.addEventListener('input', updateGaugeLabel);
 
 // ── Action buttons ─────────────────────────────────────────────────────────
 btnPipi.addEventListener('click', () => {
-  action = 'pipi';
+  selectedAction = 'pipi';
   btnPipi.className = 'btn-toggle active-pipi';
   btnCaca.className = 'btn-toggle';
-  gauge.value = 50;
-  updateGauge();
+  gauge.value = 2; // Normal
+  setupGauge();
 });
 
 btnCaca.addEventListener('click', () => {
-  action = 'caca';
+  selectedAction = 'caca';
   btnCaca.className = 'btn-toggle active-caca';
   btnPipi.className = 'btn-toggle';
-  gauge.value = 50;
-  updateGauge();
+  gauge.value = 1; // Mou
+  setupGauge();
 });
 
 // ── Location buttons ───────────────────────────────────────────────────────
 btnDehors.addEventListener('click', () => {
-  location = 'outside';
+  selectedLocation = 'outside';
   btnDehors.className = 'btn-toggle active-dehors';
   btnDedans.className = 'btn-toggle';
 });
 
 btnDedans.addEventListener('click', () => {
-  location = 'inside';
+  selectedLocation = 'inside';
   btnDedans.className = 'btn-toggle active-dedans';
   btnDehors.className = 'btn-toggle';
 });
@@ -93,9 +106,12 @@ btnSave.addEventListener('click', async () => {
 
   btnSave.disabled = true;
 
+  // Lire la valeur de la jauge AVANT tout reset
+  const gaugeIndex = parseInt(gauge.value, 10);
+
   const entry = {
-    type:      action,
-    text_val:  location,
+    type:      selectedAction,
+    text_val:  selectedLocation,
     num_val:   parseInt(gauge.value),
     timestamp: new Date().toISOString(),
   };
@@ -103,7 +119,6 @@ btnSave.addEventListener('click', async () => {
   try {
     await saveEntryFn(entry);
 
-    // Success feedback
     const orig = btnSave.textContent;
     btnSave.classList.add('success');
     btnSave.textContent = '✓ Enregistré !';
@@ -112,15 +127,15 @@ btnSave.addEventListener('click', async () => {
       btnSave.classList.remove('success');
       btnSave.textContent = orig;
       btnSave.disabled = false;
-      // Reset to defaults
-      action   = 'pipi';
-      location = 'outside';
+      // Reset aux défauts
+      selectedAction   = 'pipi';
+      selectedLocation = 'outside';
       btnPipi.className   = 'btn-toggle active-pipi';
       btnCaca.className   = 'btn-toggle';
       btnDehors.className = 'btn-toggle active-dehors';
       btnDedans.className = 'btn-toggle';
-      gauge.value = 50;
-      updateGauge();
+      gauge.value = 2; // Normal
+      setupGauge();
     }, 1200);
   } catch {
     btnSave.textContent = '✗ Erreur';
@@ -132,5 +147,5 @@ btnSave.addEventListener('click', async () => {
 });
 
 // ── Boot ───────────────────────────────────────────────────────────────────
-updateGauge();
+setupGauge();
 initFirebase();
