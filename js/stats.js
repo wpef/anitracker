@@ -11,9 +11,7 @@
  *    attribués à la journée suivante. Avant 7h, la fenêtre démarre à 7h la veille.
  */
 
-// ── Prédicat balade ────────────────────────────────────────────────────────
-// Les entrées walk.action='end' (format v1) sont filtrées par normalizeEntry() en amont.
-const isWalk = e => e.type === 'walk';
+import { isWalk, formatDayShort } from './utils.js';
 
 /**
  * Calcule l'ensemble des statistiques utilisées par la page Stats et les quick-stats.
@@ -35,7 +33,6 @@ const isWalk = e => e.type === 'walk';
  *   todayPipiDedans: number,
  *   todayWalkMinSince7am: number,
  *   todayPipiDehors: number,
- *   todayPipiDedans_s: number,
  *   todayCacaDehors: number,
  *   todayCacaDedans: number,
  *   dailyLabels: string[],
@@ -76,19 +73,18 @@ export function getStats(entries) {
   const todayPipi         = todayEntries.filter(e => e.type === 'pipi');
   const todayCaca         = todayEntries.filter(e => e.type === 'caca');
   const todayPipiDehors   = todayPipi.filter(e => e.text_val === 'outside').length;
-  const todayPipiDedans_s = todayPipi.filter(e => e.text_val === 'inside').length;
+  const todayPipiDedans   = todayPipi.filter(e => e.text_val === 'inside').length;
   const todayCacaDehors   = todayCaca.filter(e => e.text_val === 'outside').length;
   const todayCacaDedans   = todayCaca.filter(e => e.text_val === 'inside').length;
 
   // Score de propreté — formule : 100 − (accidents / total_pipis × 100)
   // Caca dehors est neutre, exclu du dénominateur (on ne peut pas "forcer" un caca dehors).
-  const todayBad   = todayPipiDedans_s + todayCacaDedans;
+  const todayBad   = todayPipiDedans + todayCacaDedans;
   const todayScore = todayPipi.length > 0
     ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
 
   // Dérivés directs — même fenêtre, pas de second filtre
-  const todayPipiTotal       = todayPipi.length;
-  const todayPipiDedans      = todayPipiDedans_s; // alias — deux consommateurs dans ui-stats.js
+  const todayPipiTotal = todayPipi.length;
   const todayWalkMinSince7am = todayEntries.filter(isWalk)
     .reduce((s, e) => s + (e.duration_min || 0), 0);
 
@@ -122,7 +118,7 @@ export function getStats(entries) {
       return t >= day && t <= dayEnd;
     });
 
-    dailyLabels.push(day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }));
+    dailyLabels.push(formatDayShort(day));
     dailyWalks.push(dayEntries.filter(isWalk).length);
 
     const dayPipi       = dayEntries.filter(e => e.type === 'pipi');
@@ -154,9 +150,7 @@ export function getStats(entries) {
   const todayStr       = now.toDateString();
   const firmnessLabels = recentCacas.map(e => {
     const d      = new Date(e.timestamp);
-    const dayStr = d.toDateString() === todayStr
-      ? 'Auj.'
-      : d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+    const dayStr = d.toDateString() === todayStr ? 'Auj.' : formatDayShort(d);
     return dayStr + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   });
   const firmnessData = recentCacas.map(e => e.num_val);
@@ -177,7 +171,6 @@ export function getStats(entries) {
     todayPipiDedans,
     todayWalkMinSince7am,
     todayPipiDehors,
-    todayPipiDedans_s,
     todayCacaDehors,
     todayCacaDedans,
     dailyLabels,

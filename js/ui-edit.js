@@ -6,7 +6,7 @@
  * enregistrer) sont enregistrés une seule fois au chargement du module.
  */
 
-import { $, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
+import { $, isWalk, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
@@ -46,7 +46,7 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
   const body    = $('edit-page-body');
   let updated   = {};
 
-  if (entry.type === 'walk') {
+  if (isWalk(entry)) {
     const startVal = $('edit-walk-start').value;
     const endVal   = $('edit-walk-end').value;
     const dur      = endVal
@@ -100,7 +100,7 @@ export function openEditPage(id) {
   editingId = id;
 
   const body = $('edit-page-body');
-  body.innerHTML = entry.type === 'walk'
+  body.innerHTML = isWalk(entry)
     ? _buildWalkForm(entry)
     : _buildBathroomForm(entry);
 
@@ -132,25 +132,24 @@ function _buildWalkForm(entry) {
 
 function _buildBathroomForm(entry) {
   const timeVal  = toLocalISO(entry.timestamp);
-  const isCaca   = entry.type === 'caca';
-  const isIn     = entry.text_val === 'inside';
-  const cfgF     = TYPE_DEF.caca.gauge;
+  const isCaca = entry.type === 'caca';
+  const cfgF   = TYPE_DEF.caca.gauge;
   const cfgT     = TYPE_DEF.pipi.gauge;
   const numVal   = entry.num_val ?? (isCaca ? cfgF.def : cfgT.def);
   return `
     <div class="card">
       <div class="card-title">Action</div>
-      <div class="segment">
-        <button class="seg-btn ${!isCaca ? 'active' : ''}" data-action="pipi">💧 Pipi</button>
-        <button class="seg-btn ${isCaca  ? 'active' : ''}" data-action="caca">💩 Caca</button>
-      </div>
+      ${buildSegment('action', [
+        { value: 'pipi', label: '💧 Pipi' },
+        { value: 'caca', label: '💩 Caca' },
+      ], entry.type)}
     </div>
     <div class="card">
       <div class="card-title">Lieu</div>
-      <div class="segment">
-        <button class="seg-btn ${!isIn ? 'active' : ''}" data-loc="outside">🌿 Dehors</button>
-        <button class="seg-btn ${isIn  ? 'active' : ''}" data-loc="inside">🏠 Dedans</button>
-      </div>
+      ${buildSegment('loc', [
+        { value: 'outside', label: '🌿 Dehors' },
+        { value: 'inside',  label: '🏠 Dedans' },
+      ], entry.text_val)}
     </div>
     <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
       <div class="card-title">💩 ${cfgF.title}</div>
@@ -183,7 +182,7 @@ function _buildBathroomForm(entry) {
 // ── Listeners dynamiques (recréés à chaque ouverture) ─────────────────────
 
 function _attachEditListeners(entry) {
-  if (entry.type === 'walk') {
+  if (isWalk(entry)) {
     const recalc = () => {
       const dur = Math.round(
         (new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000
