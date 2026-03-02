@@ -46,7 +46,7 @@ export function renderStats() {
   ], { yMax: 100, yUnit: '%' });
 
   // ── Graphique balades (7 jours) ───────────────────────────────────────
-  renderLineChart('chart-walks', s.dailyLabels, s.dailyWalks, '#4caf50');
+  renderLineChart('chart-walks', s.dailyLabels, s.dailyWalks, '#4caf50', { yUnit: 'h' });
 
   // ── Graphique fermeté des cacas (3 jours, points individuels) ─────────
   renderLineChart('chart-firmness', s.firmnessLabels, s.firmnessData, '#ffcc80');

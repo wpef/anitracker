@@ -123,7 +123,9 @@ export function getStats(entries) {
     });
 
     dailyLabels.push(day.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }));
-    dailyWalks.push(dayEntries.filter(isWalk).length);
+    dailyWalks.push(
+      Math.round(dayEntries.filter(isWalk).reduce((s, e) => s + (e.duration_min || 0), 0) / 60 * 10) / 10
+    );
 
     const dayPipi       = dayEntries.filter(e => e.type === 'pipi');
     const dayCaca       = dayEntries.filter(e => e.type === 'caca');
