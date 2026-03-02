@@ -23,7 +23,7 @@ export function renderStats() {
   // ── Score de propreté du jour ──────────────────────────────────────────
   renderScoreRing(s.todayScore);
   $('si-pipi-out').textContent = s.todayPipiDehors;
-  $('si-pipi-in').textContent  = s.todayPipiDedans_s;
+  $('si-pipi-in').textContent  = s.todayPipiDedans;
   $('si-caca-out').textContent = s.todayCacaDehors;
   $('si-caca-in').textContent  = s.todayCacaDedans;
 
