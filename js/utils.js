@@ -30,6 +30,15 @@
 
 /** @typedef {BaseEntry} Entry */
 
+// ── Prédicats de type ──────────────────────────────────────────────────────
+// Source unique pour les vérifications de type : à mettre à jour ici si de
+// nouveaux types walk-like ou bathroom-like sont ajoutés.
+
+/** @param {BaseEntry} e @returns {boolean} */
+export const isWalk     = e => e.type === 'walk';
+/** @param {BaseEntry} e @returns {boolean} */
+export const isBathroom = e => e.type === 'pipi' || e.type === 'caca';
+
 // ── Labels de valeur pipi / caca ───────────────────────────────────────────
 
 /**
@@ -163,7 +172,47 @@ export const setActive = (group, value) => {
   });
 };
 
+/**
+ * Affiche ou masque un élément identifié par son id.
+ * Remplace les appels directs à style.display éparpillés dans les modules UI.
+ *
+ * @param {string}  id    getElementById target
+ * @param {boolean} show
+ */
+export function setVisible(id, show) {
+  $(id).style.display = show ? 'block' : 'none';
+}
+
+/**
+ * Génère le HTML d'un groupe de boutons segment (`.segment` / `.seg-btn`).
+ * Utilisé pour construire les toggles action (pipi/caca) et lieu (dehors/dedans)
+ * dans les formulaires dynamiques (nouvelle entrée, édition).
+ *
+ * @param {string}   dataAttr    Nom de l'attribut data (ex: 'action', 'loc')
+ * @param {Array<{value: string, label: string}>} options
+ * @param {string}   activeValue Valeur à marquer active
+ * @returns {string} HTML string
+ */
+export function buildSegment(dataAttr, options, activeValue) {
+  const buttons = options.map(({ value, label }) =>
+    `<button class="seg-btn${value === activeValue ? ' active' : ''}" data-${dataAttr}="${value}">${label}</button>`
+  ).join('');
+  return `<div class="segment">${buttons}</div>`;
+}
+
 // ── Formatage ──────────────────────────────────────────────────────────────
+
+/**
+ * Formate une Date en label court localisé : ex "lun. 3".
+ * Utilisé pour les labels de graphiques (stats.js) et l'affichage
+ * de l'heure de balade hors du jour courant (formatWalkTime).
+ *
+ * @param {Date} date
+ * @returns {string}
+ */
+export function formatDayShort(date) {
+  return date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' });
+}
 
 /**
  * Formate une durée en minutes → "30min", "1h", "1h30".
@@ -193,7 +242,7 @@ export function formatWalkTime(isoStr) {
   const today = new Date();
   const time  = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
   if (d.toDateString() === today.toDateString()) return time;
-  return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' }) + ' ' + time;
+  return formatDayShort(d) + ' ' + time;
 }
 
 /**

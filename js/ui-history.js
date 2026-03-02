@@ -5,7 +5,7 @@
  * Un clic sur une entrée ouvre la page d'édition.
  */
 
-import { $, formatDuration, TYPE_DEF, pipiLabel, cacaLabel } from './utils.js';
+import { $, isWalk, formatDuration, TYPE_DEF, pipiLabel, cacaLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 
@@ -49,7 +49,7 @@ function _buildHTML(entries) {
     html += `<div class="tl-day-header">${_dayLabel(key, dayEntries[0], todayKey, yestKey)}</div>
              <div class="tl-list">`;
     for (const e of dayEntries) {
-      html += e.type === 'walk' ? _walkRow(e, fmt) : _bathroomRow(e, fmt);
+      html += isWalk(e) ? _walkRow(e, fmt) : _bathroomRow(e, fmt);
     }
     html += '</div>';
   }

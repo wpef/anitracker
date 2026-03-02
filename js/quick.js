@@ -5,10 +5,11 @@
 import { initGauge } from './ui-gauge.js';
 import { TYPE_DEF } from './utils.js';
 
-// ── State ──────────────────────────────────────────────────────────────────
-// NOTE: on n'utilise pas 'location' (conflits avec window.location dans certains navigateurs)
-let selectedAction   = 'pipi';    // 'pipi' | 'caca'
-let selectedLocation = 'outside'; // 'outside' | 'inside'  ← valeurs Firebase
+// ── État local ─────────────────────────────────────────────────────────────
+// Nommage aligné avec ui-new-entry.js. Note : ne pas nommer la variable 'location'
+// (conflit avec window.location dans certains navigateurs).
+let currentAction   = 'pipi';    // 'pipi' | 'caca'
+let currentLocation = 'outside'; // 'outside' | 'inside'
 
 // ── Elements ───────────────────────────────────────────────────────────────
 const btnPipi     = document.getElementById('btn-pipi');
@@ -28,17 +29,17 @@ const gauge = initGauge(gaugeInput, gaugeVal, 'pipi');
 
 // ── Mise à jour apparence de la jauge lors du changement de type ───────────
 function setupGauge() {
-  const cfg = TYPE_DEF[selectedAction].gauge;
+  const cfg = TYPE_DEF[currentAction].gauge;
   gaugeEndL.textContent  = cfg.ends[0];
   gaugeEndR.textContent  = cfg.ends[1];
-  gaugeLabel.textContent = TYPE_DEF[selectedAction].icon + ' ' + cfg.title;
-  gaugeInput.className   = selectedAction === 'pipi' ? 'taille' : 'fermete';
-  gauge.setType(selectedAction);
+  gaugeLabel.textContent = TYPE_DEF[currentAction].icon + ' ' + cfg.title;
+  gaugeInput.className   = currentAction === 'pipi' ? 'taille' : 'fermete';
+  gauge.setType(currentAction);
 }
 
 // ── Action buttons ─────────────────────────────────────────────────────────
 btnPipi.addEventListener('click', () => {
-  selectedAction = 'pipi';
+  currentAction = 'pipi';
   btnPipi.className = 'btn-toggle active-pipi';
   btnCaca.className = 'btn-toggle';
   gauge.setValue(50); // Normal
@@ -46,7 +47,7 @@ btnPipi.addEventListener('click', () => {
 });
 
 btnCaca.addEventListener('click', () => {
-  selectedAction = 'caca';
+  currentAction = 'caca';
   btnCaca.className = 'btn-toggle active-caca';
   btnPipi.className = 'btn-toggle';
   gauge.setValue(25); // Mou
@@ -55,13 +56,13 @@ btnCaca.addEventListener('click', () => {
 
 // ── Location buttons ───────────────────────────────────────────────────────
 btnDehors.addEventListener('click', () => {
-  selectedLocation = 'outside';
+  currentLocation = 'outside';
   btnDehors.className = 'btn-toggle active-dehors';
   btnDedans.className = 'btn-toggle';
 });
 
 btnDedans.addEventListener('click', () => {
-  selectedLocation = 'inside';
+  currentLocation = 'inside';
   btnDedans.className = 'btn-toggle active-dedans';
   btnDehors.className = 'btn-toggle';
 });
@@ -89,8 +90,8 @@ btnSave.addEventListener('click', async () => {
   btnSave.disabled = true;
 
   const entry = {
-    type:      selectedAction,
-    text_val:  selectedLocation,
+    type:      currentAction,
+    text_val:  currentLocation,
     num_val:   gauge.getValue(),
     timestamp: new Date().toISOString(),
   };
@@ -107,8 +108,8 @@ btnSave.addEventListener('click', async () => {
       btnSave.textContent = orig;
       btnSave.disabled = false;
       // Reset aux défauts
-      selectedAction   = 'pipi';
-      selectedLocation = 'outside';
+      currentAction   = 'pipi';
+      currentLocation = 'outside';
       btnPipi.className   = 'btn-toggle active-pipi';
       btnCaca.className   = 'btn-toggle';
       btnDehors.className = 'btn-toggle active-dehors';

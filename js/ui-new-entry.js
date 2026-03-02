@@ -5,7 +5,7 @@
  * raccourcis temporels, et soumission vers la base de données.
  */
 
-import { $, setActive, toLocalISO, localNow, formatDuration, formatWalkTime } from './utils.js';
+import { $, setActive, setVisible, buildSegment, toLocalISO, localNow, formatDuration, formatWalkTime } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
@@ -46,9 +46,7 @@ export function initNewEntry() {
     if (!btn) return;
     currentAction = btn.dataset.action;
     setActive('action', currentAction);
-    updateLocationVisibility();
-    updateFirmnessVisibility();
-    updateTailleVisibility();
+    _updateSections();
   });
 
   // Sélecteur de lieu
@@ -149,38 +147,24 @@ export function updateActionPanel() {
     currentAction = 'walk';
   } else {
     actionCard.style.display = 'block';
-    panel.innerHTML = `
-      <button class="seg-btn" data-action="pipi">💧 Pipi</button>
-      <button class="seg-btn" data-action="caca">💩 Caca</button>
-    `;
+    panel.innerHTML = buildSegment('action', [
+      { value: 'pipi', label: '💧 Pipi' },
+      { value: 'caca', label: '💩 Caca' },
+    ], currentAction);
     if (currentAction !== 'pipi' && currentAction !== 'caca') currentAction = 'pipi';
-    setActive('action', currentAction);
   }
 
-  updateLocationVisibility();
-  _updateWalkSectionVisibility();
-  updateFirmnessVisibility();
-  updateTailleVisibility();
+  _updateSections();
 }
 
-export function updateLocationVisibility() {
-  $('location-section').style.display = currentType === 'bathroom' ? 'block' : 'none';
-}
-
-export function updateFirmnessVisibility() {
-  $('firmness-section').style.display =
-    (currentType === 'bathroom' && currentAction === 'caca') ? 'block' : 'none';
-}
-
-export function updateTailleVisibility() {
-  $('taille-section').style.display =
-    (currentType === 'bathroom' && currentAction === 'pipi') ? 'block' : 'none';
-}
-
-function _updateWalkSectionVisibility() {
-  const show = currentType === 'walk';
-  $('walk-section').style.display  = show ? 'block' : 'none';
-  $('datetime-card').style.display = show ? 'none'  : 'block';
+/** Met à jour la visibilité de toutes les sections selon le type et l'action courants. */
+function _updateSections() {
+  const isBath = currentType === 'bathroom';
+  setVisible('location-section', isBath);
+  setVisible('firmness-section', isBath && currentAction === 'caca');
+  setVisible('taille-section',   isBath && currentAction === 'pipi');
+  setVisible('walk-section',     currentType === 'walk');
+  setVisible('datetime-card',    currentType !== 'walk');
 }
 
 function _getWalkDurationMin() {
