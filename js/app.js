@@ -17,7 +17,7 @@ import { $, normalizeEntry } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage, onShowPage } from './navigation.js';
 import { db } from './db-context.js';
-import { initNewEntry, resetNewEntryDefaults, entryLabel } from './ui-new-entry.js';
+import { initNewEntry, entryLabel } from './ui-new-entry.js';
 import { initQuick } from './ui-quick.js';
 import { renderHistory } from './ui-history.js';
 import { openEditPage } from './ui-edit.js';
@@ -41,7 +41,6 @@ async function loadDemoDb() {
 
 // ── Renderers de navigation ────────────────────────────────────────────────
 
-onShowPage('new',     resetNewEntryDefaults);
 onShowPage('stats',   renderStats);
 onShowPage('history', renderHistory);
 

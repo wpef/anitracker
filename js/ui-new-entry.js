@@ -132,18 +132,6 @@ export function initNewEntry() {
   setActive('loc',  currentLocation);
 }
 
-/**
- * Réinitialise le formulaire aux valeurs par défaut :
- * type = walk, dates = maintenant.
- * Appelé à l'init et à chaque navigation vers la page "Complet".
- */
-export function resetNewEntryDefaults() {
-  _resetDefaults();
-  updateActionPanel();
-  setActive('type', currentType);
-  setActive('loc',  currentLocation);
-}
-
 function _resetDefaults() {
   currentType = 'walk';
   $('entry-time').value = localNow();
