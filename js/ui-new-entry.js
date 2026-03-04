@@ -15,7 +15,7 @@ import { db } from './db-context.js';
 let gaugeF = null; // jauge fermeté caca
 let gaugeT = null; // jauge quantité pipi
 
-let currentType     = 'bathroom'; // 'bathroom' | 'walk'
+let currentType     = 'walk';     // 'bathroom' | 'walk'
 let currentAction   = 'pipi';     // 'pipi' | 'caca'
 let currentLocation = 'outside';  // 'outside' | 'inside'
 // walkAnchor détermine quel côté de la balade reste fixe quand on applique un preset de durée.
@@ -124,15 +124,34 @@ export function initNewEntry() {
   // Bouton de soumission
   $('btn-add').addEventListener('click', _handleAdd);
 
-  // Valeurs initiales — restaure la dernière saisie si disponible
-  $('entry-time').value = sessionStorage.getItem('lastEntryTime') || localNow();
-  $('walk-start').value = sessionStorage.getItem('lastWalkStart') || localNow();
-  $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
-  walkAnchor = 'start';
+  // Valeurs initiales
+  _resetDefaults();
 
   updateActionPanel();
   setActive('type', currentType);
   setActive('loc',  currentLocation);
+}
+
+/**
+ * Réinitialise le formulaire aux valeurs par défaut :
+ * type = walk, dates = maintenant.
+ * Appelé à l'init et à chaque navigation vers la page "Complet".
+ */
+export function resetNewEntryDefaults() {
+  _resetDefaults();
+  updateActionPanel();
+  setActive('type', currentType);
+  setActive('loc',  currentLocation);
+}
+
+function _resetDefaults() {
+  currentType = 'walk';
+  $('entry-time').value = localNow();
+  $('walk-start').value = localNow();
+  $('walk-end').value   = '';
+  $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
+  walkAnchor = 'start';
+  _updateWalkDurationDisplay();
 }
 
 // ── Mise à jour dynamique du formulaire ────────────────────────────────────
