@@ -18,6 +18,7 @@ import { showToast, setSyncState } from './toast.js';
 import { showPage, onShowPage } from './navigation.js';
 import { db } from './db-context.js';
 import { initNewEntry, entryLabel } from './ui-new-entry.js';
+import { initQuick } from './ui-quick.js';
 import { renderHistory } from './ui-history.js';
 import { openEditPage } from './ui-edit.js';
 import { renderStats } from './ui-stats.js';
@@ -79,7 +80,8 @@ async function startDemo() {
   $('demo-banner').style.display = 'flex';
   setSyncState('ok');
   initNewEntry();
-  showPage('new');
+  initQuick();
+  showPage('quick');
 }
 
 // ── Saisie rapide (?quick=pipi|caca|walk) ─────────────────────────────────
@@ -141,8 +143,9 @@ async function boot() {
   });
 
   initNewEntry();
+  initQuick();
   await handleQuickEntry();
-  showPage('new');
+  showPage('quick');
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')

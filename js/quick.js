@@ -23,9 +23,22 @@ const gaugeEndL   = document.getElementById('gauge-end-left');
 const gaugeEndR   = document.getElementById('gauge-end-right');
 const btnSave     = document.getElementById('btn-save');
 const errorBanner = document.getElementById('error-banner');
+const timeInput   = document.getElementById('time-gauge');
+const timeVal     = document.getElementById('time-val');
 
 // ── Composant jauge (partagé avec l'app principale) ────────────────────────
 const gauge = initGauge(gaugeInput, gaugeVal, 'pipi');
+
+// ── Time scrubber ───────────────────────────────────────────────────────────
+function updateTimeGauge() {
+  const steps = parseInt(timeInput.value, 10); // 30 = maintenant, 0 = −30 min
+  const pct   = (steps / 30) * 100;
+  timeInput.style.background =
+    `linear-gradient(to right, #4cc9f0 ${pct}%, rgba(255,255,255,.1) ${pct}%)`;
+  timeVal.textContent = steps === 30 ? 'Maintenant' : `il y a ${30 - steps} min`;
+}
+
+timeInput.addEventListener('input', updateTimeGauge);
 
 // ── Mise à jour apparence de la jauge lors du changement de type ───────────
 function setupGauge() {
@@ -93,7 +106,7 @@ btnSave.addEventListener('click', async () => {
     type:      currentAction,
     text_val:  currentLocation,
     num_val:   gauge.getValue(),
-    timestamp: new Date().toISOString(),
+    timestamp: new Date(Date.now() - (30 - parseInt(timeInput.value, 10)) * 60_000).toISOString(),
   };
 
   try {
@@ -116,6 +129,8 @@ btnSave.addEventListener('click', async () => {
       btnDedans.className = 'btn-toggle';
       gauge.setValue(50); // Normal
       setupGauge();
+      timeInput.value = 30;
+      updateTimeGauge();
     }, 1200);
   } catch {
     btnSave.textContent = '✗ Erreur';
@@ -128,4 +143,5 @@ btnSave.addEventListener('click', async () => {
 
 // ── Boot ───────────────────────────────────────────────────────────────────
 setupGauge();
+updateTimeGauge();
 initFirebase();

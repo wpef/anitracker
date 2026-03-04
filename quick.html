@@ -131,6 +131,38 @@
       color: var(--text2);
     }
 
+    /* ── Time scrubber ── */
+    #time-section {
+      flex: 0 0 auto;
+      background: var(--surface);
+      border-radius: var(--radius);
+      padding: 14px 16px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    #time-gauge {
+      width: 100%;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 8px;
+      border-radius: 4px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #time-gauge::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,.45);
+      cursor: pointer;
+    }
+
     /* ── Save button ── */
     #btn-save {
       flex: 0 0 auto;
@@ -195,6 +227,19 @@
     <div class="gauge-ends">
       <span id="gauge-end-left">Gouttes</span>
       <span id="gauge-end-right">Énorme</span>
+    </div>
+  </div>
+
+  <!-- Time scrubber -->
+  <div id="time-section">
+    <div class="gauge-header">
+      <span class="gauge-label">🕐 Heure</span>
+      <span class="gauge-value" id="time-val">Maintenant</span>
+    </div>
+    <input type="range" id="time-gauge" min="0" max="30" value="30" step="1" />
+    <div class="gauge-ends">
+      <span>−30 min</span>
+      <span>Maintenant</span>
     </div>
   </div>
 
