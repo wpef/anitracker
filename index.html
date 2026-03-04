@@ -34,8 +34,57 @@
     </div>
   </header>
 
+  <!-- ===== Page 0 : Rapide ===== -->
+  <main id="page-quick" class="page active">
+
+    <div class="quick-row">
+      <button class="btn-toggle active-pipi" id="qp-pipi">
+        <span class="qp-emoji">💧</span>PIPI
+      </button>
+      <button class="btn-toggle" id="qp-caca">
+        <span class="qp-emoji">💩</span>CACA
+      </button>
+    </div>
+
+    <div class="quick-row">
+      <button class="btn-toggle active-dehors" id="qp-dehors">
+        <span class="qp-emoji">🌿</span>DEHORS
+      </button>
+      <button class="btn-toggle" id="qp-dedans">
+        <span class="qp-emoji">🏠</span>DEDANS
+      </button>
+    </div>
+
+    <div class="qp-gauge-section">
+      <div class="qp-gauge-header">
+        <span class="qp-gauge-label" id="qp-gauge-label">💧 Quantité</span>
+        <span class="qp-gauge-value" id="qp-gauge-val">Normal</span>
+      </div>
+      <input type="range" id="qp-gauge" min="0" max="100" value="50" step="1" />
+      <div class="qp-gauge-ends">
+        <span id="qp-gauge-end-left">Gouttes</span>
+        <span id="qp-gauge-end-right">Énorme</span>
+      </div>
+    </div>
+
+    <div class="qp-gauge-section">
+      <div class="qp-gauge-header">
+        <span class="qp-gauge-label">🕐 Heure</span>
+        <span class="qp-gauge-value" id="qp-time-val">Maintenant</span>
+      </div>
+      <input type="range" id="qp-time-gauge" min="0" max="30" value="30" step="1" />
+      <div class="qp-gauge-ends">
+        <span>−30 min</span>
+        <span>Maintenant</span>
+      </div>
+    </div>
+
+    <button id="qp-save" class="qp-save-btn">Enregistrer ✓</button>
+
+  </main>
+
   <!-- ===== Page 1 : Nouvelle entrée ===== -->
-  <main id="page-new" class="page active">
+  <main id="page-new" class="page">
 
     <!-- Type d'événement -->
     <div class="card">
@@ -252,9 +301,13 @@
 
   <!-- ===== Bottom Nav ===== -->
   <nav>
+    <button class="nav-btn active" id="nav-quick" data-page="quick">
+      <span class="nav-icon">⚡</span>
+      Rapide
+    </button>
     <button class="nav-btn" id="nav-new" data-page="new">
       <span class="nav-icon">➕</span>
-      Nouveau
+      Complet
     </button>
     <button class="nav-btn" id="nav-stats" data-page="stats">
       <span class="nav-icon">📊</span>
@@ -333,9 +386,6 @@
     </button>
   </div>
 </div>
-
-<!-- ===== FAB Quick Entry ===== -->
-<a href="quick.html" id="btn-quick-fab" class="quick-fab" title="Saisie rapide">＋</a>
 
 <!-- Toast -->
 <div id="toast"></div>
