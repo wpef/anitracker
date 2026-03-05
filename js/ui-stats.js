@@ -15,8 +15,8 @@ export function renderStats() {
   const s = getStats(db.getAllEntries());
 
   // ── Quick-stats (bandeau du haut) ──────────────────────────────────────
-  $('qs-pipi-in').textContent    = s.todayPipiDedans;
-  $('qs-pipi-total').textContent = s.todayPipiTotal;
+  $('qs-pipi-in').textContent    = s.todayPipiDedans + s.todayCacaDedans;
+  $('qs-pipi-total').textContent = s.todayPipiTotal + s.todayCacaDehors + s.todayCacaDedans;
   $('qs-walk-time').textContent  = s.todayWalkMinSince7am > 0
     ? formatDuration(s.todayWalkMinSince7am) : '0';
 
@@ -45,8 +45,10 @@ export function renderStats() {
     { label: 'Propreté (%)', data: s.dailyPropretScore, color: '#4caf50' },
   ], { yMax: 100, yUnit: '%' });
 
-  // ── Graphique balades (7 jours) ───────────────────────────────────────
-  renderLineChart('chart-walks', s.dailyLabels, s.dailyWalks, '#4caf50', { yUnit: 'h' });
+  // ── Graphique balades (7 jours — durée en minutes par jour) ──────────
+  renderBarChart('chart-walks', s.dailyLabels, [
+    { label: 'Balades (min)', data: s.dailyWalkMin, color: '#4cc9f0' },
+  ], { yUnit: ' min' });
 
   // ── Graphique fermeté des cacas (3 jours, points individuels) ─────────
   renderLineChart('chart-firmness', s.firmnessLabels, s.firmnessData, '#ffcc80');

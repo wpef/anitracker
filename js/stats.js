@@ -5,10 +5,14 @@
  * en paramètre et retourne un objet de métriques prêtes à l'affichage.
  *
  * Deux fenêtres temporelles :
- *  - 7 jours glissants  → tendance long terme (graphiques, compteurs globaux)
+ *  - 7 jours glissants (fenêtres 7h→7h) → tendance long terme (graphiques, compteurs)
  *  - Depuis 7h du matin → toutes les stats "du jour" (score ring, quick-stats, balades)
- *    Le reset à 7h (et non à minuit) évite que les accidents nocturnes soient
- *    attribués à la journée suivante. Avant 7h, la fenêtre démarre à 7h la veille.
+ *
+ * Le reset à 7h (et non à minuit) évite que les besoins nocturnes soient
+ * attribués à la journée suivante. Avant 7h, la fenêtre démarre à 7h la veille.
+ *
+ * Score de propreté = 100 − (besoins dedans / besoins totaux × 100)
+ * où besoins totaux = pipi + caca, besoins dedans = pipi dedans + caca dedans.
  */
 
 import { isWalk, formatDayShort } from './utils.js';
@@ -37,6 +41,7 @@ import { isWalk, formatDayShort } from './utils.js';
  *   todayCacaDedans: number,
  *   dailyLabels: string[],
  *   dailyWalks: number[],
+ *   dailyWalkMin: number[],
  *   dailyPipi: number[],
  *   dailyCaca: number[],
  *   dailyInside: number[],
@@ -77,11 +82,12 @@ export function getStats(entries) {
   const todayCacaDehors   = todayCaca.filter(e => e.text_val === 'outside').length;
   const todayCacaDedans   = todayCaca.filter(e => e.text_val === 'inside').length;
 
-  // Score de propreté — formule : 100 − (accidents / total_pipis × 100)
-  // Caca dehors est neutre, exclu du dénominateur (on ne peut pas "forcer" un caca dehors).
+  // Score de propreté — formule : 100 − (besoins dedans / besoins totaux × 100)
+  // Besoins totaux = pipi + caca ; besoins dedans = pipi dedans + caca dedans.
   const todayBad   = todayPipiDedans + todayCacaDedans;
-  const todayScore = todayPipi.length > 0
-    ? Math.max(0, Math.round(100 - (todayBad / todayPipi.length * 100))) : null;
+  const todayTotal = todayPipi.length + todayCaca.length;
+  const todayScore = todayTotal > 0
+    ? Math.max(0, Math.round(100 - (todayBad / todayTotal * 100))) : null;
 
   // Dérivés directs — même fenêtre, pas de second filtre
   const todayPipiTotal = todayPipi.length;
@@ -98,28 +104,35 @@ export function getStats(entries) {
       durationMin: e.duration_min || null,
     }));
 
-  // ── Tendance 7 jours (graphique barres) ───────────────────────────────────
+  // ── Tendance 7 jours (graphiques) ─────────────────────────────────────────
+  // Fenêtres de 7h à 7h (comme le score du jour) pour que les besoins
+  // nocturnes (avant 7h) soient attribués à la journée précédente.
   const dailyLabels       = [];
   const dailyWalks        = [];
+  const dailyWalkMin      = [];
   const dailyPipi         = [];
   const dailyCaca         = [];
   const dailyInside       = [];
   const dailyPropretScore = [];
 
   for (let i = 6; i >= 0; i--) {
-    const day    = new Date(now);
-    day.setDate(day.getDate() - i);
-    day.setHours(0, 0, 0, 0);
-    const dayEnd = new Date(day);
-    dayEnd.setHours(23, 59, 59, 999);
+    const dayStart = new Date(now);
+    dayStart.setDate(dayStart.getDate() - i);
+    dayStart.setHours(7, 0, 0, 0);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+    // dayEnd = lendemain 7h00 → fenêtre [7h, 7h+1j[
 
     const dayEntries = entries.filter(e => {
       const t = new Date(e.timestamp);
-      return t >= day && t <= dayEnd;
+      return t >= dayStart && t < dayEnd;
     });
 
-    dailyLabels.push(formatDayShort(day));
-    dailyWalks.push(dayEntries.filter(isWalk).length);
+    dailyLabels.push(formatDayShort(dayStart));
+
+    const dayWalks = dayEntries.filter(isWalk);
+    dailyWalks.push(dayWalks.length);
+    dailyWalkMin.push(dayWalks.reduce((s, e) => s + (e.duration_min || 0), 0));
 
     const dayPipi       = dayEntries.filter(e => e.type === 'pipi');
     const dayCaca       = dayEntries.filter(e => e.type === 'caca');
@@ -129,10 +142,11 @@ export function getStats(entries) {
     dailyPipi.push(dayPipi.length);
     dailyCaca.push(dayCaca.length);
     dailyInside.push(dayEntries.filter(e => e.text_val === 'inside').length);
-    // Même formule que le score du jour
+    // Même formule que le score du jour : dedans / total besoins
+    const dayTotal = dayPipi.length + dayCaca.length;
     dailyPropretScore.push(
-      dayPipi.length > 0
-        ? Math.max(0, Math.round(100 - ((dayPipiDedans + dayCacaDedans) / dayPipi.length * 100)))
+      dayTotal > 0
+        ? Math.max(0, Math.round(100 - ((dayPipiDedans + dayCacaDedans) / dayTotal * 100)))
         : null
     );
   }
@@ -175,6 +189,7 @@ export function getStats(entries) {
     todayCacaDedans,
     dailyLabels,
     dailyWalks,
+    dailyWalkMin,
     dailyPipi,
     dailyCaca,
     dailyInside,
