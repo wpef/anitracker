@@ -42,7 +42,7 @@ Remplacer `BRANCH_NAME` par le nom de la branche courante (ex: `claude/dog-habit
 | `navigation.js`   | `showPage()` + registre de renderers `onShowPage()` |
 | `utils.js`        | Helpers DOM (`$`, `setActive`), formatters, **typedefs `Entry`**, `normalizeEntry`, `TYPE_DEF` |
 | `toast.js`        | `showToast()`, `setSyncState()` |
-| `stats.js`        | `getStats(entries)` — logique pure, zéro DOM, zéro DB |
+| `stats.js`        | `getStats(entries)` — logique pure, zéro DOM, zéro DB. Score propreté = 100 − (dedans/total besoins × 100). Fenêtres 7h→7h (nuit = veille). |
 | `charts.js`       | `renderScoreRing/BarChart/LineChart` — wrapper Chart.js |
 | `ui-new-entry.js` | Formulaire nouvelle entrée (state local : type/action/location/anchor) |
 | `ui-history.js`   | Liste historique groupée par jour |
