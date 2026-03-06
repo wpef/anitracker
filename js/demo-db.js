@@ -32,7 +32,7 @@ function generateDemoData() {
   const pipi  = (d, h, m, loc, num_val = 50)  => ({ id: mkId(), type: 'pipi', text_val: loc, num_val, timestamp: at(d,h,m) });
   const caca  = (d, h, m, loc, num_val = 70)  => ({ id: mkId(), type: 'caca', text_val: loc, num_val, timestamp: at(d,h,m) });
   const cacan = (d, h, m, loc, num_val, note) => ({ ...caca(d,h,m,loc,num_val), note });
-  const meal  = (d, h, m, num_val = 52)        => ({ id: mkId(), type: 'meal', num_val, timestamp: at(d,h,m) });
+  const meal  = (d, h, m, num_val = 52, tv = 'normal') => ({ id: mkId(), type: 'meal', text_val: tv, num_val, timestamp: at(d,h,m) });
   const walk  = (d, h, m, dur) => {
     const ts  = at(d, h, m);
     const end = new Date(new Date(ts).getTime() + dur * 60000).toISOString();
@@ -74,7 +74,7 @@ function generateDemoData() {
   entries.push(pipi(2, 19, 0,  'outside', 55));
 
   // ── Jour -3 ──────────────────────────────────────────────────────────────
-  entries.push(meal(3, 7, 0, 64));
+  entries.push(meal(3, 7, 0, 64, 'rushed'));
   entries.push(walk(3, 7, 45, 30));
   entries.push(pipi(3, 7, 30,  'outside', 75));
   entries.push(pipi(3, 9, 45,  'outside', 50));
@@ -105,7 +105,7 @@ function generateDemoData() {
   entries.push(caca(5, 14, 30, 'outside', 70));
   entries.push(walk(5, 17, 0,  30));
   entries.push(pipi(5, 17, 45, 'outside', 50));
-  entries.push(meal(5, 18, 30, 48));
+  entries.push(meal(5, 18, 30, 48, 'stressed'));
   entries.push(pipi(5, 20, 30, 'inside',  30));    // accident
 
   // ── Jour -6 ──────────────────────────────────────────────────────────────
@@ -117,7 +117,7 @@ function generateDemoData() {
   entries.push(caca(6, 12, 0,  'outside', 60));
   entries.push(walk(6, 17, 30, 30));
   entries.push(pipi(6, 18, 0,  'outside', 55));
-  entries.push(meal(6, 18, 30, 44));
+  entries.push(meal(6, 18, 30, 44, 'rushed'));
 
   return entries;
 }
