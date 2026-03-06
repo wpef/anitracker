@@ -174,6 +174,12 @@ export const TYPE_DEF = {
       def:   25,
     },
   },
+  meal: {
+    label:    'Repas',
+    icon:     '🍽️',
+    category: 'activity',
+    color:    '#ff9800',
+  },
 };
 
 // ── Helpers TYPE_DEF ─────────────────────────────────────────────────────
