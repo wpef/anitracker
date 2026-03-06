@@ -1,57 +1,28 @@
 /**
  * stats.js – Calcul des statistiques à partir du tableau d'entrées
  *
- * Pas de dépendance sur le DOM ni sur la couche DB : reçoit les entrées
- * en paramètre et retourne un objet de métriques prêtes à l'affichage.
+ * Entièrement piloté par TYPE_DEF : les statistiques de propreté sont
+ * calculées pour tous les types de la catégorie 'need' (avec insideValue).
+ * Pour ajouter un nouveau besoin, aucun changement ici.
  *
  * Deux fenêtres temporelles :
- *  - 7 jours glissants (fenêtres 7h→7h) → tendance long terme (graphiques, compteurs)
- *  - Depuis 7h du matin → toutes les stats "du jour" (score ring, quick-stats, balades)
- *
- * Le reset à 7h (et non à minuit) évite que les besoins nocturnes soient
- * attribués à la journée suivante. Avant 7h, la fenêtre démarre à 7h la veille.
+ *  - 7 jours glissants (fenêtres 7h→7h) → tendance long terme
+ *  - Depuis 7h du matin → stats "du jour" (score ring, quick-stats)
  *
  * Score de propreté = 100 − (besoins dedans / besoins totaux × 100)
- * où besoins totaux = pipi + caca, besoins dedans = pipi dedans + caca dedans.
  */
 
-import { isWalk, formatDayShort } from './utils.js';
+import { TYPE_DEF, needTypes, formatDayShort } from './utils.js';
 
 /**
- * Calcule l'ensemble des statistiques utilisées par la page Stats et les quick-stats.
+ * Calcule l'ensemble des statistiques.
  *
  * @param {object[]} entries  Toutes les entrées triées par timestamp décroissant
- * @returns {{
- *   total: number,
- *   recent: number,
- *   walkStarts: number,
- *   pipi: number,
- *   caca: number,
- *   pipiDehors: number,
- *   pipiDedans: number,
- *   cacaDehors: number,
- *   cacaDedans: number,
- *   todayScore: number|null,
- *   todayWalks: object[],
- *   todayPipiTotal: number,
- *   todayPipiDedans: number,
- *   todayWalkMinSince7am: number,
- *   todayPipiDehors: number,
- *   todayCacaDehors: number,
- *   todayCacaDedans: number,
- *   dailyLabels: string[],
- *   dailyWalks: number[],
- *   dailyWalkMin: number[],
- *   dailyPipi: number[],
- *   dailyCaca: number[],
- *   dailyInside: number[],
- *   dailyPropretScore: (number|null)[],
- *   firmnessLabels: string[],
- *   firmnessData: number[],
- * }}
+ * @returns {object}
  */
 export function getStats(entries) {
   const now = new Date();
+  const needs = needTypes(); // [[key, def], ...]
 
   // ── 7 derniers jours (compteurs globaux) ──────────────────────────────────
   const sevenDaysAgo = new Date(now);
@@ -59,43 +30,48 @@ export function getStats(entries) {
   sevenDaysAgo.setHours(0, 0, 0, 0);
   const recent = entries.filter(e => new Date(e.timestamp) >= sevenDaysAgo);
 
-  const walkStarts = recent.filter(isWalk);
-  const pipi       = recent.filter(e => e.type === 'pipi');
-  const caca       = recent.filter(e => e.type === 'caca');
-  const pipiDehors = pipi.filter(e => e.text_val === 'outside').length;
-  const pipiDedans = pipi.filter(e => e.text_val === 'inside').length;
-  const cacaDehors = caca.filter(e => e.text_val === 'outside').length;
-  const cacaDedans = caca.filter(e => e.text_val === 'inside').length;
+  const walkStarts = recent.filter(e => TYPE_DEF[e.type]?.hasDuration);
 
-  // ── Fenêtre "du jour" : depuis 7h (source unique pour score + quick-stats) ─
-  // Reset à 7h (et non à minuit) pour que les accidents nocturnes soient attribués
-  // à la journée précédente. Avant 7h, la fenêtre démarre à 7h la veille.
+  // Compteurs par type de besoin (7 jours)
+  const needCounts = {};
+  for (const [key, def] of needs) {
+    const typed = recent.filter(e => e.type === key);
+    const inside  = def.insideValue ? typed.filter(e => e.text_val === def.insideValue).length : 0;
+    const outside = typed.length - inside;
+    needCounts[key] = { total: typed.length, inside, outside };
+  }
+
+  // ── Fenêtre "du jour" : depuis 7h ────────────────────────────────────────
   const todayFrom = new Date(now);
   if (now.getHours() < 7) todayFrom.setDate(todayFrom.getDate() - 1);
   todayFrom.setHours(7, 0, 0, 0);
   const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayFrom);
 
-  const todayPipi         = todayEntries.filter(e => e.type === 'pipi');
-  const todayCaca         = todayEntries.filter(e => e.type === 'caca');
-  const todayPipiDehors   = todayPipi.filter(e => e.text_val === 'outside').length;
-  const todayPipiDedans   = todayPipi.filter(e => e.text_val === 'inside').length;
-  const todayCacaDehors   = todayCaca.filter(e => e.text_val === 'outside').length;
-  const todayCacaDedans   = todayCaca.filter(e => e.text_val === 'inside').length;
+  // Compteurs du jour par type de besoin
+  const todayNeedCounts = {};
+  let todayNeedTotal  = 0;
+  let todayNeedInside = 0;
+  for (const [key, def] of needs) {
+    const typed   = todayEntries.filter(e => e.type === key);
+    const inside  = def.insideValue ? typed.filter(e => e.text_val === def.insideValue).length : 0;
+    const outside = typed.length - inside;
+    todayNeedCounts[key] = { total: typed.length, inside, outside };
+    todayNeedTotal  += typed.length;
+    todayNeedInside += inside;
+  }
 
-  // Score de propreté — formule : 100 − (besoins dedans / besoins totaux × 100)
-  // Besoins totaux = pipi + caca ; besoins dedans = pipi dedans + caca dedans.
-  const todayBad   = todayPipiDedans + todayCacaDedans;
-  const todayTotal = todayPipi.length + todayCaca.length;
-  const todayScore = todayTotal > 0
-    ? Math.max(0, Math.round(100 - (todayBad / todayTotal * 100))) : null;
+  // Score de propreté
+  const todayScore = todayNeedTotal > 0
+    ? Math.max(0, Math.round(100 - (todayNeedInside / todayNeedTotal * 100)))
+    : null;
 
-  // Dérivés directs — même fenêtre, pas de second filtre
-  const todayPipiTotal = todayPipi.length;
-  const todayWalkMinSince7am = todayEntries.filter(isWalk)
+  // Balades du jour
+  const todayWalkMinSince7am = todayEntries
+    .filter(e => TYPE_DEF[e.type]?.hasDuration)
     .reduce((s, e) => s + (e.duration_min || 0), 0);
 
   const todayWalks = todayEntries
-    .filter(isWalk)
+    .filter(e => TYPE_DEF[e.type]?.hasDuration)
     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
     .map(e => ({
       id:          e.id,
@@ -105,15 +81,13 @@ export function getStats(entries) {
     }));
 
   // ── Tendance 7 jours (graphiques) ─────────────────────────────────────────
-  // Fenêtres de 7h à 7h (comme le score du jour) pour que les besoins
-  // nocturnes (avant 7h) soient attribués à la journée précédente.
   const dailyLabels       = [];
   const dailyWalks        = [];
   const dailyWalkMin      = [];
-  const dailyPipi         = [];
-  const dailyCaca         = [];
-  const dailyInside       = [];
   const dailyPropretScore = [];
+  const dailyNeedCounts   = {};
+  const dailyInside       = [];
+  for (const [key] of needs) dailyNeedCounts[key] = [];
 
   for (let i = 6; i >= 0; i--) {
     const dayStart = new Date(now);
@@ -121,7 +95,6 @@ export function getStats(entries) {
     dayStart.setHours(7, 0, 0, 0);
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
-    // dayEnd = lendemain 7h00 → fenêtre [7h, 7h+1j[
 
     const dayEntries = entries.filter(e => {
       const t = new Date(e.timestamp);
@@ -130,71 +103,74 @@ export function getStats(entries) {
 
     dailyLabels.push(formatDayShort(dayStart));
 
-    const dayWalks = dayEntries.filter(isWalk);
+    const dayWalks = dayEntries.filter(e => TYPE_DEF[e.type]?.hasDuration);
     dailyWalks.push(dayWalks.length);
     dailyWalkMin.push(dayWalks.reduce((s, e) => s + (e.duration_min || 0), 0));
 
-    const dayPipi       = dayEntries.filter(e => e.type === 'pipi');
-    const dayCaca       = dayEntries.filter(e => e.type === 'caca');
-    const dayPipiDedans = dayPipi.filter(e => e.text_val === 'inside').length;
-    const dayCacaDedans = dayCaca.filter(e => e.text_val === 'inside').length;
+    let dayNeedTotal  = 0;
+    let dayNeedInside = 0;
+    for (const [key, def] of needs) {
+      const typed   = dayEntries.filter(e => e.type === key);
+      const inside  = def.insideValue ? typed.filter(e => e.text_val === def.insideValue).length : 0;
+      dailyNeedCounts[key].push(typed.length);
+      dayNeedTotal  += typed.length;
+      dayNeedInside += inside;
+    }
+    dailyInside.push(dayEntries.filter(e => {
+      const def = TYPE_DEF[e.type];
+      return def?.insideValue && e.text_val === def.insideValue;
+    }).length);
 
-    dailyPipi.push(dayPipi.length);
-    dailyCaca.push(dayCaca.length);
-    dailyInside.push(dayEntries.filter(e => e.text_val === 'inside').length);
-    // Même formule que le score du jour : dedans / total besoins
-    const dayTotal = dayPipi.length + dayCaca.length;
     dailyPropretScore.push(
-      dayTotal > 0
-        ? Math.max(0, Math.round(100 - ((dayPipiDedans + dayCacaDedans) / dayTotal * 100)))
+      dayNeedTotal > 0
+        ? Math.max(0, Math.round(100 - (dayNeedInside / dayNeedTotal * 100)))
         : null
     );
   }
 
-  // ── Fermeté des cacas – 3 derniers jours, points individuels ─────────────
+  // ── Données de jauge – 3 derniers jours, points individuels ───────────────
+  const gaugeData = {};
   const threeDaysAgo = new Date(now);
   threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
   threeDaysAgo.setHours(0, 0, 0, 0);
+  const todayStr = now.toDateString();
 
-  const recentCacas = entries
-    .filter(e => e.type === 'caca' && e.num_val !== undefined)
-    .filter(e => new Date(e.timestamp) >= threeDaysAgo)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+  for (const [key, def] of needs) {
+    if (!def.gauge) continue;
+    const recentItems = entries
+      .filter(e => e.type === key && e.num_val !== undefined)
+      .filter(e => new Date(e.timestamp) >= threeDaysAgo)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-  const todayStr       = now.toDateString();
-  const firmnessLabels = recentCacas.map(e => {
-    const d      = new Date(e.timestamp);
-    const dayStr = d.toDateString() === todayStr ? 'Auj.' : formatDayShort(d);
-    return dayStr + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-  });
-  const firmnessData = recentCacas.map(e => e.num_val);
+    gaugeData[key] = {
+      labels: recentItems.map(e => {
+        const d      = new Date(e.timestamp);
+        const dayStr = d.toDateString() === todayStr ? 'Auj.' : formatDayShort(d);
+        return dayStr + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      }),
+      data:  recentItems.map(e => e.num_val),
+      title: `${def.icon} ${def.gauge.title} – 3 jours`,
+      color: def.color || '#ffcc80',
+    };
+  }
 
   return {
-    total: entries.length,
+    total:  entries.length,
     recent: recent.length,
     walkStarts: walkStarts.length,
-    pipi: pipi.length,
-    caca: caca.length,
-    pipiDehors,
-    pipiDedans,
-    cacaDehors,
-    cacaDedans,
+    needCounts,
+    todayNeedCounts,
+    todayNeedTotal,
+    todayNeedInside,
     todayScore,
     todayWalks,
-    todayPipiTotal,
-    todayPipiDedans,
     todayWalkMinSince7am,
-    todayPipiDehors,
-    todayCacaDehors,
-    todayCacaDedans,
     dailyLabels,
     dailyWalks,
     dailyWalkMin,
-    dailyPipi,
-    dailyCaca,
+    dailyNeedCounts,
     dailyInside,
     dailyPropretScore,
-    firmnessLabels,
-    firmnessData,
+    gaugeData,
   };
 }

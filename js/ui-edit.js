@@ -1,12 +1,11 @@
 /**
  * ui-edit.js – Page d'édition d'une entrée existante.
  *
- * openEditPage(id) construit le formulaire d'édition dans #edit-page-body
- * et navigue vers la page 'edit'. Les boutons persistants (retour, supprimer,
- * enregistrer) sont enregistrés une seule fois au chargement du module.
+ * Entièrement piloté par TYPE_DEF : le formulaire est construit
+ * dynamiquement selon le type de l'entrée (gauge, textOptions, hasDuration).
  */
 
-import { $, isWalk, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
+import { $, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF, getTextLabel } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
@@ -43,10 +42,11 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
   const entry = db.getAllEntries().find(e => e.id === editingId);
   if (!entry) return;
 
-  const body    = $('edit-page-body');
-  let updated   = {};
+  const def   = TYPE_DEF[entry.type];
+  const body  = $('edit-page-body');
+  let updated = {};
 
-  if (isWalk(entry)) {
+  if (def?.hasDuration) {
     const startVal = $('edit-walk-start').value;
     const endVal   = $('edit-walk-end').value;
     const dur      = endVal
@@ -59,20 +59,15 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
       note:         $('edit-note').value.trim(),
     };
   } else {
-    const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.type;
-    const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc       || entry.text_val;
-    const firmInput    = $('edit-firmness');
-    const tailleInput  = $('edit-taille');
-    const numVal = activeAction === 'caca'
-      ? (firmInput  ? parseInt(firmInput.value,  10) : undefined)
-      : (tailleInput ? parseInt(tailleInput.value, 10) : undefined);
+    const activeLoc = body.querySelector('[data-loc].active')?.dataset.loc || entry.text_val;
+    const gaugeEl   = $('edit-gauge');
     updated = {
-      type:      activeAction,
-      text_val:  activeLoc,
+      type:      entry.type,
       timestamp: new Date($('edit-time').value).toISOString(),
       note:      $('edit-note').value.trim(),
-      ...(numVal !== undefined ? { num_val: numVal } : {}),
     };
+    if (activeLoc !== undefined) updated.text_val = activeLoc;
+    if (gaugeEl)                 updated.num_val  = parseInt(gaugeEl.value, 10);
   }
 
   setSyncState('pending');
@@ -89,28 +84,24 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
 
 // ── Ouverture de la page d'édition ────────────────────────────────────────
 
-/**
- * Construit le formulaire d'édition pour l'entrée donnée et affiche la page.
- *
- * @param {string} id  Identifiant de l'entrée à éditer
- */
 export function openEditPage(id) {
   const entry = db.getAllEntries().find(e => e.id === id);
   if (!entry) return;
   editingId = id;
 
+  const def  = TYPE_DEF[entry.type];
   const body = $('edit-page-body');
-  body.innerHTML = isWalk(entry)
-    ? _buildWalkForm(entry)
-    : _buildBathroomForm(entry);
+  body.innerHTML = def?.hasDuration
+    ? _buildDurationForm(entry, def)
+    : _buildPointForm(entry, def);
 
   showPage('edit');
-  _attachEditListeners(entry);
+  _attachEditListeners(entry, def);
 }
 
 // ── Construction des formulaires ───────────────────────────────────────────
 
-function _buildWalkForm(entry) {
+function _buildDurationForm(entry, def) {
   const startVal = toLocalISO(entry.timestamp);
   const endVal   = entry.end_time ? toLocalISO(entry.end_time) : '';
   const dur      = entry.duration_min || 0;
@@ -130,59 +121,55 @@ function _buildWalkForm(entry) {
     </div>`;
 }
 
-function _buildBathroomForm(entry) {
-  const timeVal  = toLocalISO(entry.timestamp);
-  const isCaca = entry.type === 'caca';
-  const cfgF   = TYPE_DEF.caca.gauge;
-  const cfgT     = TYPE_DEF.pipi.gauge;
-  const numVal   = entry.num_val ?? (isCaca ? cfgF.def : cfgT.def);
-  return `
-    <div class="card">
-      <div class="card-title">Action</div>
-      ${buildSegment('action', [
-        { value: 'pipi', label: '💧 Pipi' },
-        { value: 'caca', label: '💩 Caca' },
-      ], entry.type)}
-    </div>
-    <div class="card">
+function _buildPointForm(entry, def) {
+  const timeVal = toLocalISO(entry.timestamp);
+  let html = '';
+
+  // Options textuelles (lieu, etc.)
+  if (def?.textOptions?.length) {
+    html += `<div class="card">
       <div class="card-title">Lieu</div>
-      ${buildSegment('loc', [
-        { value: 'outside', label: '🌿 Dehors' },
-        { value: 'inside',  label: '🏠 Dedans' },
-      ], entry.text_val)}
-    </div>
-    <div class="card" id="edit-firmness-section" style="display:${isCaca ? 'block' : 'none'}">
-      <div class="card-title">💩 ${cfgF.title}</div>
-      <div class="gauge-current-label" id="edit-firmness-value">${cfgF.getLabel(numVal)}</div>
-      <input type="range" id="edit-firmness" min="0" max="100" value="${numVal}" step="1" />
-      <div class="gauge-ends-row">
-        <span>${cfgF.ends[0]}</span>
-        <span>${cfgF.ends[1]}</span>
-      </div>
-    </div>
-    <div class="card" id="edit-taille-section" style="display:${!isCaca ? 'block' : 'none'}">
-      <div class="card-title">💧 ${cfgT.title}</div>
-      <div class="gauge-current-label" id="edit-taille-value">${cfgT.getLabel(numVal)}</div>
-      <input type="range" id="edit-taille" min="0" max="100" value="${numVal}" step="1" />
-      <div class="gauge-ends-row">
-        <span>${cfgT.ends[0]}</span>
-        <span>${cfgT.ends[1]}</span>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">🕐 Date &amp; heure</div>
-      <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
-    </div>
-    <div class="card">
-      <div class="card-title">📝 Note</div>
-      <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+      ${buildSegment('loc',
+        def.textOptions.map(o => ({ value: o.value, label: (o.icon || '') + ' ' + o.label })),
+        entry.text_val
+      )}
     </div>`;
+  }
+
+  // Jauge
+  if (def?.gauge) {
+    const cfg    = def.gauge;
+    const numVal = entry.num_val ?? cfg.def;
+    html += `<div class="card">
+      <div class="card-title">${def.icon} ${cfg.title}</div>
+      <div class="gauge-current-label" id="edit-gauge-value">${cfg.getLabel(numVal)}</div>
+      <input type="range" id="edit-gauge" min="0" max="100" value="${numVal}" step="1" />
+      <div class="gauge-ends-row">
+        <span>${cfg.ends[0]}</span>
+        <span>${cfg.ends[1]}</span>
+      </div>
+    </div>`;
+  }
+
+  // Date & heure
+  html += `<div class="card">
+    <div class="card-title">🕐 Date &amp; heure</div>
+    <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
+  </div>`;
+
+  // Note
+  html += `<div class="card">
+    <div class="card-title">📝 Note</div>
+    <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+  </div>`;
+
+  return html;
 }
 
 // ── Listeners dynamiques (recréés à chaque ouverture) ─────────────────────
 
-function _attachEditListeners(entry) {
-  if (isWalk(entry)) {
+function _attachEditListeners(entry, def) {
+  if (def?.hasDuration) {
     const recalc = () => {
       const dur = Math.round(
         (new Date($('edit-walk-end').value) - new Date($('edit-walk-start').value)) / 60000
@@ -194,22 +181,15 @@ function _attachEditListeners(entry) {
     $('edit-walk-end').addEventListener('change',   recalc);
   } else {
     const body = $('edit-page-body');
+    // Délégation click pour les options textuelles
     body.addEventListener('click', ev => {
-      const aBtn = ev.target.closest('[data-action]');
-      if (aBtn) {
-        body.querySelectorAll('[data-action]').forEach(b => b.classList.remove('active'));
-        aBtn.classList.add('active');
-        const isCaca = aBtn.dataset.action === 'caca';
-        $('edit-firmness-section').style.display = isCaca  ? 'block' : 'none';
-        $('edit-taille-section').style.display   = !isCaca ? 'block' : 'none';
-      }
       const lBtn = ev.target.closest('[data-loc]');
       if (lBtn) {
         body.querySelectorAll('[data-loc]').forEach(b => b.classList.remove('active'));
         lBtn.classList.add('active');
       }
     });
-    if ($('edit-firmness'))  initGauge($('edit-firmness'),  $('edit-firmness-value'), 'caca');
-    if ($('edit-taille'))   initGauge($('edit-taille'),    $('edit-taille-value'),   'pipi');
+    // Jauge
+    if ($('edit-gauge')) initGauge($('edit-gauge'), $('edit-gauge-value'), entry.type);
   }
 }

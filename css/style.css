@@ -150,14 +150,12 @@ nav {
   color: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
+/* Types — couleurs dynamiques via TYPE_DEF.color (inline style set par JS) */
 .seg-btn[data-type="walk"].active    { background: var(--walk);     }
-.seg-btn[data-type="bathroom"].active{ background: var(--bathroom); }
-.seg-btn[data-action="start"].active,
-.seg-btn[data-action="end"].active,
-.seg-btn[data-action="walk_from_start"].active,
-.seg-btn[data-action="walk_from_end"].active { background: var(--accent2); color: var(--walk); }
-.seg-btn[data-action="pipi"].active  { background: #1565c0;         color: #90caf9; }
-.seg-btn[data-action="caca"].active  { background: #4e342e;         color: #ffcc80; }
+.seg-btn[data-type="pipi"].active    { background: #1565c0; color: #90caf9; }
+.seg-btn[data-type="caca"].active    { background: #4e342e; color: #ffcc80; }
+/* Fallback générique pour les futurs types — la couleur est injectée en inline */
+.seg-btn[data-type].active           { color: #fff; }
 .seg-btn[data-loc="outside"].active  { background: var(--outside);  color: #fff; }
 .seg-btn[data-loc="inside"].active   { background: var(--inside);   color: #fff; }
 

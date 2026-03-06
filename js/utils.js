@@ -31,13 +31,16 @@
 /** @typedef {BaseEntry} Entry */
 
 // ── Prédicats de type ──────────────────────────────────────────────────────
-// Source unique pour les vérifications de type : à mettre à jour ici si de
-// nouveaux types walk-like ou bathroom-like sont ajoutés.
+// Déduits de TYPE_DEF — plus aucun type n'est hardcodé ici.
 
 /** @param {BaseEntry} e @returns {boolean} */
-export const isWalk     = e => e.type === 'walk';
+export const isWalk     = e => TYPE_DEF[e.type]?.hasDuration === true;
 /** @param {BaseEntry} e @returns {boolean} */
-export const isBathroom = e => e.type === 'pipi' || e.type === 'caca';
+export const isBathroom = e => TYPE_DEF[e.type]?.category === 'need';
+/** @param {BaseEntry} e @returns {boolean} */
+export const isNeed     = e => TYPE_DEF[e.type]?.category === 'need';
+/** @param {BaseEntry} e @returns {boolean} */
+export const hasDuration = e => TYPE_DEF[e.type]?.hasDuration === true;
 
 // ── Labels de valeur pipi / caca ───────────────────────────────────────────
 
@@ -86,9 +89,12 @@ export function cacaLabel(val) {
 export function normalizeEntry(e) {
   if (!e) return null;
   if (e.type === 'walk' && e.action === 'end') return null;
-  if (e.type === 'pipi' || e.type === 'caca') return e;  // déjà BaseEntry
-  if (e.type === 'walk') {
-    return { ...e, timestamp: e.timestamp || e.start_time };
+  // Types connus dans TYPE_DEF → déjà au format BaseEntry (+ fix timestamp legacy walk)
+  if (TYPE_DEF[e.type]) {
+    if (TYPE_DEF[e.type].hasDuration && !e.timestamp && e.start_time) {
+      return { ...e, timestamp: e.start_time };
+    }
+    return e;
   }
   // Entrées legacy type:'bathroom' ET entrées sans type (type absent/null/undefined)
   if (e.type === 'bathroom' || !e.type) {
@@ -110,24 +116,32 @@ export function normalizeEntry(e) {
  * Pour ajouter un nouveau type : une seule entrée ici, aucun autre fichier à toucher.
  *
  * Champs communs :
- *   label      {string}   - Libellé affiché (historique, toast)
- *   icon       {string}   - Emoji
- *   textLabel  {fn}       - Transforme text_val → label lisible (ex: 'outside' → 'Dehors')
+ *   label          {string}   - Libellé affiché (historique, toast)
+ *   icon           {string}   - Emoji
+ *   category       {string}   - 'need' (besoin, entre dans le score propreté) | 'activity'
+ *   color          {string}   - Couleur CSS principale du type
  *
- * Champs optionnels (types avec jauge) :
- *   gauge.title    {string}         - Titre de la section jauge
- *   gauge.color    {string}         - Gradient CSS du track
- *   gauge.ends     {[string,string]}- Labels extrémités [gauche, droite]
- *   gauge.getLabel {fn}             - (val: 0-100) → label courant
- *   gauge.def      {number}         - Valeur par défaut (0-100)
+ * Champs optionnels :
+ *   hasDuration    {boolean}  - true = type avec début/fin (balade)
+ *   textOptions    {Array<{value,label,icon}>}  - Options pour text_val (dehors/dedans…)
+ *   defaultTextVal {string}   - Valeur par défaut de text_val
+ *   insideValue    {string}   - Valeur de text_val comptée comme "dedans" pour le score propreté
+ *   gauge          {object}   - Config de la jauge (titre, couleur, labels, fn, défaut)
  *
  * @type {Record<string, object>}
  */
 export const TYPE_DEF = {
   pipi: {
-    label:     'Pipi',
-    icon:      '💧',
-    textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+    label:          'Pipi',
+    icon:           '💧',
+    category:       'need',
+    color:          '#4cc9f0',
+    textOptions:    [
+      { value: 'outside', label: 'Dehors', icon: '🌿' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠' },
+    ],
+    defaultTextVal: 'outside',
+    insideValue:    'inside',
     gauge: {
       title:    'Quantité',
       color:    'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
@@ -137,9 +151,16 @@ export const TYPE_DEF = {
     },
   },
   caca: {
-    label:     'Caca',
-    icon:      '💩',
-    textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+    label:          'Caca',
+    icon:           '💩',
+    category:       'need',
+    color:          '#f77f00',
+    textOptions:    [
+      { value: 'outside', label: 'Dehors', icon: '🌿' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠' },
+    ],
+    defaultTextVal: 'outside',
+    insideValue:    'inside',
     gauge: {
       title:    'Fermeté',
       color:    'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
@@ -149,10 +170,33 @@ export const TYPE_DEF = {
     },
   },
   walk: {
-    label: 'Balade',
-    icon:  '🐾',
+    label:       'Balade',
+    icon:        '🐾',
+    category:    'activity',
+    color:       '#4cc9f0',
+    hasDuration: true,
   },
 };
+
+// ── Helpers TYPE_DEF ─────────────────────────────────────────────────────
+
+/** Types de la catégorie 'need' (besoins — entrent dans le score propreté). */
+export const needTypes     = () => Object.entries(TYPE_DEF).filter(([, d]) => d.category === 'need');
+/** Types de la catégorie 'activity' (hasDuration). */
+export const activityTypes = () => Object.entries(TYPE_DEF).filter(([, d]) => d.category === 'activity');
+/** Tous les types sous forme [key, def]. */
+export const allTypes      = () => Object.entries(TYPE_DEF);
+
+/**
+ * Retourne le label lisible d'une text_val pour un type donné.
+ * @param {string} type   Clé du type (ex: 'pipi')
+ * @param {string} value  Valeur (ex: 'outside')
+ * @returns {string}
+ */
+export function getTextLabel(type, value) {
+  const opt = TYPE_DEF[type]?.textOptions?.find(o => o.value === value);
+  return opt ? opt.label : (value || '');
+}
 
 // ── Helpers DOM ────────────────────────────────────────────────────────────
 
