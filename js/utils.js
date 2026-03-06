@@ -175,10 +175,16 @@ export const TYPE_DEF = {
     },
   },
   meal: {
-    label:    'Repas',
-    icon:     '🍽️',
-    category: 'activity',
-    color:    '#ff9800',
+    label:          'Repas',
+    icon:           '🍽️',
+    category:       'activity',
+    color:          '#ff9800',
+    textOptions:    [
+      { value: 'normal',  label: 'Normal',  icon: '😊' },
+      { value: 'rushed',  label: 'Pressé',  icon: '⚡' },
+      { value: 'stressed', label: 'Stressé', icon: '😰' },
+    ],
+    defaultTextVal: 'normal',
     gauge: {
       title: 'Quantité',
       color: 'linear-gradient(to right, rgba(255,152,0,.25), #ff9800)',
