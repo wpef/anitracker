@@ -1,5 +1,5 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v27';
+const CACHE_NAME = 'anitracker-v28';
 const ASSETS = [
   '/index.html',
   '/quick.html',

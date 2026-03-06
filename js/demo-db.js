@@ -32,7 +32,7 @@ function generateDemoData() {
   const pipi  = (d, h, m, loc, num_val = 50)  => ({ id: mkId(), type: 'pipi', text_val: loc, num_val, timestamp: at(d,h,m) });
   const caca  = (d, h, m, loc, num_val = 70)  => ({ id: mkId(), type: 'caca', text_val: loc, num_val, timestamp: at(d,h,m) });
   const cacan = (d, h, m, loc, num_val, note) => ({ ...caca(d,h,m,loc,num_val), note });
-  const meal  = (d, h, m)                     => ({ id: mkId(), type: 'meal', timestamp: at(d,h,m) });
+  const meal  = (d, h, m, num_val = 52)        => ({ id: mkId(), type: 'meal', num_val, timestamp: at(d,h,m) });
   const walk  = (d, h, m, dur) => {
     const ts  = at(d, h, m);
     const end = new Date(new Date(ts).getTime() + dur * 60000).toISOString();
@@ -40,7 +40,7 @@ function generateDemoData() {
   };
 
   // ── Aujourd'hui (jour 0) ─────────────────────────────────────────────────
-  entries.push(meal(0, 7, 0));
+  entries.push(meal(0, 7, 0, 56));
   entries.push(walk(0, 7, 50, 30));
   entries.push(pipi(0, 7, 45, 'outside', 65));
   entries.push(pipi(0, 8, 30, 'outside', 40));
@@ -50,7 +50,7 @@ function generateDemoData() {
   entries.push(pipi(0, 13, 30, 'outside', 55));
 
   // ── Hier (jour 1) ────────────────────────────────────────────────────────
-  entries.push(meal(1, 7, 0));
+  entries.push(meal(1, 7, 0, 60));
   entries.push(walk(1, 7, 30, 35));
   entries.push(pipi(1, 7, 15,  'outside', 70));
   entries.push(pipi(1, 9, 30,  'outside', 45));
@@ -58,11 +58,11 @@ function generateDemoData() {
   entries.push(caca(1, 12, 30, 'outside', 75));
   entries.push(walk(1, 17, 0,  40));
   entries.push(pipi(1, 17, 45, 'outside', 50));
-  entries.push(meal(1, 18, 30));
+  entries.push(meal(1, 18, 30, 48));
   entries.push(pipi(1, 20, 0,  'outside', 40));
 
   // ── Jour -2 ──────────────────────────────────────────────────────────────
-  entries.push(meal(2, 7, 15));
+  entries.push(meal(2, 7, 15, 52));
   entries.push(walk(2, 8, 0,   25));
   entries.push(pipi(2, 7, 50,  'outside', 65));
   entries.push(pipi(2, 10, 0,  'outside', 40));
@@ -70,11 +70,11 @@ function generateDemoData() {
   entries.push(pipi(2, 12, 45, 'inside',  30));    // accident
   entries.push(caca(2, 14, 0,  'outside', 65));
   entries.push(walk(2, 18, 30, 30));
-  entries.push(meal(2, 18, 0));
+  entries.push(meal(2, 18, 0, 44));
   entries.push(pipi(2, 19, 0,  'outside', 55));
 
   // ── Jour -3 ──────────────────────────────────────────────────────────────
-  entries.push(meal(3, 7, 0));
+  entries.push(meal(3, 7, 0, 64));
   entries.push(walk(3, 7, 45, 30));
   entries.push(pipi(3, 7, 30,  'outside', 75));
   entries.push(pipi(3, 9, 45,  'outside', 50));
@@ -82,22 +82,22 @@ function generateDemoData() {
   entries.push(cacan(3, 13, 0, 'inside',  55, 'Un peu mou'));  // accident
   entries.push(walk(3, 17, 30, 45));
   entries.push(pipi(3, 18, 0,  'outside', 60));
-  entries.push(meal(3, 18, 30));
+  entries.push(meal(3, 18, 30, 50));
   entries.push(pipi(3, 20, 30, 'outside', 35));
 
   // ── Jour -4 ──────────────────────────────────────────────────────────────
-  entries.push(meal(4, 7, 0));
+  entries.push(meal(4, 7, 0, 56));
   entries.push(walk(4, 8, 0,   30));
   entries.push(pipi(4, 7, 45,  'outside', 65));
   entries.push(pipi(4, 9, 30,  'inside',  40));    // accident
   entries.push(caca(4, 11, 0,  'outside', 85));
   entries.push(walk(4, 17, 0,  35));
   entries.push(pipi(4, 17, 30, 'outside', 55));
-  entries.push(meal(4, 18, 0));
+  entries.push(meal(4, 18, 0, 46));
   entries.push(pipi(4, 20, 0,  'outside', 45));
 
   // ── Jour -5 ──────────────────────────────────────────────────────────────
-  entries.push(meal(5, 7, 0));
+  entries.push(meal(5, 7, 0, 52));
   entries.push(walk(5, 7, 30, 40));
   entries.push(pipi(5, 7, 20,  'outside', 70));
   entries.push(pipi(5, 10, 0,  'outside', 45));
@@ -105,11 +105,11 @@ function generateDemoData() {
   entries.push(caca(5, 14, 30, 'outside', 70));
   entries.push(walk(5, 17, 0,  30));
   entries.push(pipi(5, 17, 45, 'outside', 50));
-  entries.push(meal(5, 18, 30));
+  entries.push(meal(5, 18, 30, 48));
   entries.push(pipi(5, 20, 30, 'inside',  30));    // accident
 
   // ── Jour -6 ──────────────────────────────────────────────────────────────
-  entries.push(meal(6, 7, 0));
+  entries.push(meal(6, 7, 0, 58));
   entries.push(walk(6, 8, 0,   25));
   entries.push(pipi(6, 7, 50,  'outside', 60));
   entries.push(pipi(6, 10, 15, 'inside',  40));    // accident
@@ -117,7 +117,7 @@ function generateDemoData() {
   entries.push(caca(6, 12, 0,  'outside', 60));
   entries.push(walk(6, 17, 30, 30));
   entries.push(pipi(6, 18, 0,  'outside', 55));
-  entries.push(meal(6, 18, 30));
+  entries.push(meal(6, 18, 30, 44));
 
   return entries;
 }

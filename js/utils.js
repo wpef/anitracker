@@ -179,6 +179,14 @@ export const TYPE_DEF = {
     icon:     '🍽️',
     category: 'activity',
     color:    '#ff9800',
+    gauge: {
+      title: 'Quantité',
+      color: 'linear-gradient(to right, rgba(255,152,0,.25), #ff9800)',
+      ends:  ['50g', '300g'],
+      steps: [[0, '50g'], [10, '75g'], [20, '100g'], [30, '125g'], [40, '150g'],
+              [50, '175g'], [60, '200g'], [70, '225g'], [80, '250g'], [90, '275g'], [100, '300g']],
+      def:   52,
+    },
   },
 };
 
