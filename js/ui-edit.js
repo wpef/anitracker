@@ -6,7 +6,7 @@
  * enregistrer) sont enregistrés une seule fois au chargement du module.
  */
 
-import { $, isWalk, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
+import { $, isWalk, isMeal, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
@@ -58,6 +58,11 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
       duration_min: dur,
       note:         $('edit-note').value.trim(),
     };
+  } else if (isMeal(entry)) {
+    updated = {
+      timestamp: new Date($('edit-time').value).toISOString(),
+      note:      $('edit-note').value.trim(),
+    };
   } else {
     const activeAction = body.querySelector('[data-action].active')?.dataset.action || entry.type;
     const activeLoc    = body.querySelector('[data-loc].active')?.dataset.loc       || entry.text_val;
@@ -102,7 +107,9 @@ export function openEditPage(id) {
   const body = $('edit-page-body');
   body.innerHTML = isWalk(entry)
     ? _buildWalkForm(entry)
-    : _buildBathroomForm(entry);
+    : isMeal(entry)
+      ? _buildMealForm(entry)
+      : _buildBathroomForm(entry);
 
   showPage('edit');
   _attachEditListeners(entry);
@@ -124,6 +131,19 @@ function _buildWalkForm(entry) {
       <input type="datetime-local" id="edit-walk-end" value="${endVal}" class="modal-input" />
     </div>
     <div id="edit-dur-display" class="walk-duration-display">${dur > 0 ? formatDuration(dur) : '—'}</div>
+    <div class="card">
+      <div class="card-title">📝 Note</div>
+      <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />
+    </div>`;
+}
+
+function _buildMealForm(entry) {
+  const timeVal = toLocalISO(entry.timestamp);
+  return `
+    <div class="card">
+      <div class="card-title">🕐 Date &amp; heure</div>
+      <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
+    </div>
     <div class="card">
       <div class="card-title">📝 Note</div>
       <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />

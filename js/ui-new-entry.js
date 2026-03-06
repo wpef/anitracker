@@ -149,9 +149,9 @@ export function updateActionPanel() {
   const panel      = $('action-panel');
   const actionCard = $('action-card');
 
-  if (currentType === 'walk') {
+  if (currentType === 'walk' || currentType === 'meal') {
     actionCard.style.display = 'none';
-    currentAction = 'walk';
+    currentAction = currentType;
   } else {
     actionCard.style.display = 'block';
     panel.innerHTML = buildSegment('action', [
@@ -172,6 +172,8 @@ function _updateSections() {
   setVisible('taille-section',   isBath && currentAction === 'pipi');
   setVisible('walk-section',     currentType === 'walk');
   setVisible('datetime-card',    currentType !== 'walk');
+  // Meal: set entry-time to now when switching to meal type
+  if (currentType === 'meal') $('entry-time').value = localNow();
 }
 
 function _getWalkDurationMin() {
@@ -210,6 +212,13 @@ async function _handleAdd() {
       timestamp:    new Date(startVal).toISOString(),
       end_time:     endVal ? new Date(endVal).toISOString() : null,
       duration_min: durationMin,
+      note,
+    };
+  } else if (currentType === 'meal') {
+    const timeVal = $('entry-time').value;
+    entry = {
+      type:      'meal',
+      timestamp: timeVal ? new Date(timeVal).toISOString() : new Date().toISOString(),
       note,
     };
   } else {
@@ -255,6 +264,7 @@ export function entryLabel(entry) {
     const dur = entry.duration_min ? ` (${formatDuration(entry.duration_min)})` : '';
     return `🐾 Balade${dur}`;
   }
+  if (entry.type === 'meal') return '🍽️ Repas';
   const actions = { pipi: 'Pipi', caca: 'Caca' };
   const locs    = { outside: 'dehors', inside: 'dedans' };
   let label = '🚽 ' + (actions[entry.type] || entry.type);

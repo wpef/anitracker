@@ -38,6 +38,8 @@
 export const isWalk     = e => e.type === 'walk';
 /** @param {BaseEntry} e @returns {boolean} */
 export const isBathroom = e => e.type === 'pipi' || e.type === 'caca';
+/** @param {BaseEntry} e @returns {boolean} */
+export const isMeal = e => e.type === 'meal';
 
 // ── Labels de valeur pipi / caca ───────────────────────────────────────────
 
@@ -151,6 +153,10 @@ export const TYPE_DEF = {
   walk: {
     label: 'Balade',
     icon:  '🐾',
+  },
+  meal: {
+    label: 'Repas',
+    icon:  '🍽️',
   },
 };
 

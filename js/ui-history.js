@@ -5,7 +5,7 @@
  * Un clic sur une entrée ouvre la page d'édition.
  */
 
-import { $, isWalk, formatDuration, TYPE_DEF, pipiLabel, cacaLabel } from './utils.js';
+import { $, isWalk, isMeal, formatDuration, TYPE_DEF, pipiLabel, cacaLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 
@@ -49,7 +49,7 @@ function _buildHTML(entries) {
     html += `<div class="tl-day-header">${_dayLabel(key, dayEntries[0], todayKey, yestKey)}</div>
              <div class="tl-list">`;
     for (const e of dayEntries) {
-      html += isWalk(e) ? _walkRow(e, fmt) : _bathroomRow(e, fmt);
+      html += isWalk(e) ? _walkRow(e, fmt) : isMeal(e) ? _mealRow(e, fmt) : _bathroomRow(e, fmt);
     }
     html += '</div>';
   }
@@ -90,6 +90,19 @@ function _walkRow(e, fmt) {
             <div class="tl-entry-icon">🐾</div>
             <div class="tl-entry-body">
               <div class="tl-entry-title">Balade${dur ? ' · ' + dur : ''}</div>
+              ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
+            </div>
+          </div>`;
+}
+
+function _mealRow(e, fmt) {
+  const time = fmt(e.timestamp);
+  const meta = e.note || '';
+  return `<div class="tl-entry tl-entry-meal" data-id="${e.id}">
+            <div class="tl-entry-time">${time}</div>
+            <div class="tl-entry-icon">🍽️</div>
+            <div class="tl-entry-body">
+              <div class="tl-entry-title">Repas</div>
               ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
             </div>
           </div>`;
