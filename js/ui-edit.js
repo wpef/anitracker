@@ -5,7 +5,7 @@
  * dynamiquement selon le type de l'entrée (gauge, textOptions, hasDuration).
  */
 
-import { $, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF, getTextLabel } from './utils.js';
+import { $, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF, getTextLabel, gaugeLabel } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
@@ -142,7 +142,7 @@ function _buildPointForm(entry, def) {
     const numVal = entry.num_val ?? cfg.def;
     html += `<div class="card">
       <div class="card-title">${def.icon} ${cfg.title}</div>
-      <div class="gauge-current-label" id="edit-gauge-value">${cfg.getLabel(numVal)}</div>
+      <div class="gauge-current-label" id="edit-gauge-value">${gaugeLabel(cfg.steps, numVal)}</div>
       <input type="range" id="edit-gauge" min="0" max="100" value="${numVal}" step="1" />
       <div class="gauge-ends-row">
         <span>${cfg.ends[0]}</span>

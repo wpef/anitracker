@@ -42,34 +42,28 @@ export const isNeed     = e => TYPE_DEF[e.type]?.category === 'need';
 /** @param {BaseEntry} e @returns {boolean} */
 export const hasDuration = e => TYPE_DEF[e.type]?.hasDuration === true;
 
-// ── Labels de valeur pipi / caca ───────────────────────────────────────────
+// ── Label générique de jauge ────────────────────────────────────────────────
 
 /**
- * Retourne le label textuel pour une valeur pipi (0–100).
- * @param {number} val
+ * Retourne le label textuel d'une valeur de jauge en se basant sur les
+ * paliers (steps) définis dans gauge.steps.
+ *
+ * Chaque palier est un tuple [seuil, label]. La fonction retourne le label
+ * du dernier palier dont le seuil est ≤ val.
+ *
+ * @param {Array<[number, string]>} steps  Paliers triés par seuil croissant
+ * @param {number} val                     Valeur 0–100
  * @returns {string}
  */
-export function pipiLabel(val) {
-  if (val === undefined || val === null) return 'Normal';
-  if (val < 10) return 'Gouttes';
-  if (val < 30) return 'Petit';
-  if (val < 60) return 'Normal';
-  if (val < 85) return 'Gros';
-  return 'Énorme';
-}
-
-/**
- * Retourne le label textuel pour une valeur caca (0–100).
- * @param {number} val
- * @returns {string}
- */
-export function cacaLabel(val) {
-  if (val === undefined || val === null) return 'Mou';
-  if (val < 10) return 'Liquide';
-  if (val < 30) return 'Mou';
-  if (val < 50) return 'Pateux';
-  if (val < 85) return 'Ferme';
-  return 'Solide';
+export function gaugeLabel(steps, val) {
+  if (!steps?.length) return '?';
+  if (val === undefined || val === null) return steps[0][1];
+  let label = steps[0][1];
+  for (const [threshold, lbl] of steps) {
+    if (val >= threshold) label = lbl;
+    else break;
+  }
+  return label;
 }
 
 // ── Normalisation des entrées legacy ───────────────────────────────────────
@@ -126,7 +120,8 @@ export function normalizeEntry(e) {
  *   textOptions    {Array<{value,label,icon}>}  - Options pour text_val (dehors/dedans…)
  *   defaultTextVal {string}   - Valeur par défaut de text_val
  *   insideValue    {string}   - Valeur de text_val comptée comme "dedans" pour le score propreté
- *   gauge          {object}   - Config de la jauge (titre, couleur, labels, fn, défaut)
+ *   gauge          {object}   - Config de la jauge (titre, couleur, paliers, défaut)
+ *     gauge.steps  {Array<[number,string]>}  - Paliers [seuil, label] triés croissant
  *
  * @type {Record<string, object>}
  */
@@ -143,11 +138,11 @@ export const TYPE_DEF = {
     defaultTextVal: 'outside',
     insideValue:    'inside',
     gauge: {
-      title:    'Quantité',
-      color:    'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
-      ends:     ['Gouttes', 'Énorme'],
-      getLabel: pipiLabel,
-      def:      50,
+      title: 'Quantité',
+      color: 'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
+      ends:  ['Gouttes', 'Énorme'],
+      steps: [[0, 'Gouttes'], [10, 'Petit'], [30, 'Normal'], [60, 'Gros'], [85, 'Énorme']],
+      def:   50,
     },
   },
   caca: {
@@ -162,11 +157,11 @@ export const TYPE_DEF = {
     defaultTextVal: 'outside',
     insideValue:    'inside',
     gauge: {
-      title:    'Fermeté',
-      color:    'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
-      ends:     ['Liquide', 'Solide'],
-      getLabel: cacaLabel,
-      def:      25,
+      title: 'Fermeté',
+      color: 'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
+      ends:  ['Liquide', 'Solide'],
+      steps: [[0, 'Liquide'], [10, 'Mou'], [30, 'Pateux'], [50, 'Ferme'], [85, 'Solide']],
+      def:   25,
     },
   },
   walk: {

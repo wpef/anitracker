@@ -5,7 +5,7 @@
  * définition de type. Pour ajouter un nouveau type, aucun changement ici.
  */
 
-import { $, formatDuration, TYPE_DEF, getTextLabel } from './utils.js';
+import { $, formatDuration, TYPE_DEF, getTextLabel, gaugeLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 
@@ -106,7 +106,7 @@ function _entryRow(e, fmt) {
 
   const parts = [];
   if (e.num_val !== undefined && def.gauge) {
-    parts.push(def.gauge.getLabel(e.num_val));
+    parts.push(gaugeLabel(def.gauge.steps, e.num_val));
   }
   if (e.note) parts.push(e.note);
   const meta = parts.join(' · ');

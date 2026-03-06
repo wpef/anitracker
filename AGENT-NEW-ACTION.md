@@ -19,9 +19,11 @@ Pose les questions suivantes à l'utilisateur, une par une :
 6. **Jauge (num_val)** : Cette action a-t-elle une jauge de 0 à 100 ?
    - Si oui : quel est le titre ? (ex: "Quantité", "Intensité")
    - Quels sont les labels des extrémités ? (ex: `["Peu", "Beaucoup"]`)
-   - Quels sont les paliers de labels ? (ex: à 10→"Peu", 30→"Moyen", 60→"Normal", 85→"Gros", 100→"Énorme")
+   - Quels sont les paliers ? Chaque palier = `[seuil, "label"]`, triés par seuil croissant.
+     Exemple : `[[0, "Gouttes"], [10, "Petit"], [30, "Normal"], [60, "Gros"], [85, "Énorme"]]`
+     La fonction `gaugeLabel(steps, val)` retourne le label du dernier palier ≤ val.
    - Quelle est la valeur par défaut ? (0-100)
-   - Quel gradient CSS ? (propose un par défaut)
+   - Quel gradient CSS ? (propose un par défaut cohérent avec la couleur du type)
 7. **Durée** : Cette action a-t-elle un début et une fin (comme la balade) ou est-ce un événement ponctuel ?
 
 ## Étape 2 — Résumé et confirmation
@@ -67,28 +69,20 @@ C'est le **seul fichier** à toucher. Ajouter une entrée dans `TYPE_DEF` :
   insideValue:    '[valDedans]',  // uniquement si category === 'need'
   // Si gauge :
   gauge: {
-    title:    '[Titre jauge]',
-    color:    '[gradient CSS]',
-    ends:     ['[LabelMin]', '[LabelMax]'],
-    getLabel: [nomFonction],  // fonction à créer dans utils.js
-    def:      [valeurParDefaut],
+    title: '[Titre jauge]',
+    color: '[gradient CSS]',
+    ends:  ['[LabelMin]', '[LabelMax]'],
+    steps: [[0, '[label0]'], [seuil1, '[label1]'], [seuil2, '[label2]'], ...],
+    def:   [valeurParDefaut],
   },
 },
 ```
 
-### Si jauge : créer la fonction `getLabel` dans `js/utils.js`
+Les **paliers** (`steps`) sont un tableau de tuples `[seuil, label]` triés par
+seuil croissant. La fonction générique `gaugeLabel(steps, val)` (dans `utils.js`)
+retourne le label du dernier palier dont le seuil est ≤ à la valeur.
 
-Ajouter une fonction de labellisation à côté de `pipiLabel` et `cacaLabel` :
-
-```javascript
-export function [slug]Label(val) {
-  if (val === undefined || val === null) return '[labelParDefaut]';
-  if (val < [seuil1]) return '[label1]';
-  if (val < [seuil2]) return '[label2]';
-  // ...
-  return '[labelMax]';
-}
-```
+**Aucune fonction dédiée à créer** — tout est dans les données.
 
 ### Optionnel : ajouter des données de démo dans `demo-db.js`
 
@@ -119,7 +113,7 @@ Si on veut un style de bouton spécifique dans le sélecteur de type (page "Comp
 
 | Fichier | Action | Obligatoire ? |
 |---------|--------|:---:|
-| `js/utils.js` | Ajouter l'entrée dans `TYPE_DEF` + fonction label si jauge | **Oui** |
+| `js/utils.js` | Ajouter l'entrée dans `TYPE_DEF` (paliers de jauge inclus dans `steps`) | **Oui** |
 | `js/demo-db.js` | Ajouter des données de démo | Non |
 | `css/style.css` | Style CSS spécifique pour le bouton | Non |
 
@@ -160,17 +154,7 @@ vomit: {
 ### Exemple 3 : Ajouter "Boisson" (besoin avec jauge de quantité)
 
 ```javascript
-// Fonction label
-export function drinkLabel(val) {
-  if (val === undefined || val === null) return 'Normal';
-  if (val < 15) return 'Quelques gouttes';
-  if (val < 40) return 'Un peu';
-  if (val < 65) return 'Normal';
-  if (val < 85) return 'Beaucoup';
-  return 'Énorme';
-}
-
-// Dans TYPE_DEF
+// Dans TYPE_DEF — js/utils.js
 drink: {
   label:          'Boisson',
   icon:           '💦',
@@ -182,11 +166,11 @@ drink: {
   ],
   defaultTextVal: 'bowl',
   gauge: {
-    title:    'Quantité',
-    color:    'linear-gradient(to right, rgba(3,169,244,.25), #03a9f4)',
-    ends:     ['Peu', 'Énorme'],
-    getLabel: drinkLabel,
-    def:      50,
+    title: 'Quantité',
+    color: 'linear-gradient(to right, rgba(3,169,244,.25), #03a9f4)',
+    ends:  ['Peu', 'Énorme'],
+    steps: [[0, 'Quelques gouttes'], [15, 'Un peu'], [40, 'Normal'], [65, 'Beaucoup'], [85, 'Énorme']],
+    def:   50,
   },
 },
 ```
