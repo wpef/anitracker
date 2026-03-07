@@ -179,10 +179,11 @@ export const TYPE_DEF = {
     icon:           '🍽️',
     category:       'activity',
     color:          '#ff9800',
+    textTitle:      'Appétit',
     textOptions:    [
-      { value: 'normal',  label: 'Normal',  icon: '😊' },
-      { value: 'rushed',  label: 'Pressé',  icon: '⚡' },
-      { value: 'stressed', label: 'Stressé', icon: '😰' },
+      { value: 'normal',  label: 'Normal',  icon: '😊', color: '#4caf50' },
+      { value: 'rushed',  label: 'Pressé',  icon: '⚡', color: '#ff9800' },
+      { value: 'stressed', label: 'Stressé', icon: '😰', color: '#e94560' },
     ],
     defaultTextVal: 'normal',
     gauge: {
