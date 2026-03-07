@@ -134,46 +134,6 @@ export const TYPE_DEF = {
     color:       '#4cc9f0',
     hasDuration: true,
   },
-  pipi: {
-    label:          'Pipi',
-    icon:           '💧',
-    category:       'need',
-    color:          '#4cc9f0',
-    textTitle:      'Lieu',
-    textOptions:    [
-      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
-      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
-    ],
-    defaultTextVal: 'outside',
-    insideValue:    'inside',
-    gauge: {
-      title: 'Quantité',
-      color: 'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
-      ends:  ['Gouttes', 'Énorme'],
-      steps: [[0, 'Gouttes'], [10, 'Petit'], [30, 'Normal'], [60, 'Gros'], [85, 'Énorme']],
-      def:   50,
-    },
-  },
-  caca: {
-    label:          'Caca',
-    icon:           '💩',
-    category:       'need',
-    color:          '#f77f00',
-    textTitle:      'Lieu',
-    textOptions:    [
-      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
-      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
-    ],
-    defaultTextVal: 'outside',
-    insideValue:    'inside',
-    gauge: {
-      title: 'Fermeté',
-      color: 'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
-      ends:  ['Liquide', 'Solide'],
-      steps: [[0, 'Liquide'], [10, 'Mou'], [30, 'Pateux'], [50, 'Ferme'], [85, 'Solide']],
-      def:   25,
-    },
-  },
   occupation: {
     label:          'Occupation',
     icon:           '🧩',
@@ -215,6 +175,46 @@ export const TYPE_DEF = {
       steps: [[0, '50g'], [10, '75g'], [20, '100g'], [30, '125g'], [40, '150g'],
               [50, '175g'], [60, '200g'], [70, '225g'], [80, '250g'], [90, '275g'], [100, '300g']],
       def:   52,
+    },
+  },
+  pipi: {
+    label:          'Pipi',
+    icon:           '💧',
+    category:       'need',
+    color:          '#4cc9f0',
+    textTitle:      'Lieu',
+    textOptions:    [
+      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
+    ],
+    defaultTextVal: 'outside',
+    insideValue:    'inside',
+    gauge: {
+      title: 'Quantité',
+      color: 'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
+      ends:  ['Gouttes', 'Énorme'],
+      steps: [[0, 'Gouttes'], [10, 'Petit'], [30, 'Normal'], [60, 'Gros'], [85, 'Énorme']],
+      def:   50,
+    },
+  },
+  caca: {
+    label:          'Caca',
+    icon:           '💩',
+    category:       'need',
+    color:          '#f77f00',
+    textTitle:      'Lieu',
+    textOptions:    [
+      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
+    ],
+    defaultTextVal: 'outside',
+    insideValue:    'inside',
+    gauge: {
+      title: 'Fermeté',
+      color: 'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
+      ends:  ['Liquide', 'Solide'],
+      steps: [[0, 'Liquide'], [10, 'Mou'], [30, 'Pateux'], [50, 'Ferme'], [85, 'Solide']],
+      def:   25,
     },
   },
 };
@@ -347,4 +347,23 @@ export function toLocalISO(date) {
 /** Retourne l'heure locale courante au format datetime-local. */
 export function localNow() {
   return toLocalISO(new Date());
+}
+
+/**
+ * Formate un datetime-local en texte lisible style moment.js.
+ * "Aujourd'hui 14:30", "Hier 09:15", "lun. 3 mars 14:30"
+ */
+export function formatDateTimeFriendly(isoOrLocal) {
+  if (!isoOrLocal) return '';
+  const d     = new Date(isoOrLocal);
+  const now   = new Date();
+  const time  = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yest  = new Date(today); yest.setDate(yest.getDate() - 1);
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  if (target.getTime() === today.getTime()) return `Aujourd'hui ${time}`;
+  if (target.getTime() === yest.getTime())  return `Hier ${time}`;
+  const dayStr = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `${dayStr} ${time}`;
 }

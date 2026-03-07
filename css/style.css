@@ -452,14 +452,21 @@ nav {
   box-shadow: 0 0 0 3px rgba(76,201,240,.12);
 }
 .datetime-row label { font-size: 1rem; flex-shrink: 0; }
+.datetime-friendly {
+  flex: 1;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
 .datetime-row input[type="datetime-local"] {
   background: transparent;
   border: none;
-  color: var(--text);
-  font-size: .95rem;
-  font-weight: 600;
+  color: var(--text2);
+  font-size: .75rem;
   font-family: inherit;
-  flex: 1;
+  width: auto;
+  flex: 0 0 auto;
   cursor: pointer;
   outline: none;
   color-scheme: dark;
@@ -985,28 +992,21 @@ nav {
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 100%;
-  justify-content: center;
 }
 
-/* Action slider (horizontal scroll) */
-.qp-action-scroll {
+/* Action row & text row — horizontal scroll, square buttons, fill height */
+.qp-action-scroll,
+.qp-text-grid {
   display: flex;
   gap: 10px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  flex-shrink: 0;
-  padding-bottom: 2px;
+  flex: 1;
+  min-height: 0;
 }
-.qp-action-scroll::-webkit-scrollbar { display: none; }
-
-/* Text options grid */
-.qp-text-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  flex-shrink: 0;
-}
+.qp-action-scroll::-webkit-scrollbar,
+.qp-text-grid::-webkit-scrollbar { display: none; }
 
 .btn-toggle {
   border: 2px solid transparent;
@@ -1023,8 +1023,10 @@ nav {
   gap: 6px;
   transition: background .15s, color .15s, transform .1s;
   -webkit-tap-highlight-color: transparent;
-  padding: 16px 20px;
-  min-width: 100px;
+  padding: 10px;
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  height: 100%;
 }
 .btn-toggle .qp-emoji { font-size: clamp(1.4rem, 6vw, 2rem); }
 .btn-toggle:active { transform: scale(.96); }

@@ -7,7 +7,8 @@
  */
 
 import { $, setActive, setVisible, buildSegment, toLocalISO, localNow,
-         formatDuration, formatWalkTime, TYPE_DEF, allTypes, getTextLabel } from './utils.js';
+         formatDuration, formatWalkTime, formatDateTimeFriendly,
+         TYPE_DEF, allTypes, getTextLabel } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
@@ -60,11 +61,13 @@ export function initNewEntry() {
     t.setSeconds(0, 0);
     $('entry-time').value = toLocalISO(t);
     sessionStorage.setItem('lastEntryTime', $('entry-time').value);
+    _updateFriendlyDate();
   });
 
   // Persistance du temps saisi en session
   $('entry-time').addEventListener('change', () => {
     sessionStorage.setItem('lastEntryTime', $('entry-time').value);
+    _updateFriendlyDate();
   });
   $('walk-start').addEventListener('change', () => {
     sessionStorage.setItem('lastWalkStart', $('walk-start').value);
@@ -189,10 +192,16 @@ function _applyTextOptionColors(def) {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function _updateFriendlyDate() {
+  const el = $('entry-time-friendly');
+  if (el) el.textContent = formatDateTimeFriendly($('entry-time').value);
+}
+
 function _resetDefaults() {
   const firstType = allTypes()[0]?.[0] || 'walk';
   _selectType(firstType);
   $('entry-time').value = localNow();
+  _updateFriendlyDate();
   $('walk-start').value = localNow();
   $('walk-end').value   = '';
   $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
