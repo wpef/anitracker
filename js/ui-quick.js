@@ -77,8 +77,8 @@ function _highlightTextButton() {
   textRow.querySelectorAll('[data-qp-text]').forEach(btn => {
     const val = btn.dataset.qpText;
     if (val === currentTextVal) {
-      const isInside = def?.insideValue && val === def.insideValue;
-      const color = isInside ? '#e94560' : '#4caf50';
+      const opt = def?.textOptions?.find(o => o.value === val);
+      const color = opt?.color || '#4caf50';
       btn.style.borderColor = color;
       btn.style.color       = color;
       btn.style.background  = _alpha(color, 0.18);

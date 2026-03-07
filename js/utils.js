@@ -117,7 +117,8 @@ export function normalizeEntry(e) {
  *
  * Champs optionnels :
  *   hasDuration    {boolean}  - true = type avec début/fin (balade)
- *   textOptions    {Array<{value,label,icon}>}  - Options pour text_val (dehors/dedans…)
+ *   textTitle      {string}   - Titre de la section text_val ("Lieu", "Appétit"…)
+ *   textOptions    {Array<{value,label,icon,color}>} - Options pour text_val
  *   defaultTextVal {string}   - Valeur par défaut de text_val
  *   insideValue    {string}   - Valeur de text_val comptée comme "dedans" pour le score propreté
  *   gauge          {object}   - Config de la jauge (titre, couleur, paliers, défaut)
@@ -131,9 +132,10 @@ export const TYPE_DEF = {
     icon:           '💧',
     category:       'need',
     color:          '#4cc9f0',
+    textTitle:      'Lieu',
     textOptions:    [
-      { value: 'outside', label: 'Dehors', icon: '🌿' },
-      { value: 'inside',  label: 'Dedans', icon: '🏠' },
+      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
     ],
     defaultTextVal: 'outside',
     insideValue:    'inside',
@@ -150,9 +152,10 @@ export const TYPE_DEF = {
     icon:           '💩',
     category:       'need',
     color:          '#f77f00',
+    textTitle:      'Lieu',
     textOptions:    [
-      { value: 'outside', label: 'Dehors', icon: '🌿' },
-      { value: 'inside',  label: 'Dedans', icon: '🏠' },
+      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
     ],
     defaultTextVal: 'outside',
     insideValue:    'inside',

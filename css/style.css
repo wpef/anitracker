@@ -156,8 +156,7 @@ nav {
 .seg-btn[data-type="caca"].active    { background: #4e342e; color: #ffcc80; }
 /* Fallback générique pour les futurs types — la couleur est injectée en inline */
 .seg-btn[data-type].active           { color: #fff; }
-.seg-btn[data-loc="outside"].active  { background: var(--outside);  color: #fff; }
-.seg-btn[data-loc="inside"].active   { background: var(--inside);   color: #fff; }
+/* Text option colors (data-loc) are set inline by JS from TYPE_DEF textOptions[].color */
 
 /* ===== Submit Button ===== */
 .btn-submit {

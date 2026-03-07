@@ -42,6 +42,7 @@ export function initNewEntry() {
     if (!btn) return;
     currentTextVal = btn.dataset.loc;
     setActive('loc', currentTextVal);
+    _applyTextOptionColors(TYPE_DEF[currentType]);
   });
 
   // Raccourcis temporels
@@ -149,11 +150,13 @@ function _selectType(type) {
   // Options textuelles (lieu, etc.)
   if (def.textOptions && def.textOptions.length > 0) {
     setVisible('text-options-section', true);
+    $('text-options-title').textContent = def.textTitle || 'Options';
     currentTextVal = def.defaultTextVal || def.textOptions[0].value;
     $('text-options-panel').innerHTML = buildSegment('loc',
       def.textOptions.map(o => ({ value: o.value, label: (o.icon || '') + ' ' + o.label })),
       currentTextVal
     );
+    _applyTextOptionColors(def);
   } else {
     setVisible('text-options-section', false);
     currentTextVal = null;
@@ -162,6 +165,23 @@ function _selectType(type) {
   // Sections durée vs datetime ponctuel
   setVisible('walk-section',  !!def.hasDuration);
   setVisible('datetime-card', !def.hasDuration);
+}
+
+// ── Couleurs dynamiques des options textuelles ──────────────────────────────
+
+function _applyTextOptionColors(def) {
+  if (!def?.textOptions?.length) return;
+  $('text-options-panel').querySelectorAll('[data-loc]').forEach(btn => {
+    const opt = def.textOptions.find(o => o.value === btn.dataset.loc);
+    const isActive = btn.classList.contains('active');
+    if (isActive && opt?.color) {
+      btn.style.backgroundColor = opt.color;
+      btn.style.color = '#fff';
+    } else {
+      btn.style.backgroundColor = '';
+      btn.style.color = '';
+    }
+  });
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────

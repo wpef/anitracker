@@ -44,9 +44,10 @@ TYPE_DEF = {
     hasDuration: boolean,  // true → start/end time UI, duration tracking
 
     // --- Optional: text selector (location, category…) ---
+    textTitle:   string,                     // Section heading ("Lieu", "Humeur")
     textOptions: [
-      { value: string, label: string, icon?: string }
-    ],
+      { value: string, label: string, icon?: string, color?: string }
+    ],                                       // color = CSS hex shown when button is active
     defaultTextVal: string,
     insideValue:    string,  // Which text_val counts as "inside" for cleanliness score
                              // (only meaningful when category === 'need')
@@ -201,8 +202,8 @@ inline by JS from `TYPE_DEF[type].color`. Specific CSS overrides exist for
 `walk`, `pipi`, `caca` but a generic fallback (`[data-type].active`) works
 for any future type.
 
-Location buttons (`[data-loc]`) use CSS classes:
-`.seg-btn[data-loc="outside"].active` → green, `.seg-btn[data-loc="inside"].active` → red.
+Location buttons (`[data-loc]`) get their active color set inline by JS from
+`TYPE_DEF[type].textOptions[].color`. No hardcoded CSS rules needed.
 
 ---
 

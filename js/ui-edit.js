@@ -128,7 +128,7 @@ function _buildPointForm(entry, def) {
   // Options textuelles (lieu, etc.)
   if (def?.textOptions?.length) {
     html += `<div class="card">
-      <div class="card-title">Lieu</div>
+      <div class="card-title">${def.textTitle || 'Options'}</div>
       ${buildSegment('loc',
         def.textOptions.map(o => ({ value: o.value, label: (o.icon || '') + ' ' + o.label })),
         entry.text_val
@@ -166,6 +166,23 @@ function _buildPointForm(entry, def) {
   return html;
 }
 
+// ── Couleurs dynamiques des options textuelles ──────────────────────────────
+
+function _applyEditTextColors(container, def) {
+  if (!def?.textOptions?.length) return;
+  container.querySelectorAll('[data-loc]').forEach(btn => {
+    const opt = def.textOptions.find(o => o.value === btn.dataset.loc);
+    const isActive = btn.classList.contains('active');
+    if (isActive && opt?.color) {
+      btn.style.backgroundColor = opt.color;
+      btn.style.color = '#fff';
+    } else {
+      btn.style.backgroundColor = '';
+      btn.style.color = '';
+    }
+  });
+}
+
 // ── Listeners dynamiques (recréés à chaque ouverture) ─────────────────────
 
 function _attachEditListeners(entry, def) {
@@ -187,8 +204,11 @@ function _attachEditListeners(entry, def) {
       if (lBtn) {
         body.querySelectorAll('[data-loc]').forEach(b => b.classList.remove('active'));
         lBtn.classList.add('active');
+        _applyEditTextColors(body, def);
       }
     });
+    // Apply initial colors
+    _applyEditTextColors(body, def);
     // Jauge
     if ($('edit-gauge')) initGauge($('edit-gauge'), $('edit-gauge-value'), entry.type);
   }

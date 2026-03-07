@@ -13,7 +13,9 @@ Pose les questions suivantes à l'utilisateur, une par une :
 3. **Catégorie** : Est-ce un **besoin** (entre dans le score propreté, comme pipi/caca) ou une **activité** (comme la balade) ?
 4. **Couleur** : Quelle couleur CSS principale ? (ex: `#ff9800`, `#8bc34a`) — propose une couleur par défaut cohérente avec l'icône.
 5. **Options textuelles (text_val)** : Cette action a-t-elle des options de lieu ou de catégorie ?
-   - Si oui : quelles sont les options ? (ex: `dehors/dedans`, `sec/humide`)
+   - Si oui : quel est le **titre de la section** ? (ex: `Lieu`, `Humeur`, `Appétit`)
+   - Quelles sont les options ? (ex: `dehors/dedans`, `sec/humide`)
+   - Quelle **couleur** pour chaque option ? (affichée quand le bouton est actif, ex: `#4caf50` vert pour dehors, `#e94560` rouge pour dedans)
    - Quelle est la valeur par défaut ?
    - Si c'est un besoin : quelle valeur compte comme "dedans" pour le score propreté ?
 6. **Jauge (num_val)** : Cette action a-t-elle une jauge de 0 à 100 ?
@@ -37,7 +39,7 @@ Affiche un résumé structuré de la nouvelle action :
 │ Clé type     : [slug]                   │
 │ Catégorie    : need / activity          │
 │ Couleur      : [#hex]                   │
-│ Options text : [oui/non] → [liste]      │
+│ Options text : [oui/non] → [titre] [liste] │
 │ Jauge        : [oui/non] → [titre]      │
 │ Durée        : [oui/non]                │
 └─────────────────────────────────────────┘
@@ -61,9 +63,10 @@ C'est le **seul fichier** à toucher. Ajouter une entrée dans `TYPE_DEF` :
   // Si hasDuration :
   hasDuration:    true,
   // Si textOptions :
+  textTitle:      '[Titre section]',  // ex: 'Lieu', 'Humeur'
   textOptions:    [
-    { value: '[val1]', label: '[Label1]', icon: '[emoji1]' },
-    { value: '[val2]', label: '[Label2]', icon: '[emoji2]' },
+    { value: '[val1]', label: '[Label1]', icon: '[emoji1]', color: '[#hex1]' },
+    { value: '[val2]', label: '[Label2]', icon: '[emoji2]', color: '[#hex2]' },
   ],
   defaultTextVal: '[val1]',
   insideValue:    '[valDedans]',  // uniquement si category === 'need'
@@ -142,9 +145,10 @@ vomit: {
   icon:           '🤮',
   category:       'need',
   color:          '#9c27b0',
+  textTitle:      'Lieu',
   textOptions:    [
-    { value: 'outside', label: 'Dehors', icon: '🌿' },
-    { value: 'inside',  label: 'Dedans', icon: '🏠' },
+    { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+    { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
   ],
   defaultTextVal: 'outside',
   insideValue:    'inside',
@@ -160,9 +164,10 @@ drink: {
   icon:           '💦',
   category:       'need',
   color:          '#03a9f4',
+  textTitle:      'Source',
   textOptions:    [
-    { value: 'bowl',    label: 'Gamelle', icon: '🥣' },
-    { value: 'outside', label: 'Dehors',  icon: '🌿' },
+    { value: 'bowl',    label: 'Gamelle', icon: '🥣', color: '#03a9f4' },
+    { value: 'outside', label: 'Dehors',  icon: '🌿', color: '#4caf50' },
   ],
   defaultTextVal: 'bowl',
   gauge: {
