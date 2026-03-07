@@ -174,6 +174,28 @@ export const TYPE_DEF = {
     color:       '#4cc9f0',
     hasDuration: true,
   },
+  occupation: {
+    label:          'Occupation',
+    icon:           '🧩',
+    category:       'activity',
+    color:          '#ab47bc',
+    hasDuration:    true,
+    textTitle:      'Activité',
+    textOptions:    [
+      { value: 'training',  label: 'Entraînement', icon: '☝️', color: '#2196f3' },
+      { value: 'play',      label: 'Jeu',          icon: '🎾', color: '#ab47bc' },
+      { value: 'chew',      label: 'Machouille',   icon: '🦴', color: '#ff9800' },
+      { value: 'alone',     label: 'Solitude',     icon: '🧸', color: '#78909c' },
+    ],
+    defaultTextVal: 'training',
+    gauge: {
+      title: 'Intensité',
+      color: 'linear-gradient(to right, rgba(171,71,188,.2), #ab47bc)',
+      ends:  ['Calme', 'Intense'],
+      steps: [[0, 'Calme'], [15, 'Léger'], [35, 'Modéré'], [60, 'Soutenu'], [85, 'Intense']],
+      def:   50,
+    },
+  },
   meal: {
     label:          'Repas',
     icon:           '🍽️',
