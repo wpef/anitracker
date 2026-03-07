@@ -127,6 +127,13 @@ export function normalizeEntry(e) {
  * @type {Record<string, object>}
  */
 export const TYPE_DEF = {
+  walk: {
+    label:       'Balade',
+    icon:        '🐾',
+    category:    'activity',
+    color:       '#4cc9f0',
+    hasDuration: true,
+  },
   pipi: {
     label:          'Pipi',
     icon:           '💧',
@@ -166,13 +173,6 @@ export const TYPE_DEF = {
       steps: [[0, 'Liquide'], [10, 'Mou'], [30, 'Pateux'], [50, 'Ferme'], [85, 'Solide']],
       def:   25,
     },
-  },
-  walk: {
-    label:       'Balade',
-    icon:        '🐾',
-    category:    'activity',
-    color:       '#4cc9f0',
-    hasDuration: true,
   },
 };
 

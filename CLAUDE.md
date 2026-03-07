@@ -71,7 +71,8 @@ Components documented (in order):
 | Datetime card | `.datetime-row .time-shortcuts` | Date picker + time shortcuts |
 | Note field | `#entry-note` | Free-text input |
 | Submit buttons | `.btn-submit .qp-save-btn` | Primary action + success/disabled states |
-| Quick toggles | `.btn-toggle` | Large touch buttons (quick page) |
+| Quick action slider | `.qp-action-scroll .btn-toggle` | Horizontal slider of non-duration types |
+| Quick text grid | `.qp-text-grid .btn-toggle` | Grid of textOptions for selected action |
 | Quick gauge | `.qp-gauge-section` | Compact gauge variant |
 | Time scrubber | `#qp-time-gauge` | "X minutes ago" slider |
 | Quick stats | `.quick-stats .qs-item` | 3 summary badges |

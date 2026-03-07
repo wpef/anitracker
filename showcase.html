@@ -197,15 +197,15 @@
   <!-- ========================================= -->
   <div class="showcase-section">
     <div class="showcase-label">Sélecteur type <code>.segment .seg-btn</code></div>
-    <div class="showcase-note">Boutons segmentés pour choisir le type d'entrée. Couleur active définie par TYPE_DEF.</div>
+    <div class="showcase-note">Boutons segmentés scrollables (.seg-scroll) pour choisir le type. Ordre : Balade → Pipi → Caca.</div>
   </div>
   <div style="padding:0 16px">
     <div class="card">
       <div class="card-title">Type d'événement</div>
-      <div class="segment" id="type-selector">
-        <button class="seg-btn active" data-type="pipi" style="background:#1565c0;color:#90caf9">💧 Pipi</button>
+      <div class="segment seg-scroll" id="type-selector">
+        <button class="seg-btn active" data-type="walk" style="background:var(--walk);color:#fff">🐾 Balade</button>
+        <button class="seg-btn" data-type="pipi">💧 Pipi</button>
         <button class="seg-btn" data-type="caca">💩 Caca</button>
-        <button class="seg-btn" data-type="walk">🐾 Balade</button>
       </div>
     </div>
   </div>
@@ -351,29 +351,37 @@
   </div>
 
   <!-- ========================================= -->
-  <!--  QUICK PAGE — TOGGLE BUTTONS               -->
+  <!--  QUICK PAGE — ACTION SLIDER                -->
   <!-- ========================================= -->
   <div class="showcase-section">
-    <div class="showcase-label">Boutons rapides <code>.btn-toggle</code></div>
-    <div class="showcase-note">Gros boutons du mode rapide (page ⚡). Générés depuis TYPE_DEF needTypes.</div>
+    <div class="showcase-label">Actions rapides <code>.qp-action-scroll</code></div>
+    <div class="showcase-note">Slider horizontal des types sans durée. Scroll pour voir tous les boutons.</div>
   </div>
   <div style="padding:0 16px">
-    <!-- Action row -->
-    <div style="display:flex;gap:10px;height:90px;margin-bottom:10px;">
-      <button class="btn-toggle active-pipi">
-        <span class="qp-emoji">💧</span>Pipi
+    <div class="qp-action-scroll">
+      <button class="btn-toggle" style="border-color:#4cc9f0;color:#4cc9f0;background:rgba(76,201,240,.18)">
+        <span class="qp-emoji">💧</span>PIPI
       </button>
       <button class="btn-toggle">
-        <span class="qp-emoji">💩</span>Caca
+        <span class="qp-emoji">💩</span>CACA
       </button>
     </div>
-    <!-- Text row -->
-    <div style="display:flex;gap:10px;height:90px;">
-      <button class="btn-toggle active-dehors">
-        <span class="qp-emoji">🌿</span>Dehors
+  </div>
+
+  <!-- ========================================= -->
+  <!--  QUICK PAGE — TEXT GRID                    -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Options rapides <code>.qp-text-grid</code></div>
+    <div class="showcase-note">Grille des textOptions du type sélectionné. Se met à jour quand on change d'action.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="qp-text-grid">
+      <button class="btn-toggle" style="border-color:#4caf50;color:#4caf50;background:rgba(76,175,80,.18)">
+        <span class="qp-emoji">🌿</span>DEHORS
       </button>
       <button class="btn-toggle">
-        <span class="qp-emoji">🏠</span>Dedans
+        <span class="qp-emoji">🏠</span>DEDANS
       </button>
     </div>
   </div>

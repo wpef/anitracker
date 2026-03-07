@@ -130,11 +130,20 @@ nav {
   padding: 4px;
   gap: 4px;
 }
+/* Scrollable variant for rows that may overflow */
+.seg-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;          /* Firefox */
+  flex-wrap: nowrap;
+}
+.seg-scroll::-webkit-scrollbar { display: none; }
 .seg-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: 90px;
   border: none;
   border-radius: 9px;
-  padding: 10px 8px;
+  padding: 10px 12px;
   font-size: .85rem;
   font-weight: 600;
   cursor: pointer;
@@ -145,6 +154,7 @@ nav {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  white-space: nowrap;
 }
 .seg-btn.active {
   color: #fff;
@@ -342,9 +352,13 @@ nav {
 .time-shortcuts {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   margin-top: 10px;
 }
+.time-shortcuts::-webkit-scrollbar { display: none; }
 .time-shortcut-btn {
   border: 1px solid rgba(255,255,255,.12);
   background: var(--bg);
@@ -367,9 +381,13 @@ nav {
 .duration-presets {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-bottom: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.duration-presets::-webkit-scrollbar { display: none; }
 .dur-btn {
   border: 1px solid rgba(255,255,255,.12);
   background: var(--bg);
@@ -957,23 +975,36 @@ nav {
 #page-quick {
   padding: 12px 12px calc(12px + 64px + env(safe-area-inset-bottom, 0px));
   gap: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
-.quick-row {
+/* Action slider (horizontal scroll) */
+.qp-action-scroll {
   display: flex;
   gap: 10px;
-  flex: 1;
-  min-height: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  padding-bottom: 2px;
+}
+.qp-action-scroll::-webkit-scrollbar { display: none; }
+
+/* Text options grid */
+.qp-text-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .btn-toggle {
-  flex: 1;
   border: 2px solid transparent;
   border-radius: 18px;
   background: var(--surface);
   color: var(--text2);
-  font-size: clamp(1.2rem, 5vw, 1.7rem);
+  font-size: clamp(1rem, 4vw, 1.3rem);
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -983,9 +1014,12 @@ nav {
   gap: 6px;
   transition: background .15s, color .15s, transform .1s;
   -webkit-tap-highlight-color: transparent;
+  padding: 16px 20px;
+  min-width: 100px;
 }
-.btn-toggle .qp-emoji { font-size: clamp(1.8rem, 8vw, 2.6rem); }
+.btn-toggle .qp-emoji { font-size: clamp(1.4rem, 6vw, 2rem); }
 .btn-toggle:active { transform: scale(.96); }
+/* Legacy active classes kept for fallback */
 .btn-toggle.active-pipi   { background: rgba(76,201,240,.18); border-color: var(--walk);    color: var(--walk);    }
 .btn-toggle.active-caca   { background: rgba(247,127,0,.18);  border-color: #f77f00;         color: #f77f00;        }
 .btn-toggle.active-dehors { background: rgba(76,175,80,.18);  border-color: var(--outside);  color: var(--outside); }

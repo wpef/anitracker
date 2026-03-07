@@ -125,7 +125,13 @@ function _buildPointForm(entry, def) {
   const timeVal = toLocalISO(entry.timestamp);
   let html = '';
 
-  // Options textuelles (lieu, etc.)
+  // 1. Date & heure
+  html += `<div class="card">
+    <div class="card-title">🕐 Date &amp; heure</div>
+    <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
+  </div>`;
+
+  // 2. Options textuelles (lieu, etc.)
   if (def?.textOptions?.length) {
     html += `<div class="card">
       <div class="card-title">${def.textTitle || 'Options'}</div>
@@ -136,7 +142,7 @@ function _buildPointForm(entry, def) {
     </div>`;
   }
 
-  // Jauge
+  // 3. Jauge
   if (def?.gauge) {
     const cfg    = def.gauge;
     const numVal = entry.num_val ?? cfg.def;
@@ -151,13 +157,7 @@ function _buildPointForm(entry, def) {
     </div>`;
   }
 
-  // Date & heure
-  html += `<div class="card">
-    <div class="card-title">🕐 Date &amp; heure</div>
-    <input type="datetime-local" id="edit-time" value="${timeVal}" class="modal-input" />
-  </div>`;
-
-  // Note
+  // 4. Note
   html += `<div class="card">
     <div class="card-title">📝 Note</div>
     <input type="text" id="edit-note" value="${entry.note || ''}" class="modal-input" placeholder="Note…" />

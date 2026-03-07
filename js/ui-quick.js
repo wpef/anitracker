@@ -1,12 +1,12 @@
 /**
  * ui-quick.js – Page "Rapide" intégrée dans l'app principale.
  *
- * Entièrement piloté par TYPE_DEF : les boutons d'action, les options
- * textuelles et la jauge sont générés dynamiquement depuis needTypes().
+ * Entièrement piloté par TYPE_DEF : les boutons d'action (types sans durée),
+ * les options textuelles et la jauge sont générés dynamiquement.
  */
 
 import { initGauge } from './ui-gauge.js';
-import { TYPE_DEF, needTypes } from './utils.js';
+import { TYPE_DEF, allTypes } from './utils.js';
 import { db } from './db-context.js';
 
 // ── État local ──────────────────────────────────────────────────────────────
@@ -29,10 +29,15 @@ const btnSave      = document.getElementById('qp-save');
 // ── Composant jauge ─────────────────────────────────────────────────────────
 const gauge = initGauge(gaugeInput, gaugeValEl, 'pipi');
 
+// ── Types éligibles à la page rapide (sans durée) ──────────────────────────
+function quickTypes() {
+  return allTypes().filter(([, def]) => !def.hasDuration);
+}
+
 // ── Génération dynamique des boutons ────────────────────────────────────────
 
 function _buildActionButtons() {
-  const types = needTypes();
+  const types = quickTypes();
   actionRow.innerHTML = types.map(([key, def]) =>
     `<button class="btn-toggle" data-qp-action="${key}">
       <span class="qp-emoji">${def.icon}</span>${def.label.toUpperCase()}
@@ -123,7 +128,7 @@ function setupGauge() {
 
 // ── Reset après enregistrement ──────────────────────────────────────────────
 function reset() {
-  const types = needTypes();
+  const types = quickTypes();
   currentAction = types[0]?.[0] || 'pipi';
   const def = TYPE_DEF[currentAction];
   currentTextVal = def?.defaultTextVal || def?.textOptions?.[0]?.value || null;
@@ -192,7 +197,7 @@ btnSave.addEventListener('click', async () => {
 // ── Export ───────────────────────────────────────────────────────────────────
 export function initQuick() {
   _buildActionButtons();
-  const types = needTypes();
+  const types = quickTypes();
   currentAction = types[0]?.[0] || 'pipi';
   _highlightActionButton();
   _buildTextButtons();
