@@ -987,9 +987,7 @@ nav {
 #page-quick {
   padding: 12px 12px calc(12px + 64px + env(safe-area-inset-bottom, 0px));
   gap: 10px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-height: 100%;
+  overflow: hidden;
 }
 
 /* Action row & text row — horizontal scroll, square buttons, fill height */
@@ -1076,10 +1074,8 @@ nav {
 
 .qp-save-btn {
   flex: 0 0 auto;
-  position: sticky;
-  bottom: 0;
   width: 100%;
-  height: clamp(52px, 10dvh, 68px);
+  height: clamp(48px, 8dvh, 60px);
   border: none;
   border-radius: 18px;
   background: var(--accent);
@@ -1088,7 +1084,6 @@ nav {
   font-weight: 700;
   cursor: pointer;
   transition: background .15s, transform .1s;
-  z-index: 10;
 }
 .qp-save-btn:active    { transform: scale(.97); }
 .qp-save-btn.success   { background: var(--outside); }
