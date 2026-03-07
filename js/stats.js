@@ -43,8 +43,9 @@ export function getStats(entries) {
 
   // ── Fenêtre "du jour" : depuis 7h ────────────────────────────────────────
   const todayFrom = new Date(now);
-  if (now.getHours() < 7) todayFrom.setDate(todayFrom.getDate() - 1);
-  todayFrom.setHours(7, 0, 0, 0);
+  if (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30))
+    todayFrom.setDate(todayFrom.getDate() - 1);
+  todayFrom.setHours(5, 30, 0, 0);
   const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayFrom);
 
   // Compteurs du jour par type de besoin
@@ -92,7 +93,7 @@ export function getStats(entries) {
   for (let i = 6; i >= 0; i--) {
     const dayStart = new Date(now);
     dayStart.setDate(dayStart.getDate() - i);
-    dayStart.setHours(7, 0, 0, 0);
+    dayStart.setHours(5, 30, 0, 0);
     const dayEnd = new Date(dayStart);
     dayEnd.setDate(dayEnd.getDate() + 1);
 
