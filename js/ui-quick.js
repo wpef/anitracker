@@ -31,7 +31,9 @@ const gauge = initGauge(gaugeInput, gaugeValEl, 'pipi');
 
 // ── Types éligibles à la page rapide (sans durée) ──────────────────────────
 function quickTypes() {
-  return allTypes().filter(([, def]) => !def.hasDuration);
+  const types = allTypes().filter(([, def]) => !def.hasDuration);
+  // Needs (pipi, caca) first, then activities
+  return types.sort((a, b) => (a[1].category === 'need' ? 0 : 1) - (b[1].category === 'need' ? 0 : 1));
 }
 
 // ── Génération dynamique des boutons ────────────────────────────────────────
