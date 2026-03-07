@@ -33,6 +33,11 @@ function generateDemoData() {
   const caca  = (d, h, m, loc, num_val = 70)  => ({ id: mkId(), type: 'caca', text_val: loc, num_val, timestamp: at(d,h,m) });
   const cacan = (d, h, m, loc, num_val, note) => ({ ...caca(d,h,m,loc,num_val), note });
   const meal  = (d, h, m, num_val = 52, tv = 'normal') => ({ id: mkId(), type: 'meal', text_val: tv, num_val, timestamp: at(d,h,m) });
+  const occup = (d, h, m, dur, tv = 'training', num_val = 50) => {
+    const ts  = at(d, h, m);
+    const end = new Date(new Date(ts).getTime() + dur * 60000).toISOString();
+    return { id: mkId(), type: 'occupation', text_val: tv, num_val, timestamp: ts, end_time: end, duration_min: dur };
+  };
   const walk  = (d, h, m, dur) => {
     const ts  = at(d, h, m);
     const end = new Date(new Date(ts).getTime() + dur * 60000).toISOString();
@@ -48,6 +53,8 @@ function generateDemoData() {
   entries.push(caca(0, 11, 0,  'outside', 80));
   entries.push(walk(0, 12, 0,  20));
   entries.push(pipi(0, 13, 30, 'outside', 55));
+  entries.push(occup(0, 9, 0, 15, 'training', 65));
+  entries.push(occup(0, 14, 0, 10, 'chew', 30));
 
   // ── Hier (jour 1) ────────────────────────────────────────────────────────
   entries.push(meal(1, 7, 0, 60));
@@ -60,6 +67,8 @@ function generateDemoData() {
   entries.push(pipi(1, 17, 45, 'outside', 50));
   entries.push(meal(1, 18, 30, 48));
   entries.push(pipi(1, 20, 0,  'outside', 40));
+  entries.push(occup(1, 10, 0, 20, 'play', 75));
+  entries.push(occup(1, 15, 0, 30, 'alone', 20));
 
   // ── Jour -2 ──────────────────────────────────────────────────────────────
   entries.push(meal(2, 7, 15, 52));
@@ -72,6 +81,7 @@ function generateDemoData() {
   entries.push(walk(2, 18, 30, 30));
   entries.push(meal(2, 18, 0, 44));
   entries.push(pipi(2, 19, 0,  'outside', 55));
+  entries.push(occup(2, 9, 30, 15, 'training', 55));
 
   // ── Jour -3 ──────────────────────────────────────────────────────────────
   entries.push(meal(3, 7, 0, 64, 'rushed'));
@@ -84,6 +94,8 @@ function generateDemoData() {
   entries.push(pipi(3, 18, 0,  'outside', 60));
   entries.push(meal(3, 18, 30, 50));
   entries.push(pipi(3, 20, 30, 'outside', 35));
+  entries.push(occup(3, 14, 0, 25, 'play', 80));
+  entries.push(occup(3, 9, 0, 10, 'chew', 25));
 
   // ── Jour -4 ──────────────────────────────────────────────────────────────
   entries.push(meal(4, 7, 0, 56));
