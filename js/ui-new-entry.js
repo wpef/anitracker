@@ -165,6 +165,9 @@ function _selectType(type) {
   // Sections durée vs datetime ponctuel
   setVisible('walk-section',  !!def.hasDuration);
   setVisible('datetime-card', !def.hasDuration);
+  if (def.hasDuration) {
+    $('walk-section-title').textContent = `⏱ ${def.label}`;
+  }
 }
 
 // ── Couleurs dynamiques des options textuelles ──────────────────────────────

@@ -76,48 +76,53 @@ function _dayLabel(key, sample, todayKey, yestKey) {
 
 /**
  * Rendu unifié d'une entrée, piloté par TYPE_DEF.
- * Gère aussi bien les types avec durée (balade) que les types ponctuels (pipi, caca, etc.).
+ * Titre : Nom du type • Durée (si existante)
+ * Sous-titre : label de la jauge (si existant), sinon horaires ou note
+ * Badge : valeur texte avec couleur associée (depuis textOptions)
  */
 function _entryRow(e, fmt) {
   const def  = TYPE_DEF[e.type] || { label: e.type || '?', icon: '?' };
   const icon = def.icon;
+  const startStr = fmt(e.timestamp);
 
-  if (def.hasDuration) {
-    // Type avec durée (balade, etc.)
-    const dur      = e.duration_min ? formatDuration(e.duration_min) : '';
-    const startStr = fmt(e.timestamp);
-    const endStr   = e.end_time ? fmt(e.end_time) : '';
-    const range    = endStr ? `${startStr} → ${endStr}` : startStr;
-    const meta     = [range, e.note].filter(Boolean).join(' · ');
-    return `<div class="tl-entry tl-entry-walk" data-id="${e.id}">
-              <div class="tl-entry-time">${startStr}</div>
-              <div class="tl-entry-icon">${icon}</div>
-              <div class="tl-entry-body">
-                <div class="tl-entry-title">${def.label}${dur ? ' · ' + dur : ''}</div>
-                ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
-              </div>
-            </div>`;
-  }
+  // Title: Type • Duration
+  const dur = e.duration_min ? formatDuration(e.duration_min) : '';
+  const titleParts = [def.label];
+  if (dur) titleParts.push(dur);
+  const title = titleParts.join(' · ');
 
-  // Type ponctuel (pipi, caca, etc.)
-  const title    = def.label;
-  const locClass = e.text_val && def.insideValue && e.text_val === def.insideValue ? 'inside' : 'outside';
-  const locLabel = e.text_val ? getTextLabel(e.type, e.text_val) : '';
-
-  const parts = [];
+  // Subtitle: gauge label > time range > note
+  const metaParts = [];
   if (e.num_val !== undefined && def.gauge) {
-    parts.push(gaugeLabel(def.gauge.steps, e.num_val));
+    metaParts.push(gaugeLabel(def.gauge.steps, e.num_val));
   }
-  if (e.note) parts.push(e.note);
-  const meta = parts.join(' · ');
+  if (def.hasDuration) {
+    const endStr = e.end_time ? fmt(e.end_time) : '';
+    if (endStr) metaParts.push(`${startStr} → ${endStr}`);
+  }
+  if (e.note) metaParts.push(e.note);
+  const meta = metaParts.join(' · ');
 
-  return `<div class="tl-entry tl-entry-bathroom tl-entry-${locClass}" data-id="${e.id}">
-            <div class="tl-entry-time">${fmt(e.timestamp)}</div>
+  // Badge: text value with color from textOptions
+  const textLabel = e.text_val ? getTextLabel(e.type, e.text_val) : '';
+  const textOpt   = e.text_val && def.textOptions
+    ? def.textOptions.find(o => o.value === e.text_val) : null;
+  const badgeColor = textOpt?.color || '';
+  const badgeHtml  = textLabel
+    ? `<span class="entry-badge" style="${badgeColor ? `background:${badgeColor}22;color:${badgeColor}` : ''}">${textLabel}</span>`
+    : '';
+
+  // Border color: use type color, or inside/outside for needs
+  const locClass = e.text_val && def.insideValue && e.text_val === def.insideValue ? 'inside' : 'outside';
+  const entryClass = def.hasDuration ? 'tl-entry-walk' : `tl-entry-bathroom tl-entry-${locClass}`;
+
+  return `<div class="tl-entry ${entryClass}" data-id="${e.id}" style="border-left-color:${def.color || ''}">
+            <div class="tl-entry-time">${startStr}</div>
             <div class="tl-entry-icon">${icon}</div>
             <div class="tl-entry-body">
               <div class="tl-entry-title">${title}</div>
               ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
             </div>
-            ${locLabel ? `<span class="entry-badge badge-${e.text_val}">${locLabel}</span>` : ''}
+            ${badgeHtml}
           </div>`;
 }

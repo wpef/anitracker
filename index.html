@@ -95,6 +95,9 @@
       </div>
       <div class="time-shortcuts">
         <button class="time-shortcut-btn" data-offset="0">Maintenant</button>
+        <button class="time-shortcut-btn" data-offset="-3">-3 min</button>
+        <button class="time-shortcut-btn" data-offset="-5">-5 min</button>
+        <button class="time-shortcut-btn" data-offset="-10">-10 min</button>
         <button class="time-shortcut-btn" data-offset="-15">-15 min</button>
         <button class="time-shortcut-btn" data-offset="-30">-30 min</button>
         <button class="time-shortcut-btn" data-offset="-60">-1h</button>
@@ -104,7 +107,7 @@
 
     <!-- 2b. Horaires balade (visible uniquement pour les balades) -->
     <div class="card" id="walk-section" style="display:none">
-      <div class="card-title">⏱ Balade</div>
+      <div class="card-title" id="walk-section-title">⏱ Durée</div>
 
       <div class="walk-anchor-row">
         <!-- Début -->

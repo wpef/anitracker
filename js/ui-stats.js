@@ -48,10 +48,8 @@ export function renderStats() {
     { label: 'Propreté (%)', data: s.dailyPropretScore, color: '#4caf50' },
   ], { yMax: 100, yUnit: '%' });
 
-  // ── Graphique balades (7 jours — durée en minutes par jour) ──────────
-  renderBarChart('chart-walks', s.dailyLabels, [
-    { label: 'Balades (min)', data: s.dailyWalkMin, color: '#4cc9f0' },
-  ], { yUnit: ' min' });
+  // ── Graphique balades (7 jours — durée en minutes par jour, courbe) ──
+  renderLineChart('chart-walks', s.dailyLabels, s.dailyWalkMin, '#4cc9f0', { yUnit: ' min' });
 
   // ── Graphiques de jauge dynamiques ─────────────────────────────────────
   _renderGaugeCharts(s);
