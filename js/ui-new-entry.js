@@ -64,6 +64,13 @@ export function initNewEntry() {
     _updateFriendlyDate();
   });
 
+  // Click on datetime row opens native picker
+  document.querySelector('#datetime-card .datetime-row').addEventListener('click', () => {
+    const input = $('entry-time');
+    if (input.showPicker) input.showPicker();
+    else input.focus();
+  });
+
   // Persistance du temps saisi en session
   $('entry-time').addEventListener('change', () => {
     sessionStorage.setItem('lastEntryTime', $('entry-time').value);

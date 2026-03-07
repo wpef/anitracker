@@ -438,6 +438,7 @@ nav {
 
 /* ===== Date/Time Field ===== */
 .datetime-row {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -446,6 +447,7 @@ nav {
   padding: 12px 14px;
   border: 1px solid rgba(255,255,255,.08);
   transition: border-color .2s;
+  cursor: pointer;
 }
 .datetime-row:focus-within {
   border-color: var(--walk);
@@ -460,16 +462,12 @@ nav {
   cursor: pointer;
 }
 .datetime-row input[type="datetime-local"] {
-  background: transparent;
-  border: none;
-  color: var(--text2);
-  font-size: .75rem;
-  font-family: inherit;
-  width: auto;
-  flex: 0 0 auto;
-  cursor: pointer;
-  outline: none;
-  color-scheme: dark;
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 /* ===== Timeline (History Page) – liste épurée ===== */
@@ -1078,6 +1076,8 @@ nav {
 
 .qp-save-btn {
   flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
   width: 100%;
   height: clamp(52px, 10dvh, 68px);
   border: none;
@@ -1088,6 +1088,7 @@ nav {
   font-weight: 700;
   cursor: pointer;
   transition: background .15s, transform .1s;
+  z-index: 10;
 }
 .qp-save-btn:active    { transform: scale(.97); }
 .qp-save-btn.success   { background: var(--outside); }
