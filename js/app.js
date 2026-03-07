@@ -13,7 +13,7 @@
 
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
-import { $, normalizeEntry } from './utils.js';
+import { $, normalizeEntry, TYPE_DEF } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage, onShowPage } from './navigation.js';
 import { db } from './db-context.js';
@@ -89,26 +89,26 @@ async function startDemo() {
 async function handleQuickEntry() {
   const params = new URLSearchParams(location.search);
   const quick  = params.get('quick');
-  if (!quick) return;
+  if (!quick || !TYPE_DEF[quick]) return;
 
+  const def = TYPE_DEF[quick];
   let entry;
-  if (quick === 'walk') {
+
+  if (def.hasDuration) {
     const durationMin = parseInt(params.get('dur'), 10) || 30;
     const start = new Date();
     const end   = new Date(start.getTime() + durationMin * 60000);
     entry = {
-      type: 'walk',
+      type: quick,
       timestamp: start.toISOString(), end_time: end.toISOString(),
       duration_min: durationMin, note: '',
     };
-  } else if (quick === 'pipi' || quick === 'caca') {
+  } else {
     entry = {
       type: quick,
-      text_val: params.get('loc') || 'outside',
       timestamp: new Date().toISOString(), note: '',
     };
-  } else {
-    return;
+    if (def.textOptions) entry.text_val = params.get('loc') || def.defaultTextVal || def.textOptions[0]?.value;
   }
 
   await db.saveEntry(entry);

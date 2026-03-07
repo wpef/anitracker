@@ -1,20 +1,17 @@
 /**
  * ui-history.js – Rendu de la page Historique (liste chronologique des entrées).
  *
- * Les entrées sont groupées par jour et affichées du plus récent au plus ancien.
- * Un clic sur une entrée ouvre la page d'édition.
+ * Entièrement piloté par TYPE_DEF : chaque entrée est rendue selon sa
+ * définition de type. Pour ajouter un nouveau type, aucun changement ici.
  */
 
-import { $, isWalk, formatDuration, TYPE_DEF, pipiLabel, cacaLabel } from './utils.js';
+import { $, formatDuration, TYPE_DEF, getTextLabel, gaugeLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 
 // ── Rendu principal ────────────────────────────────────────────────────────
 
-/** Restitue la liste de l'historique dans le conteneur #entry-list. */
 export function renderHistory() {
-  // Les enregistrements walk.action='end' (format v1) sont filtrés par normalizeEntry()
-  // dans app.js — aucun filtre supplémentaire nécessaire ici.
   const allEntries = db.getAllEntries();
   const container  = $('entry-list');
 
@@ -49,14 +46,13 @@ function _buildHTML(entries) {
     html += `<div class="tl-day-header">${_dayLabel(key, dayEntries[0], todayKey, yestKey)}</div>
              <div class="tl-list">`;
     for (const e of dayEntries) {
-      html += isWalk(e) ? _walkRow(e, fmt) : _bathroomRow(e, fmt);
+      html += _entryRow(e, fmt);
     }
     html += '</div>';
   }
   return html;
 }
 
-/** Groupe les entrées par clé de jour (triées desc → groupes du plus récent au plus ancien). */
 function _groupByDay(entries) {
   const groups = new Map();
   for (const e of entries) {
@@ -67,7 +63,6 @@ function _groupByDay(entries) {
   return groups;
 }
 
-/** @param {Date} d @returns {string} */
 function _dayKey(d) {
   return d.toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' });
 }
@@ -79,41 +74,55 @@ function _dayLabel(key, sample, todayKey, yestKey) {
     { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
-function _walkRow(e, fmt) {
-  const dur      = e.duration_min ? formatDuration(e.duration_min) : '';
+/**
+ * Rendu unifié d'une entrée, piloté par TYPE_DEF.
+ * Titre : Nom du type • Durée (si existante)
+ * Sous-titre : label de la jauge (si existant), sinon horaires ou note
+ * Badge : valeur texte avec couleur associée (depuis textOptions)
+ */
+function _entryRow(e, fmt) {
+  const def  = TYPE_DEF[e.type] || { label: e.type || '?', icon: '?' };
+  const icon = def.icon;
   const startStr = fmt(e.timestamp);
-  const endStr   = e.end_time ? fmt(e.end_time) : '';
-  const range    = endStr ? `${startStr} → ${endStr}` : startStr;
-  const meta     = [range, e.note].filter(Boolean).join(' · ');
-  return `<div class="tl-entry tl-entry-walk" data-id="${e.id}">
-            <div class="tl-entry-time">${startStr}</div>
-            <div class="tl-entry-icon">🐾</div>
-            <div class="tl-entry-body">
-              <div class="tl-entry-title">Balade${dur ? ' · ' + dur : ''}</div>
-              ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
-            </div>
-          </div>`;
-}
 
-function _bathroomRow(e, fmt) {
-  const def      = TYPE_DEF[e.type] || { label: e.type || '?', icon: '?' };
-  const icon     = def.icon;
-  const title    = def.label ?? '?';
-  const locClass = e.text_val === 'inside' ? 'inside' : 'outside';
-  const locLabel = e.text_val ? (def.textLabel?.(e.text_val) ?? e.text_val) : '';
-  const parts    = [];
-  if (e.num_val !== undefined && (e.type === 'pipi' || e.type === 'caca')) {
-    parts.push(e.type === 'caca' ? cacaLabel(e.num_val) : pipiLabel(e.num_val));
+  // Title: Type • Duration
+  const dur = e.duration_min ? formatDuration(e.duration_min) : '';
+  const titleParts = [def.label];
+  if (dur) titleParts.push(dur);
+  const title = titleParts.join(' · ');
+
+  // Subtitle: gauge label > time range > note
+  const metaParts = [];
+  if (e.num_val !== undefined && def.gauge) {
+    metaParts.push(gaugeLabel(def.gauge.steps, e.num_val));
   }
-  if (e.note) parts.push(e.note);
-  const meta = parts.join(' · ');
-  return `<div class="tl-entry tl-entry-bathroom tl-entry-${locClass}" data-id="${e.id}">
-            <div class="tl-entry-time">${fmt(e.timestamp)}</div>
+  if (def.hasDuration) {
+    const endStr = e.end_time ? fmt(e.end_time) : '';
+    if (endStr) metaParts.push(`${startStr} → ${endStr}`);
+  }
+  if (e.note) metaParts.push(e.note);
+  const meta = metaParts.join(' · ');
+
+  // Badge: text value with color from textOptions
+  const textLabel = e.text_val ? getTextLabel(e.type, e.text_val) : '';
+  const textOpt   = e.text_val && def.textOptions
+    ? def.textOptions.find(o => o.value === e.text_val) : null;
+  const badgeColor = textOpt?.color || '';
+  const badgeHtml  = textLabel
+    ? `<span class="entry-badge" style="${badgeColor ? `background:${badgeColor}22;color:${badgeColor}` : ''}">${textLabel}</span>`
+    : '';
+
+  // Border color: use type color, or inside/outside for needs
+  const locClass = e.text_val && def.insideValue && e.text_val === def.insideValue ? 'inside' : 'outside';
+  const entryClass = def.hasDuration ? 'tl-entry-walk' : `tl-entry-bathroom tl-entry-${locClass}`;
+
+  return `<div class="tl-entry ${entryClass}" data-id="${e.id}" style="border-left-color:${def.color || ''}">
+            <div class="tl-entry-time">${startStr}</div>
             <div class="tl-entry-icon">${icon}</div>
             <div class="tl-entry-body">
               <div class="tl-entry-title">${title}</div>
               ${meta ? `<div class="tl-entry-meta">${meta}</div>` : ''}
             </div>
-            ${locLabel ? `<span class="entry-badge badge-${e.text_val}">${locLabel}</span>` : ''}
+            ${badgeHtml}
           </div>`;
 }

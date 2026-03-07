@@ -1,16 +1,20 @@
 /**
  * ui-gauge.js – Composant jauge configurable.
  *
- * La configuration (couleur, labels, fn) vit dans TYPE_DEF (utils.js).
- * Pour ajouter un nouveau type : ajouter l'entrée dans TYPE_DEF, c'est tout.
+ * La configuration (couleur, paliers) vit dans TYPE_DEF (utils.js).
+ * Les paliers (gauge.steps) sont un tableau [[seuil, label], …] trié
+ * par seuil croissant. gaugeLabel() retourne le label correspondant.
+ *
+ * Pour ajouter un nouveau type avec jauge : ajouter l'entrée dans TYPE_DEF
+ * avec un champ gauge.steps, c'est tout.
  *
  * Usage :
  *   const g = initGauge(inputEl, labelEl, 'pipi');
- *   const g = initGauge(inputEl, labelEl, TYPE_DEF.pipi.gauge); // config custom
+ *   const g = initGauge(inputEl, labelEl, TYPE_DEF.pipi.gauge);
  *   g.getValue() / g.setValue(42) / g.setType('caca') / g.setConfig(cfg)
  */
 
-import { TYPE_DEF } from './utils.js';
+import { TYPE_DEF, gaugeLabel } from './utils.js';
 
 // ── Initialisation ──────────────────────────────────────────────────────────
 
@@ -25,13 +29,17 @@ import { TYPE_DEF } from './utils.js';
 export function initGauge(input, valueEl, typeOrConfig) {
   let _cfg = _resolve(typeOrConfig);
 
+  function _label(val) {
+    return gaugeLabel(_cfg.steps, val);
+  }
+
   function _apply() {
     input.style.background = _cfg.color;
-    valueEl.textContent    = _cfg.getLabel(parseInt(input.value, 10));
+    valueEl.textContent    = _label(parseInt(input.value, 10));
   }
 
   input.addEventListener('input', () => {
-    valueEl.textContent = _cfg.getLabel(parseInt(input.value, 10));
+    valueEl.textContent = _label(parseInt(input.value, 10));
   });
 
   _apply();

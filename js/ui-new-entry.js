@@ -1,28 +1,24 @@
 /**
- * ui-new-entry.js – Page de saisie d'une nouvelle entrée (balade ou pipi/caca).
+ * ui-new-entry.js – Page de saisie d'une nouvelle entrée.
  *
- * Gère le formulaire dynamique : sélecteurs de type/action/lieu, curseurs,
- * raccourcis temporels, et soumission vers la base de données.
+ * Entièrement piloté par TYPE_DEF : les types, jauges, options textuelles
+ * et sections sont générés dynamiquement. Pour ajouter un nouveau type,
+ * il suffit d'ajouter une entrée dans TYPE_DEF (utils.js).
  */
 
-import { $, setActive, setVisible, buildSegment, toLocalISO, localNow, formatDuration, formatWalkTime } from './utils.js';
+import { $, setActive, setVisible, buildSegment, toLocalISO, localNow,
+         formatDuration, formatWalkTime, formatDateTimeFriendly,
+         TYPE_DEF, allTypes, getTextLabel } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
 
 // ── État local ─────────────────────────────────────────────────────────────
 
-let gaugeF = null; // jauge fermeté caca
-let gaugeT = null; // jauge quantité pipi
-
-let currentType     = 'walk';     // 'bathroom' | 'walk'
-let currentAction   = 'pipi';     // 'pipi' | 'caca'
-let currentLocation = 'outside';  // 'outside' | 'inside'
-// walkAnchor détermine quel côté de la balade reste fixe quand on applique un preset de durée.
-//   'start' → le départ est connu, on calcule end = start + durée  (ex: je pars maintenant)
-//   'end'   → le retour est connu, on remonte start = end − durée  (ex: je viens de rentrer)
-// L'ancre bascule automatiquement sur le champ <input> focalisé en dernier par l'utilisateur.
-let walkAnchor = 'start';
+let gauge = null;       // jauge unique (re-configurée selon le type courant)
+let currentType     = null;   // clé TYPE_DEF courante (ex: 'walk', 'pipi', 'caca')
+let currentTextVal  = null;   // text_val courant (ex: 'outside')
+let walkAnchor      = 'start';
 
 // ── Initialisation ─────────────────────────────────────────────────────────
 
@@ -31,33 +27,26 @@ let walkAnchor = 'start';
  * À appeler une seule fois depuis boot().
  */
 export function initNewEntry() {
-  // Sélecteur de type (balade / pipi-caca)
-  document.querySelectorAll('[data-type]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentType = btn.dataset.type;
-      setActive('type', currentType);
-      updateActionPanel();
-    });
-  });
+  // Générer les boutons de type depuis TYPE_DEF
+  _buildTypeSelector();
 
-  // Sélecteur d'action (pipi / caca) — délégation sur le panel
-  $('action-panel').addEventListener('click', e => {
-    const btn = e.target.closest('[data-action]');
+  // Délégation click sur le sélecteur de type
+  $('type-selector').addEventListener('click', e => {
+    const btn = e.target.closest('[data-type]');
     if (!btn) return;
-    currentAction = btn.dataset.action;
-    setActive('action', currentAction);
-    _updateSections();
+    _selectType(btn.dataset.type);
   });
 
-  // Sélecteur de lieu
-  document.querySelectorAll('[data-loc]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      currentLocation = btn.dataset.loc;
-      setActive('loc', currentLocation);
-    });
+  // Délégation click sur les options textuelles (lieu, etc.)
+  $('text-options-panel').addEventListener('click', e => {
+    const btn = e.target.closest('[data-loc]');
+    if (!btn) return;
+    currentTextVal = btn.dataset.loc;
+    setActive('loc', currentTextVal);
+    _applyTextOptionColors(TYPE_DEF[currentType]);
   });
 
-  // Raccourcis temporels (pipi/caca uniquement)
+  // Raccourcis temporels
   document.querySelector('.time-shortcuts').addEventListener('click', e => {
     const btn = e.target.closest('[data-offset]');
     if (!btn) return;
@@ -72,25 +61,25 @@ export function initNewEntry() {
     t.setSeconds(0, 0);
     $('entry-time').value = toLocalISO(t);
     sessionStorage.setItem('lastEntryTime', $('entry-time').value);
+    _updateFriendlyDate();
   });
 
   // Persistance du temps saisi en session
   $('entry-time').addEventListener('change', () => {
     sessionStorage.setItem('lastEntryTime', $('entry-time').value);
+    _updateFriendlyDate();
   });
   $('walk-start').addEventListener('change', () => {
     sessionStorage.setItem('lastWalkStart', $('walk-start').value);
   });
 
-  // Jauges (composant partagé)
-  gaugeF = initGauge($('entry-firmness'), $('firmness-value'), 'caca');
-  gaugeT = initGauge($('entry-taille'),   $('taille-value'),   'pipi');
+  // Jauge unique
+  gauge = initGauge($('entry-gauge'), $('gauge-value'), 'pipi');
 
-  // Ancre de la balade : le champ focalisé en dernier est l'ancre fixe
+  // Ancre de la balade
   $('walk-start').addEventListener('focus', () => { walkAnchor = 'start'; _updateWalkAnchorUI(); });
   $('walk-end').addEventListener('focus',   () => { walkAnchor = 'end';   _updateWalkAnchorUI(); });
 
-  // Mise à jour de l'affichage quand les horaires changent
   $('walk-start').addEventListener('change', () => {
     $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
     _updateWalkDurationDisplay();
@@ -100,7 +89,7 @@ export function initNewEntry() {
     _updateWalkDurationDisplay();
   });
 
-  // Presets de durée : calcule le côté NON-ancre
+  // Presets de durée
   document.querySelector('.duration-presets').addEventListener('click', e => {
     const btn = e.target.closest('[data-min]');
     if (!btn) return;
@@ -124,54 +113,100 @@ export function initNewEntry() {
   // Bouton de soumission
   $('btn-add').addEventListener('click', _handleAdd);
 
-  // Valeurs initiales
+  // Sélectionner le premier type (walk par défaut, ou le premier de la liste)
+  const firstType = allTypes()[0]?.[0] || 'walk';
+  _selectType(firstType);
   _resetDefaults();
+}
 
-  updateActionPanel();
+// ── Construction dynamique ──────────────────────────────────────────────────
+
+function _buildTypeSelector() {
+  const container = $('type-selector');
+  container.innerHTML = allTypes().map(([key, def]) =>
+    `<button class="seg-btn" data-type="${key}">${def.icon} ${def.label}</button>`
+  ).join('');
+}
+
+function _selectType(type) {
+  const def = TYPE_DEF[type];
+  if (!def) return;
+  currentType = type;
   setActive('type', currentType);
-  setActive('loc',  currentLocation);
+  // Inject inline background color for the active type button (generic fallback)
+  $('type-selector').querySelectorAll('[data-type]').forEach(btn => {
+    btn.style.backgroundColor = btn.dataset.type === type && def.color ? def.color : '';
+  });
+
+  // Jauge
+  if (def.gauge) {
+    setVisible('gauge-section', true);
+    $('gauge-title').textContent = def.icon + ' ' + def.gauge.title;
+    $('gauge-end-left').textContent  = def.gauge.ends[0];
+    $('gauge-end-right').textContent = def.gauge.ends[1];
+    gauge.setConfig(def.gauge);
+    gauge.setValue(def.gauge.def);
+  } else {
+    setVisible('gauge-section', false);
+  }
+
+  // Options textuelles (lieu, etc.)
+  if (def.textOptions && def.textOptions.length > 0) {
+    setVisible('text-options-section', true);
+    $('text-options-title').textContent = def.textTitle || 'Options';
+    currentTextVal = def.defaultTextVal || def.textOptions[0].value;
+    $('text-options-panel').innerHTML = buildSegment('loc',
+      def.textOptions.map(o => ({ value: o.value, label: (o.icon || '') + ' ' + o.label })),
+      currentTextVal
+    );
+    _applyTextOptionColors(def);
+  } else {
+    setVisible('text-options-section', false);
+    currentTextVal = null;
+  }
+
+  // Sections durée vs datetime ponctuel
+  setVisible('walk-section',  !!def.hasDuration);
+  setVisible('datetime-card', !def.hasDuration);
+  if (def.hasDuration) {
+    $('walk-section-title').textContent = `⏱ ${def.label}`;
+  }
+}
+
+// ── Couleurs dynamiques des options textuelles ──────────────────────────────
+
+function _applyTextOptionColors(def) {
+  if (!def?.textOptions?.length) return;
+  $('text-options-panel').querySelectorAll('[data-loc]').forEach(btn => {
+    const opt = def.textOptions.find(o => o.value === btn.dataset.loc);
+    const isActive = btn.classList.contains('active');
+    if (isActive && opt?.color) {
+      btn.style.backgroundColor = opt.color;
+      btn.style.color = '#fff';
+    } else {
+      btn.style.backgroundColor = '';
+      btn.style.color = '';
+    }
+  });
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function _updateFriendlyDate() {
+  const el = $('entry-time-friendly');
+  if (el) el.textContent = formatDateTimeFriendly($('entry-time').value);
 }
 
 function _resetDefaults() {
-  currentType = 'walk';
+  const firstType = allTypes()[0]?.[0] || 'walk';
+  _selectType(firstType);
   $('entry-time').value = localNow();
+  _updateFriendlyDate();
   $('walk-start').value = localNow();
   $('walk-end').value   = '';
   $('anchor-start-time').textContent = formatWalkTime($('walk-start').value);
   walkAnchor = 'start';
   _updateWalkDurationDisplay();
-}
-
-// ── Mise à jour dynamique du formulaire ────────────────────────────────────
-
-/** Met à jour le panel d'action et les sections selon le type courant. */
-export function updateActionPanel() {
-  const panel      = $('action-panel');
-  const actionCard = $('action-card');
-
-  if (currentType === 'walk') {
-    actionCard.style.display = 'none';
-    currentAction = 'walk';
-  } else {
-    actionCard.style.display = 'block';
-    panel.innerHTML = buildSegment('action', [
-      { value: 'pipi', label: '💧 Pipi' },
-      { value: 'caca', label: '💩 Caca' },
-    ], currentAction);
-    if (currentAction !== 'pipi' && currentAction !== 'caca') currentAction = 'pipi';
-  }
-
-  _updateSections();
-}
-
-/** Met à jour la visibilité de toutes les sections selon le type et l'action courants. */
-function _updateSections() {
-  const isBath = currentType === 'bathroom';
-  setVisible('location-section', isBath);
-  setVisible('firmness-section', isBath && currentAction === 'caca');
-  setVisible('taille-section',   isBath && currentAction === 'pipi');
-  setVisible('walk-section',     currentType === 'walk');
-  setVisible('datetime-card',    currentType !== 'walk');
 }
 
 function _getWalkDurationMin() {
@@ -194,19 +229,20 @@ function _updateWalkDurationDisplay() {
 // ── Soumission ─────────────────────────────────────────────────────────────
 
 async function _handleAdd() {
+  const def  = TYPE_DEF[currentType];
   const note = $('entry-note').value.trim();
   let entry;
 
-  if (currentType === 'walk') {
+  if (def?.hasDuration) {
     const startVal    = $('walk-start').value;
     const endVal      = $('walk-end').value;
     const durationMin = _getWalkDurationMin();
     if (!startVal || durationMin <= 0) {
-      showToast('⚠️ Renseigne un début et une fin pour la balade');
+      showToast('⚠️ Renseigne un début et une fin');
       return;
     }
     entry = {
-      type:         'walk',
+      type:         currentType,
       timestamp:    new Date(startVal).toISOString(),
       end_time:     endVal ? new Date(endVal).toISOString() : null,
       duration_min: durationMin,
@@ -214,14 +250,13 @@ async function _handleAdd() {
     };
   } else {
     const timeVal = $('entry-time').value;
-    const numVal  = currentAction === 'caca' ? gaugeF.getValue() : gaugeT.getValue();
     entry = {
-      type:      currentAction,
-      text_val:  currentLocation,
-      num_val:   numVal,
+      type:      currentType,
       timestamp: timeVal ? new Date(timeVal).toISOString() : new Date().toISOString(),
       note,
     };
+    if (currentTextVal !== null) entry.text_val = currentTextVal;
+    if (def?.gauge)              entry.num_val  = gauge.getValue();
   }
 
   setSyncState('pending');
@@ -233,11 +268,10 @@ async function _handleAdd() {
   }
   showToast(entryLabel(entry) + ' enregistré ✓');
 
-  // Réinitialise le formulaire sans toucher aux champs temporels
+  // Réinitialise le formulaire
   $('walk-end').value   = '';
   $('entry-note').value = '';
-  gaugeF.setValue(25); // Mou
-  gaugeT.setValue(50); // Normal
+  if (def?.gauge) gauge.setValue(def.gauge.def);
   _updateWalkDurationDisplay();
   document.querySelectorAll('.dur-btn').forEach(b => b.classList.remove('active'));
 }
@@ -246,18 +280,21 @@ async function _handleAdd() {
 
 /**
  * Retourne le libellé d'affichage d'une entrée (pour le toast et l'historique).
- *
- * @param {object} entry
- * @returns {string}
+ * Entièrement piloté par TYPE_DEF.
  */
 export function entryLabel(entry) {
-  if (entry.type === 'walk') {
+  const def = TYPE_DEF[entry.type];
+  if (!def) return entry.type || '?';
+
+  if (def.hasDuration) {
     const dur = entry.duration_min ? ` (${formatDuration(entry.duration_min)})` : '';
-    return `🐾 Balade${dur}`;
+    return `${def.icon} ${def.label}${dur}`;
   }
-  const actions = { pipi: 'Pipi', caca: 'Caca' };
-  const locs    = { outside: 'dehors', inside: 'dedans' };
-  let label = '🚽 ' + (actions[entry.type] || entry.type);
-  if (entry.text_val) label += ' ' + (locs[entry.text_val] || '');
+
+  let label = `${def.icon} ${def.label}`;
+  if (entry.text_val) {
+    const textLabel = getTextLabel(entry.type, entry.text_val);
+    if (textLabel) label += ' ' + textLabel.toLowerCase();
+  }
   return label;
 }

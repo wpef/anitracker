@@ -130,11 +130,20 @@ nav {
   padding: 4px;
   gap: 4px;
 }
+/* Scrollable variant for rows that may overflow */
+.seg-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;          /* Firefox */
+  flex-wrap: nowrap;
+}
+.seg-scroll::-webkit-scrollbar { display: none; }
 .seg-btn {
-  flex: 1;
+  flex: 1 0 auto;
+  min-width: 90px;
   border: none;
   border-radius: 9px;
-  padding: 10px 8px;
+  padding: 10px 12px;
   font-size: .85rem;
   font-weight: 600;
   cursor: pointer;
@@ -145,21 +154,19 @@ nav {
   align-items: center;
   justify-content: center;
   gap: 6px;
+  white-space: nowrap;
 }
 .seg-btn.active {
   color: #fff;
   box-shadow: 0 2px 8px rgba(0,0,0,.3);
 }
+/* Types — couleurs dynamiques via TYPE_DEF.color (inline style set par JS) */
 .seg-btn[data-type="walk"].active    { background: var(--walk);     }
-.seg-btn[data-type="bathroom"].active{ background: var(--bathroom); }
-.seg-btn[data-action="start"].active,
-.seg-btn[data-action="end"].active,
-.seg-btn[data-action="walk_from_start"].active,
-.seg-btn[data-action="walk_from_end"].active { background: var(--accent2); color: var(--walk); }
-.seg-btn[data-action="pipi"].active  { background: #1565c0;         color: #90caf9; }
-.seg-btn[data-action="caca"].active  { background: #4e342e;         color: #ffcc80; }
-.seg-btn[data-loc="outside"].active  { background: var(--outside);  color: #fff; }
-.seg-btn[data-loc="inside"].active   { background: var(--inside);   color: #fff; }
+.seg-btn[data-type="pipi"].active    { background: #1565c0; color: #90caf9; }
+.seg-btn[data-type="caca"].active    { background: #4e342e; color: #ffcc80; }
+/* Fallback générique pour les futurs types — la couleur est injectée en inline */
+.seg-btn[data-type].active           { color: #fff; }
+/* Text option colors (data-loc) are set inline by JS from TYPE_DEF textOptions[].color */
 
 /* ===== Submit Button ===== */
 .btn-submit {
@@ -345,9 +352,13 @@ nav {
 .time-shortcuts {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   margin-top: 10px;
 }
+.time-shortcuts::-webkit-scrollbar { display: none; }
 .time-shortcut-btn {
   border: 1px solid rgba(255,255,255,.12);
   background: var(--bg);
@@ -370,9 +381,13 @@ nav {
 .duration-presets {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-bottom: 4px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.duration-presets::-webkit-scrollbar { display: none; }
 .dur-btn {
   border: 1px solid rgba(255,255,255,.12);
   background: var(--bg);
@@ -429,15 +444,29 @@ nav {
   background: var(--bg);
   border-radius: 12px;
   padding: 12px 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  transition: border-color .2s;
 }
-.datetime-row label { font-size: .8rem; color: var(--text2); flex-shrink: 0; }
+.datetime-row:focus-within {
+  border-color: var(--walk);
+  box-shadow: 0 0 0 3px rgba(76,201,240,.12);
+}
+.datetime-row label { font-size: 1rem; flex-shrink: 0; }
+.datetime-friendly {
+  flex: 1;
+  font-size: .95rem;
+  font-weight: 600;
+  color: var(--text);
+  cursor: pointer;
+}
 .datetime-row input[type="datetime-local"] {
   background: transparent;
   border: none;
-  color: var(--text);
-  font-size: .9rem;
+  color: var(--text2);
+  font-size: .75rem;
   font-family: inherit;
-  flex: 1;
+  width: auto;
+  flex: 0 0 auto;
   cursor: pointer;
   outline: none;
   color-scheme: dark;
@@ -625,27 +654,9 @@ nav {
   margin-top: 4px;
 }
 
-/* ===== Sliders (fermeté + quantité) — couleur via inline style (ui-gauge.js) ===== */
-#entry-firmness, #edit-firmness {
-  width: 100%;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  outline: none;
-  margin: 8px 0 6px;
-}
-#entry-firmness::-webkit-slider-thumb,
-#edit-firmness::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 8px rgba(0,0,0,.4);
-  cursor: pointer;
-}
+/* ===== Sliders (jauge générique) — couleur via inline style (ui-gauge.js) ===== */
+#entry-gauge, #edit-gauge,
+#entry-firmness, #edit-firmness,
 #entry-taille, #edit-taille {
   width: 100%;
   -webkit-appearance: none;
@@ -655,8 +666,9 @@ nav {
   outline: none;
   margin: 8px 0 6px;
 }
-#entry-taille::-webkit-slider-thumb,
-#edit-taille::-webkit-slider-thumb {
+#entry-gauge::-webkit-slider-thumb, #edit-gauge::-webkit-slider-thumb,
+#entry-firmness::-webkit-slider-thumb, #edit-firmness::-webkit-slider-thumb,
+#entry-taille::-webkit-slider-thumb, #edit-taille::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 22px;
@@ -977,23 +989,31 @@ nav {
 #page-quick {
   padding: 12px 12px calc(12px + 64px + env(safe-area-inset-bottom, 0px));
   gap: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 100%;
 }
 
-.quick-row {
+/* Action row & text row — horizontal scroll, square buttons, fill height */
+.qp-action-scroll,
+.qp-text-grid {
   display: flex;
   gap: 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   flex: 1;
   min-height: 0;
 }
+.qp-action-scroll::-webkit-scrollbar,
+.qp-text-grid::-webkit-scrollbar { display: none; }
 
 .btn-toggle {
-  flex: 1;
   border: 2px solid transparent;
   border-radius: 18px;
   background: var(--surface);
   color: var(--text2);
-  font-size: clamp(1.2rem, 5vw, 1.7rem);
+  font-size: clamp(1rem, 4vw, 1.3rem);
   font-weight: 700;
   cursor: pointer;
   display: flex;
@@ -1003,9 +1023,14 @@ nav {
   gap: 6px;
   transition: background .15s, color .15s, transform .1s;
   -webkit-tap-highlight-color: transparent;
+  padding: 10px;
+  flex: 0 0 auto;
+  aspect-ratio: 1;
+  height: 100%;
 }
-.btn-toggle .qp-emoji { font-size: clamp(1.8rem, 8vw, 2.6rem); }
+.btn-toggle .qp-emoji { font-size: clamp(1.4rem, 6vw, 2rem); }
 .btn-toggle:active { transform: scale(.96); }
+/* Legacy active classes kept for fallback */
 .btn-toggle.active-pipi   { background: rgba(76,201,240,.18); border-color: var(--walk);    color: var(--walk);    }
 .btn-toggle.active-caca   { background: rgba(247,127,0,.18);  border-color: #f77f00;         color: #f77f00;        }
 .btn-toggle.active-dehors { background: rgba(76,175,80,.18);  border-color: var(--outside);  color: var(--outside); }

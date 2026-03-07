@@ -31,42 +31,39 @@
 /** @typedef {BaseEntry} Entry */
 
 // ── Prédicats de type ──────────────────────────────────────────────────────
-// Source unique pour les vérifications de type : à mettre à jour ici si de
-// nouveaux types walk-like ou bathroom-like sont ajoutés.
+// Déduits de TYPE_DEF — plus aucun type n'est hardcodé ici.
 
 /** @param {BaseEntry} e @returns {boolean} */
-export const isWalk     = e => e.type === 'walk';
+export const isWalk     = e => TYPE_DEF[e.type]?.hasDuration === true;
 /** @param {BaseEntry} e @returns {boolean} */
-export const isBathroom = e => e.type === 'pipi' || e.type === 'caca';
+export const isBathroom = e => TYPE_DEF[e.type]?.category === 'need';
+/** @param {BaseEntry} e @returns {boolean} */
+export const isNeed     = e => TYPE_DEF[e.type]?.category === 'need';
+/** @param {BaseEntry} e @returns {boolean} */
+export const hasDuration = e => TYPE_DEF[e.type]?.hasDuration === true;
 
-// ── Labels de valeur pipi / caca ───────────────────────────────────────────
-
-/**
- * Retourne le label textuel pour une valeur pipi (0–100).
- * @param {number} val
- * @returns {string}
- */
-export function pipiLabel(val) {
-  if (val === undefined || val === null) return 'Normal';
-  if (val < 10) return 'Gouttes';
-  if (val < 30) return 'Petit';
-  if (val < 60) return 'Normal';
-  if (val < 85) return 'Gros';
-  return 'Énorme';
-}
+// ── Label générique de jauge ────────────────────────────────────────────────
 
 /**
- * Retourne le label textuel pour une valeur caca (0–100).
- * @param {number} val
+ * Retourne le label textuel d'une valeur de jauge en se basant sur les
+ * paliers (steps) définis dans gauge.steps.
+ *
+ * Chaque palier est un tuple [seuil, label]. La fonction retourne le label
+ * du dernier palier dont le seuil est ≤ val.
+ *
+ * @param {Array<[number, string]>} steps  Paliers triés par seuil croissant
+ * @param {number} val                     Valeur 0–100
  * @returns {string}
  */
-export function cacaLabel(val) {
-  if (val === undefined || val === null) return 'Mou';
-  if (val < 10) return 'Liquide';
-  if (val < 30) return 'Mou';
-  if (val < 50) return 'Pateux';
-  if (val < 85) return 'Ferme';
-  return 'Solide';
+export function gaugeLabel(steps, val) {
+  if (!steps?.length) return '?';
+  if (val === undefined || val === null) return steps[0][1];
+  let label = steps[0][1];
+  for (const [threshold, lbl] of steps) {
+    if (val >= threshold) label = lbl;
+    else break;
+  }
+  return label;
 }
 
 // ── Normalisation des entrées legacy ───────────────────────────────────────
@@ -86,9 +83,12 @@ export function cacaLabel(val) {
 export function normalizeEntry(e) {
   if (!e) return null;
   if (e.type === 'walk' && e.action === 'end') return null;
-  if (e.type === 'pipi' || e.type === 'caca') return e;  // déjà BaseEntry
-  if (e.type === 'walk') {
-    return { ...e, timestamp: e.timestamp || e.start_time };
+  // Types connus dans TYPE_DEF → déjà au format BaseEntry (+ fix timestamp legacy walk)
+  if (TYPE_DEF[e.type]) {
+    if (TYPE_DEF[e.type].hasDuration && !e.timestamp && e.start_time) {
+      return { ...e, timestamp: e.start_time };
+    }
+    return e;
   }
   // Entrées legacy type:'bathroom' ET entrées sans type (type absent/null/undefined)
   if (e.type === 'bathroom' || !e.type) {
@@ -110,49 +110,134 @@ export function normalizeEntry(e) {
  * Pour ajouter un nouveau type : une seule entrée ici, aucun autre fichier à toucher.
  *
  * Champs communs :
- *   label      {string}   - Libellé affiché (historique, toast)
- *   icon       {string}   - Emoji
- *   textLabel  {fn}       - Transforme text_val → label lisible (ex: 'outside' → 'Dehors')
+ *   label          {string}   - Libellé affiché (historique, toast)
+ *   icon           {string}   - Emoji
+ *   category       {string}   - 'need' (besoin, entre dans le score propreté) | 'activity'
+ *   color          {string}   - Couleur CSS principale du type
  *
- * Champs optionnels (types avec jauge) :
- *   gauge.title    {string}         - Titre de la section jauge
- *   gauge.color    {string}         - Gradient CSS du track
- *   gauge.ends     {[string,string]}- Labels extrémités [gauche, droite]
- *   gauge.getLabel {fn}             - (val: 0-100) → label courant
- *   gauge.def      {number}         - Valeur par défaut (0-100)
+ * Champs optionnels :
+ *   hasDuration    {boolean}  - true = type avec début/fin (balade)
+ *   textTitle      {string}   - Titre de la section text_val ("Lieu", "Appétit"…)
+ *   textOptions    {Array<{value,label,icon,color}>} - Options pour text_val
+ *   defaultTextVal {string}   - Valeur par défaut de text_val
+ *   insideValue    {string}   - Valeur de text_val comptée comme "dedans" pour le score propreté
+ *   gauge          {object}   - Config de la jauge (titre, couleur, paliers, défaut)
+ *     gauge.steps  {Array<[number,string]>}  - Paliers [seuil, label] triés croissant
  *
  * @type {Record<string, object>}
  */
 export const TYPE_DEF = {
-  pipi: {
-    label:     'Pipi',
-    icon:      '💧',
-    textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+  walk: {
+    label:       'Balade',
+    icon:        '🐾',
+    category:    'activity',
+    color:       '#4cc9f0',
+    hasDuration: true,
+  },
+  occupation: {
+    label:          'Occupation',
+    icon:           '🧩',
+    category:       'activity',
+    color:          '#ab47bc',
+    hasDuration:    true,
+    textTitle:      'Activité',
+    textOptions:    [
+      { value: 'training',  label: 'Entraînement', icon: '☝️', color: '#2196f3' },
+      { value: 'play',      label: 'Jeu',          icon: '🎾', color: '#ab47bc' },
+      { value: 'chew',      label: 'Machouille',   icon: '🦴', color: '#ff9800' },
+      { value: 'alone',     label: 'Solitude',     icon: '🧸', color: '#78909c' },
+    ],
+    defaultTextVal: 'training',
     gauge: {
-      title:    'Quantité',
-      color:    'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
-      ends:     ['Gouttes', 'Énorme'],
-      getLabel: pipiLabel,
-      def:      50,
+      title: 'Intensité',
+      color: 'linear-gradient(to right, rgba(171,71,188,.2), #ab47bc)',
+      ends:  ['Calme', 'Intense'],
+      steps: [[0, 'Calme'], [15, 'Léger'], [35, 'Modéré'], [60, 'Soutenu'], [85, 'Intense']],
+      def:   50,
+    },
+  },
+  meal: {
+    label:          'Repas',
+    icon:           '🍽️',
+    category:       'activity',
+    color:          '#ff9800',
+    textTitle:      'Appétit',
+    textOptions:    [
+      { value: 'normal',  label: 'Normal',  icon: '😊', color: '#4caf50' },
+      { value: 'rushed',  label: 'Pressé',  icon: '⚡', color: '#ff9800' },
+      { value: 'stressed', label: 'Stressé', icon: '😰', color: '#e94560' },
+    ],
+    defaultTextVal: 'normal',
+    gauge: {
+      title: 'Quantité',
+      color: 'linear-gradient(to right, rgba(255,152,0,.25), #ff9800)',
+      ends:  ['50g', '300g'],
+      steps: [[0, '50g'], [10, '75g'], [20, '100g'], [30, '125g'], [40, '150g'],
+              [50, '175g'], [60, '200g'], [70, '225g'], [80, '250g'], [90, '275g'], [100, '300g']],
+      def:   52,
+    },
+  },
+  pipi: {
+    label:          'Pipi',
+    icon:           '💧',
+    category:       'need',
+    color:          '#4cc9f0',
+    textTitle:      'Lieu',
+    textOptions:    [
+      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
+    ],
+    defaultTextVal: 'outside',
+    insideValue:    'inside',
+    gauge: {
+      title: 'Quantité',
+      color: 'linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)',
+      ends:  ['Gouttes', 'Énorme'],
+      steps: [[0, 'Gouttes'], [10, 'Petit'], [30, 'Normal'], [60, 'Gros'], [85, 'Énorme']],
+      def:   50,
     },
   },
   caca: {
-    label:     'Caca',
-    icon:      '💩',
-    textLabel: v => v === 'outside' ? 'Dehors' : 'Dedans',
+    label:          'Caca',
+    icon:           '💩',
+    category:       'need',
+    color:          '#f77f00',
+    textTitle:      'Lieu',
+    textOptions:    [
+      { value: 'outside', label: 'Dehors', icon: '🌿', color: '#4caf50' },
+      { value: 'inside',  label: 'Dedans', icon: '🏠', color: '#e94560' },
+    ],
+    defaultTextVal: 'outside',
+    insideValue:    'inside',
     gauge: {
-      title:    'Fermeté',
-      color:    'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
-      ends:     ['Liquide', 'Solide'],
-      getLabel: cacaLabel,
-      def:      25,
+      title: 'Fermeté',
+      color: 'linear-gradient(to right, #e94560, #ffcc80, #4caf50)',
+      ends:  ['Liquide', 'Solide'],
+      steps: [[0, 'Liquide'], [10, 'Mou'], [30, 'Pateux'], [50, 'Ferme'], [85, 'Solide']],
+      def:   25,
     },
   },
-  walk: {
-    label: 'Balade',
-    icon:  '🐾',
-  },
 };
+
+// ── Helpers TYPE_DEF ─────────────────────────────────────────────────────
+
+/** Types de la catégorie 'need' (besoins — entrent dans le score propreté). */
+export const needTypes     = () => Object.entries(TYPE_DEF).filter(([, d]) => d.category === 'need');
+/** Types de la catégorie 'activity' (hasDuration). */
+export const activityTypes = () => Object.entries(TYPE_DEF).filter(([, d]) => d.category === 'activity');
+/** Tous les types sous forme [key, def]. */
+export const allTypes      = () => Object.entries(TYPE_DEF);
+
+/**
+ * Retourne le label lisible d'une text_val pour un type donné.
+ * @param {string} type   Clé du type (ex: 'pipi')
+ * @param {string} value  Valeur (ex: 'outside')
+ * @returns {string}
+ */
+export function getTextLabel(type, value) {
+  const opt = TYPE_DEF[type]?.textOptions?.find(o => o.value === value);
+  return opt ? opt.label : (value || '');
+}
 
 // ── Helpers DOM ────────────────────────────────────────────────────────────
 
@@ -262,4 +347,23 @@ export function toLocalISO(date) {
 /** Retourne l'heure locale courante au format datetime-local. */
 export function localNow() {
   return toLocalISO(new Date());
+}
+
+/**
+ * Formate un datetime-local en texte lisible style moment.js.
+ * "Aujourd'hui 14:30", "Hier 09:15", "lun. 3 mars 14:30"
+ */
+export function formatDateTimeFriendly(isoOrLocal) {
+  if (!isoOrLocal) return '';
+  const d     = new Date(isoOrLocal);
+  const now   = new Date();
+  const time  = d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yest  = new Date(today); yest.setDate(yest.getDate() - 1);
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  if (target.getTime() === today.getTime()) return `Aujourd'hui ${time}`;
+  if (target.getTime() === yest.getTime())  return `Hier ${time}`;
+  const dayStr = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
+  return `${dayStr} ${time}`;
 }

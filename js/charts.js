@@ -109,18 +109,23 @@ export function renderBarChart(canvasId, labels, datasets, opts = {}) {
  * @param {string[]}        labels
  * @param {(number|null)[]} data
  * @param {string}          color  Couleur CSS (hex)
+ * @param {{ yUnit?: string, yMax?: number }} [opts]
  */
-export function renderLineChart(canvasId, labels, data, color) {
+export function renderLineChart(canvasId, labels, data, color, opts = {}) {
   const ctx = $(canvasId);
   if (!ctx) return;
   if (charts[canvasId]) charts[canvasId].destroy();
+
+  const yUnit = opts.yUnit || '%';
+  const yScale = { min: 0, beginAtZero: true };
+  if (opts.yMax != null) yScale.max = opts.yMax;
+  else if (!opts.yUnit) yScale.max = 100; // default 0-100% for gauge charts
 
   charts[canvasId] = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [{
-        label:               'Fermeté (%)',
         data:                data.map(v => v === null ? NaN : v),
         borderColor:         color,
         backgroundColor:     color + '22',
@@ -140,7 +145,7 @@ export function renderLineChart(canvasId, labels, data, color) {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => isNaN(ctx.parsed.y) ? 'Pas de données' : ctx.parsed.y + '%',
+            label: ctx => isNaN(ctx.parsed.y) ? 'Pas de données' : ctx.parsed.y + yUnit,
           },
         },
       },
@@ -150,10 +155,14 @@ export function renderLineChart(canvasId, labels, data, color) {
           grid:  { color: 'rgba(255,255,255,.04)' },
         },
         y: {
-          min: 0,
-          max: 100,
-          ticks: { color: '#9a9ab0', font: { size: 10 }, callback: v => v + '%' },
-          grid:  { color: 'rgba(255,255,255,.06)' },
+          ...yScale,
+          ticks: {
+            color: '#9a9ab0',
+            font:  { size: 10 },
+            precision: 0,
+            callback: v => v + yUnit,
+          },
+          grid: { color: 'rgba(255,255,255,.06)' },
         },
       },
     },

@@ -37,33 +37,25 @@
   <!-- ===== Page 0 : Rapide ===== -->
   <main id="page-quick" class="page active">
 
-    <div class="quick-row">
-      <button class="btn-toggle active-pipi" id="qp-pipi">
-        <span class="qp-emoji">💧</span>PIPI
-      </button>
-      <button class="btn-toggle" id="qp-caca">
-        <span class="qp-emoji">💩</span>CACA
-      </button>
+    <!-- Actions (horizontal slider — all non-duration types) -->
+    <div class="qp-action-scroll" id="qp-action-row">
+      <!-- Généré dynamiquement depuis TYPE_DEF (types sans durée) -->
     </div>
 
-    <div class="quick-row">
-      <button class="btn-toggle active-dehors" id="qp-dehors">
-        <span class="qp-emoji">🌿</span>DEHORS
-      </button>
-      <button class="btn-toggle" id="qp-dedans">
-        <span class="qp-emoji">🏠</span>DEDANS
-      </button>
+    <!-- Text options (grid — from textOptions of current action) -->
+    <div class="qp-text-grid" id="qp-text-row" style="display:none">
+      <!-- Généré dynamiquement depuis textOptions du type courant -->
     </div>
 
-    <div class="qp-gauge-section">
+    <div class="qp-gauge-section" id="qp-gauge-section">
       <div class="qp-gauge-header">
-        <span class="qp-gauge-label" id="qp-gauge-label">💧 Quantité</span>
-        <span class="qp-gauge-value" id="qp-gauge-val">Normal</span>
+        <span class="qp-gauge-label" id="qp-gauge-label"></span>
+        <span class="qp-gauge-value" id="qp-gauge-val"></span>
       </div>
       <input type="range" id="qp-gauge" min="0" max="100" value="50" step="1" />
       <div class="qp-gauge-ends">
-        <span id="qp-gauge-end-left">Gouttes</span>
-        <span id="qp-gauge-end-right">Énorme</span>
+        <span id="qp-gauge-end-left"></span>
+        <span id="qp-gauge-end-right"></span>
       </div>
     </div>
 
@@ -86,57 +78,37 @@
   <!-- ===== Page 1 : Nouvelle entrée ===== -->
   <main id="page-new" class="page">
 
-    <!-- Type d'événement -->
+    <!-- 1. Type d'événement (généré dynamiquement depuis TYPE_DEF) -->
     <div class="card">
       <div class="card-title">Type d'événement</div>
-      <div class="segment">
-        <button class="seg-btn active" data-type="walk">🐕 Balade</button>
-        <button class="seg-btn" data-type="bathroom">🚽 Autre</button>
+      <div class="segment seg-scroll" id="type-selector">
+        <!-- Rempli par ui-new-entry.js -->
       </div>
     </div>
 
-    <!-- Action (pipi/caca ou walk — géré dynamiquement) -->
-    <div class="card" id="action-card">
-      <div class="card-title">Action</div>
-      <div class="segment" id="action-panel">
-        <!-- Rempli par app.js -->
+    <!-- 2a. Date & heure (visible uniquement pour les besoins) -->
+    <div class="card" id="datetime-card">
+      <div class="card-title">Date &amp; heure</div>
+      <div class="datetime-row">
+        <label>🕐</label>
+        <span class="datetime-friendly" id="entry-time-friendly"></span>
+        <input type="datetime-local" id="entry-time" />
+      </div>
+      <div class="time-shortcuts">
+        <button class="time-shortcut-btn" data-offset="0">Maintenant</button>
+        <button class="time-shortcut-btn" data-offset="-3">-3 min</button>
+        <button class="time-shortcut-btn" data-offset="-5">-5 min</button>
+        <button class="time-shortcut-btn" data-offset="-10">-10 min</button>
+        <button class="time-shortcut-btn" data-offset="-15">-15 min</button>
+        <button class="time-shortcut-btn" data-offset="-30">-30 min</button>
+        <button class="time-shortcut-btn" data-offset="-60">-1h</button>
+        <button class="time-shortcut-btn" data-offset="-120">-2h</button>
       </div>
     </div>
 
-    <!-- Fermeté caca (visible uniquement quand action = caca) -->
-    <div class="card" id="firmness-section" style="display:none">
-      <div class="card-title">💩 Fermeté</div>
-      <div class="gauge-current-label" id="firmness-value">Mou</div>
-      <input type="range" id="entry-firmness" min="0" max="100" value="25" step="1" />
-      <div class="gauge-ends-row">
-        <span>Liquide</span>
-        <span>Solide</span>
-      </div>
-    </div>
-
-    <!-- Quantité pipi (visible uniquement quand action = pipi) -->
-    <div class="card" id="taille-section" style="display:none">
-      <div class="card-title">💧 Quantité</div>
-      <div class="gauge-current-label" id="taille-value">Normal</div>
-      <input type="range" id="entry-taille" min="0" max="100" value="50" step="1" />
-      <div class="gauge-ends-row">
-        <span>Gouttes</span>
-        <span>Énorme</span>
-      </div>
-    </div>
-
-    <!-- Lieu (visible uniquement pour les besoins) -->
-    <div class="card" id="location-section">
-      <div class="card-title">Lieu</div>
-      <div class="segment">
-        <button class="seg-btn active" data-loc="outside">🌿 Dehors</button>
-        <button class="seg-btn" data-loc="inside">🏠 Dedans</button>
-      </div>
-    </div>
-
-    <!-- Horaires balade (visible uniquement pour les balades) -->
+    <!-- 2b. Horaires balade (visible uniquement pour les balades) -->
     <div class="card" id="walk-section" style="display:none">
-      <div class="card-title">⏱ Balade</div>
+      <div class="card-title" id="walk-section-title">⏱ Durée</div>
 
       <div class="walk-anchor-row">
         <!-- Début -->
@@ -159,7 +131,7 @@
         </label>
       </div>
 
-      <div class="duration-presets">
+      <div class="duration-presets seg-scroll">
         <button class="dur-btn" data-min="15">15min</button>
         <button class="dur-btn" data-min="30">30min</button>
         <button class="dur-btn" data-min="45">45min</button>
@@ -168,23 +140,26 @@
       </div>
     </div>
 
-    <!-- Date & heure (visible uniquement pour les besoins) -->
-    <div class="card" id="datetime-card">
-      <div class="card-title">Date &amp; heure</div>
-      <div class="datetime-row">
-        <label>🕐</label>
-        <input type="datetime-local" id="entry-time" />
-      </div>
-      <div class="time-shortcuts">
-        <button class="time-shortcut-btn" data-offset="0">Maintenant</button>
-        <button class="time-shortcut-btn" data-offset="-15">-15 min</button>
-        <button class="time-shortcut-btn" data-offset="-30">-30 min</button>
-        <button class="time-shortcut-btn" data-offset="-60">-1h</button>
-        <button class="time-shortcut-btn" data-offset="-120">-2h</button>
+    <!-- 3. Options textuelles : lieu, etc. (visible si le type a textOptions) -->
+    <div class="card" id="text-options-section" style="display:none">
+      <div class="card-title" id="text-options-title">Lieu</div>
+      <div id="text-options-panel" class="seg-scroll">
+        <!-- Rempli dynamiquement -->
       </div>
     </div>
 
-    <!-- Note -->
+    <!-- 4. Jauge (visible si le type courant a une gauge — contenu dynamique) -->
+    <div class="card" id="gauge-section" style="display:none">
+      <div class="card-title" id="gauge-title"></div>
+      <div class="gauge-current-label" id="gauge-value"></div>
+      <input type="range" id="entry-gauge" min="0" max="100" value="50" step="1" />
+      <div class="gauge-ends-row">
+        <span id="gauge-end-left"></span>
+        <span id="gauge-end-right"></span>
+      </div>
+    </div>
+
+    <!-- 5. Note -->
     <div class="card">
       <div class="card-title">Note (optionnel)</div>
       <div class="datetime-row">
@@ -230,23 +205,8 @@
             <span class="ring-label" id="ring-label">Dehors</span>
           </div>
         </div>
-        <div class="score-details">
-          <div class="score-item green">
-            <span class="si-label">💧 Pipi dehors</span>
-            <span class="si-value" id="si-pipi-out">0</span>
-          </div>
-          <div class="score-item red">
-            <span class="si-label">💧 Pipi dedans</span>
-            <span class="si-value" id="si-pipi-in">0</span>
-          </div>
-          <div class="score-item green">
-            <span class="si-label">💩 Caca dehors</span>
-            <span class="si-value" id="si-caca-out">0</span>
-          </div>
-          <div class="score-item red">
-            <span class="si-label">💩 Caca dedans</span>
-            <span class="si-value" id="si-caca-in">0</span>
-          </div>
+        <div class="score-details" id="score-details">
+          <!-- Généré dynamiquement depuis TYPE_DEF (needTypes) -->
         </div>
       </div>
     </div>
@@ -259,13 +219,7 @@
       </div>
     </div>
 
-    <!-- Graphique fermeté caca -->
-    <div class="card">
-      <div class="card-title">💩 Fermeté des caca – 7 jours</div>
-      <div class="chart-wrap">
-        <canvas id="chart-firmness"></canvas>
-      </div>
-    </div>
+    <!-- Graphiques de jauge (générés dynamiquement par ui-stats.js) -->
 
     <!-- Balades 7 jours -->
     <div class="card">
