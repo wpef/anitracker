@@ -177,6 +177,14 @@ g.setConfig(cfg)     // switch to arbitrary config
 
 ---
 
+## UI component showcase
+
+See `showcase.html` at the repo root for a visual reference of every reusable
+UI component (cards, segments, gauges, toggles, timeline entries, etc.)
+rendered with sample data. Open it in a browser — no JS or server required.
+
+---
+
 ## CSS conventions (`css/style.css`)
 
 ### Custom properties (`:root`)

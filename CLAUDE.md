@@ -42,11 +42,50 @@ Vanilla JS ES modules, no framework, no build step.
 ```
 index.html              Main SPA (all pages as hidden <section>s)
 quick.html              Standalone quick-entry page (Android shortcut)
+showcase.html           UI component showcase (static, no JS — see below)
 css/style.css           Single stylesheet, CSS variables in :root
 sw.js                   Service Worker (offline cache)
 js/                     ES modules (see js/CLAUDE.md for full architecture)
 AGENT-NEW-ACTION.md     Guided prompt for the "add new action type" agent
 ```
+
+### UI component showcase (`showcase.html`)
+
+Static HTML page showing every reusable UI component with sample data.
+Open it directly in a browser — no server needed (uses `css/style.css`).
+
+Components documented (in order):
+
+| Component | CSS selector | Description |
+|---|---|---|
+| Header | `<header>` | App bar: title, subtitle, sync dot |
+| Demo banner | `#demo-banner` | Orange bar for demo mode |
+| Bottom nav | `<nav> .nav-btn` | 4-tab navigation bar |
+| Toast | `#toast` | Ephemeral notification pill |
+| Sync indicator | `.sync-dot` | 3 states: `.sync-ok`, `.sync-pending`, `.sync-error` |
+| Card | `.card .card-title` | Generic surface container |
+| Type selector | `.segment .seg-btn` | Segmented control for entry type |
+| Text options | `.segment [data-loc]` | Location / category toggle |
+| Gauge | `#entry-gauge .gauge-current-label` | Slider 0–100 with threshold labels |
+| Walk duration | `.walk-anchor-btn .walk-duration-pill` | Start/end buttons + duration presets |
+| Datetime card | `.datetime-row .time-shortcuts` | Date picker + time shortcuts |
+| Note field | `#entry-note` | Free-text input |
+| Submit buttons | `.btn-submit .qp-save-btn` | Primary action + success/disabled states |
+| Quick toggles | `.btn-toggle` | Large touch buttons (quick page) |
+| Quick gauge | `.qp-gauge-section` | Compact gauge variant |
+| Time scrubber | `#qp-time-gauge` | "X minutes ago" slider |
+| Quick stats | `.quick-stats .qs-item` | 3 summary badges |
+| Score ring | `.score-ring .ring-fill` | SVG donut + detail grid |
+| Chart | `.chart-wrap canvas` | Chart.js container (200px) |
+| Walks summary | `.today-walks-summary` | Text under walks chart |
+| Timeline entry | `.tl-entry .tl-day-header` | History list row (colored left border) |
+| Empty state | `.empty-state` | Placeholder when no data |
+| Edit header | `.edit-page-header` | Back / title / delete toolbar |
+| Modal sheet | `.modal-sheet` | Bottom sheet overlay |
+| Setup screen | `.setup-screen` | Firebase config overlay |
+| CSS variables | `:root` | Color palette swatches |
+
+**Keep `showcase.html` updated** when adding or modifying UI components.
 
 ### Adding a new entry type
 
