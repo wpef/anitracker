@@ -220,6 +220,6 @@ Location buttons (`[data-loc]`) get their active color set inline by JS from
 - **Cleanliness score** = `100 − (inside_needs / total_needs × 100)`
 - **"Need" entries**: all types where `category === 'need'`
 - **"Inside"**: entries where `text_val === def.insideValue`
-- **Day window**: 7:00 AM → 7:00 AM next day (night entries count for previous day)
-- **7-day charts**: rolling 7 × 24h windows starting at 7 AM each day
+- **Day window**: 5:30 AM → 5:30 AM next day (night entries count for previous day)
+- **7-day charts**: rolling 7 × 24h windows starting at 5:30 AM each day
 - **Gauge charts**: last 3 days, one chart per type that has `gauge` in TYPE_DEF
