@@ -33,7 +33,7 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 
 | # | Phase | Fichier prompt | Statut | Date |
 |---|-------|----------------|--------|------|
-| 1 | Securite & deploiement | `phase-01-security.md` | [ ] | — |
+| 1 | Securite & deploiement | `phase-01-security.md` | [x] | 2026-03-08 |
 | 2 | Service Worker robuste | `phase-02-service-worker.md` | [ ] | — |
 | 3 | Validation des donnees | `phase-03-data-validation.md` | [ ] | — |
 | 4 | Debounce Firebase & stats | `phase-04-perf-data.md` | [ ] | — |
