@@ -100,6 +100,26 @@ See `AGENT-NEW-ACTION.md` for a step-by-step agent prompt, or
 
 ---
 
+## Evolution plan
+
+A structured plan lives in `.claude/plans/`. To continue the plan,
+start a new conversation and say **"Continue le plan"**.
+
+Claude will read `.claude/plans/PLAN.md`, find the next unchecked phase,
+open the corresponding prompt file, and execute the tasks.
+
+| Phase | Description |
+|-------|-------------|
+| 1–6 | Production readiness (security, SW, validation, perf) |
+| 7 | User auth & households |
+| 8 | Freemium / premium model |
+| 9 | New features (custom types, stats window, Gantt) |
+| 10 | Native apps (iOS/Android) & CI/CD |
+
+See `.claude/plans/PLAN.md` for full status and dependencies.
+
+---
+
 ## Conventions
 
 - **UI strings**: French. **Code/comments/docs**: English
