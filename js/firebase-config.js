@@ -43,7 +43,7 @@ export function parseConfigInput(text) {
     const block = text.match(/\{[\s\S]*\}/);
     if (block) {
       const json = block[0]
-        .replace(/^\s*\/\V[^\n]*/gm) 
+        .replace(/^\s*\/\/[^\n]*/gm, '')
         .replace(/, (\s*[\}\]])/g, '$1')
         .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":')  // cite les clés non citées
         .replace(/:\s*'([^']*)'/g, ':"$1"');         // remplace ' par "
