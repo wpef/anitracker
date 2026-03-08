@@ -1,5 +1,5 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v38';
+const CACHE_NAME = 'anitracker-v39';
 const ASSETS = [
   '/index.html',
   '/quick.html',
@@ -21,12 +21,23 @@ const ASSETS = [
   '/js/db.js',
   '/js/demo-db.js',
   '/js/quick.js',
+  '/js/ui-quick.js',
   '/js/firebase-config.js',
+  // ── Icons ──────────────────────────────────────────────────────────────
+  '/icons/icon.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache =>
+      Promise.allSettled(
+        ASSETS.map(url =>
+          cache.add(url).catch(err => console.warn('[SW] Failed to cache:', url, err))
+        )
+      )
+    )
   );
   // Prend la main immédiatement sans attendre la fermeture de l'onglet
   self.skipWaiting();
@@ -64,12 +75,20 @@ self.addEventListener('fetch', e => {
           }
           return response;
         })
-        .catch(() => caches.match(e.request))
+        .catch(() => caches.match(e.request).then(cached =>
+          cached || (e.request.mode === 'navigate' ? caches.match('/index.html') : undefined)
+        ))
     );
   } else {
     // Cache-first pour les ressources externes (CDN Firebase, Chart.js…)
     e.respondWith(
-      caches.match(e.request).then(cached => cached || fetch(e.request))
+      caches.match(e.request).then(cached => cached || fetch(e.request).then(response => {
+        if (response.ok) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
+        }
+        return response;
+      }))
     );
   }
 });
