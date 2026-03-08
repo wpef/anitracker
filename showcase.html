@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AniTracker — UI Showcase</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ===== Showcase-specific overrides ===== */
+    body { background: #0a0a14; }
+
+    #app {
+      height: auto;
+      overflow: visible;
+      padding-bottom: 40px;
+    }
+    .page {
+      display: flex !important;
+      position: relative;
+      padding: 20px 16px 20px;
+    }
+
+    /* Section separator */
+    .showcase-section {
+      padding: 0 16px;
+      margin-top: 32px;
+    }
+    .showcase-section:first-of-type { margin-top: 16px; }
+    .showcase-label {
+      font-size: .65rem;
+      font-weight: 800;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      padding-left: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .showcase-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(233,69,96,.25);
+    }
+    .showcase-label code {
+      font-size: .6rem;
+      background: rgba(255,255,255,.08);
+      border-radius: 4px;
+      padding: 2px 6px;
+      color: var(--text2);
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+    .showcase-note {
+      font-size: .72rem;
+      color: var(--text2);
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    /* Remove fixed positioning for showcase */
+    nav {
+      position: relative;
+      left: 0;
+      transform: none;
+    }
+    .btn-float {
+      position: relative !important;
+      bottom: auto !important;
+      left: auto !important;
+      right: auto !important;
+      display: block !important;
+    }
+    #toast {
+      position: relative;
+      bottom: auto;
+      left: auto;
+      transform: none;
+      opacity: 1;
+      margin: 0 16px;
+    }
+
+    /* Quick page row height for showcase */
+    .showcase-quick-row {
+      height: 100px;
+    }
+
+    /* Walk section in showcase: always visible */
+    .showcase-visible { display: block !important; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ========================================= -->
+  <!--  HEADER                                    -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Header <code>&lt;header&gt;</code></div>
+    <div class="showcase-note">En-tête global : titre, sous-titre, pastille de sync.</div>
+  </div>
+  <header>
+    <span class="header-icon">🐾</span>
+    <div>
+      <h1>AniTracker</h1>
+      <div class="header-sub">Journal de mon chien</div>
+    </div>
+    <div class="header-right">
+      <div class="sync-dot sync-ok" title="Synchronisé"></div>
+    </div>
+  </header>
+
+  <!-- ========================================= -->
+  <!--  DEMO BANNER                               -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Bannière démo <code>#demo-banner</code></div>
+    <div class="showcase-note">Visible uniquement en mode démo (données fictives en mémoire).</div>
+  </div>
+  <div id="demo-banner" style="display:flex">
+    ⚡ Mode démo · données fictives ·
+    <button id="exit-demo-btn">Configurer Firebase</button>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  BOTTOM NAV                                -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Navigation <code>&lt;nav&gt;</code></div>
+    <div class="showcase-note">Barre de navigation basse, 4 onglets. L'onglet actif est surligné en rouge.</div>
+  </div>
+  <nav>
+    <button class="nav-btn active" data-page="quick">
+      <span class="nav-icon">⚡</span>Rapide
+    </button>
+    <button class="nav-btn" data-page="new">
+      <span class="nav-icon">➕</span>Complet
+    </button>
+    <button class="nav-btn" data-page="stats">
+      <span class="nav-icon">📊</span>Stats
+    </button>
+    <button class="nav-btn" data-page="history">
+      <span class="nav-icon">📋</span>Historique
+    </button>
+  </nav>
+
+  <!-- ========================================= -->
+  <!--  TOAST                                     -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Toast <code>#toast</code></div>
+    <div class="showcase-note">Notification éphémère, apparaît après une action (ajout, suppression…).</div>
+  </div>
+  <div id="toast" class="show">✓ Pipi enregistré — Dehors</div>
+
+  <!-- ========================================= -->
+  <!--  SYNC INDICATOR (3 states)                 -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Pastille sync <code>.sync-dot</code></div>
+    <div class="showcase-note">3 états : vert (sync ok), jaune pulsant (en cours), rouge (erreur).</div>
+  </div>
+  <div style="display:flex;gap:20px;padding:0 16px;align-items:center;">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="sync-dot sync-ok"></div>
+      <span style="font-size:.75rem;color:var(--text2)">sync-ok</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="sync-dot sync-pending"></div>
+      <span style="font-size:.75rem;color:var(--text2)">sync-pending</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="sync-dot sync-error"></div>
+      <span style="font-size:.75rem;color:var(--text2)">sync-error</span>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  CARD                                      -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Carte <code>.card</code></div>
+    <div class="showcase-note">Conteneur générique avec fond surface, coins arrondis, ombre. Utilisé partout.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Titre de carte</div>
+      <p style="font-size:.85rem;color:var(--text2)">Contenu de la carte. Tous les composants formulaire sont encapsulés dans des cartes.</p>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  SEGMENT CONTROL / TYPE SELECTOR           -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Sélecteur type <code>.segment .seg-btn</code></div>
+    <div class="showcase-note">Boutons segmentés scrollables (.seg-scroll) pour choisir le type. Ordre : Balade → Pipi → Caca.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Type d'événement</div>
+      <div class="segment seg-scroll" id="type-selector">
+        <button class="seg-btn active" data-type="walk" style="background:var(--walk);color:#fff">🐾 Balade</button>
+        <button class="seg-btn" data-type="pipi">💧 Pipi</button>
+        <button class="seg-btn" data-type="caca">💩 Caca</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  TEXT OPTIONS                               -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Options texte <code>#text-options-section</code></div>
+    <div class="showcase-note">Sélecteur lieu / catégorie. Les boutons changent de couleur selon textOptions[].color.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Lieu</div>
+      <div class="segment">
+        <button class="seg-btn active" data-loc="outside" style="background:#4caf50;color:#fff">🌿 Dehors</button>
+        <button class="seg-btn" data-loc="inside">🏠 Dedans</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  GAUGE (slider)                            -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Jauge <code>#gauge-section</code></div>
+    <div class="showcase-note">Slider 0–100 avec label dynamique (paliers). Couleur du track définie par gauge.color.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Quantité</div>
+      <div class="gauge-current-label">Normal</div>
+      <input type="range" id="entry-gauge" min="0" max="100" value="50" step="1"
+        style="background:linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)" />
+      <div class="gauge-ends-row">
+        <span>Gouttes</span>
+        <span>Énorme</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second gauge variant: Fermeté -->
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Fermeté</div>
+      <div class="gauge-current-label">Mou</div>
+      <input type="range" id="entry-firmness" min="0" max="100" value="25" step="1"
+        style="background:linear-gradient(to right, #e94560, #ffcc80, #4caf50)" />
+      <div class="gauge-ends-row">
+        <span>Liquide</span>
+        <span>Solide</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  WALK DURATION SECTION                     -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Durée balade <code>#walk-section</code></div>
+    <div class="showcase-note">Boutons Début/Fin avec durée calculée. Presets rapides en bas.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">⏱ Balade</div>
+      <div class="walk-anchor-row">
+        <label class="walk-anchor-btn active">
+          <div class="anchor-label">🚶 Début</div>
+          <div class="anchor-time">14:30</div>
+        </label>
+        <div class="walk-middle">
+          <div class="walk-duration-pill">30min</div>
+        </div>
+        <label class="walk-anchor-btn">
+          <div class="anchor-label">🏠 Fin</div>
+          <div class="anchor-time">15:00</div>
+        </label>
+      </div>
+      <div class="duration-presets">
+        <button class="dur-btn">15min</button>
+        <button class="dur-btn active">30min</button>
+        <button class="dur-btn">45min</button>
+        <button class="dur-btn">1h</button>
+        <button class="dur-btn">1h30</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  DATETIME CARD                             -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Date &amp; heure <code>#datetime-card</code></div>
+    <div class="showcase-note">Sélecteur de date/heure avec raccourcis temporels.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Date &amp; heure</div>
+      <div class="datetime-row">
+        <label>🕐</label>
+        <input type="datetime-local" value="2026-03-07T14:30" style="background:transparent;border:none;color:var(--text);font-size:.9rem;font-family:inherit;flex:1;cursor:pointer;outline:none;color-scheme:dark;" />
+      </div>
+      <div class="time-shortcuts">
+        <button class="time-shortcut-btn">Maintenant</button>
+        <button class="time-shortcut-btn">-15 min</button>
+        <button class="time-shortcut-btn">-30 min</button>
+        <button class="time-shortcut-btn">-1h</button>
+        <button class="time-shortcut-btn">-2h</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  NOTE FIELD                                -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Note <code>#entry-note</code></div>
+    <div class="showcase-note">Champ texte libre optionnel.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">Note (optionnel)</div>
+      <div class="datetime-row">
+        <label>📝</label>
+        <input type="text" placeholder="Ex : a bien mangé avant…"
+          style="background:transparent;border:none;color:var(--text);font-size:.9rem;font-family:inherit;flex:1;outline:none;" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  SUBMIT BUTTONS                            -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Boutons d'action <code>.btn-submit, .qp-save-btn</code></div>
+    <div class="showcase-note">Bouton principal gradient rouge. Variante verte après succès.</div>
+  </div>
+  <div style="padding:0 16px; display:flex; flex-direction:column; gap:10px;">
+    <button class="btn-submit">＋ Enregistrer</button>
+    <button class="qp-save-btn">Enregistrer ✓</button>
+    <button class="qp-save-btn success">✓ Enregistré !</button>
+    <button class="qp-save-btn" disabled>Enregistrer ✓</button>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  QUICK PAGE — ACTION SLIDER                -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Actions rapides <code>.qp-action-scroll</code></div>
+    <div class="showcase-note">Slider horizontal des types sans durée. Scroll pour voir tous les boutons.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="qp-action-scroll">
+      <button class="btn-toggle" style="border-color:#4cc9f0;color:#4cc9f0;background:rgba(76,201,240,.18)">
+        <span class="qp-emoji">💧</span>PIPI
+      </button>
+      <button class="btn-toggle">
+        <span class="qp-emoji">💩</span>CACA
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  QUICK PAGE — TEXT GRID                    -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Options rapides <code>.qp-text-grid</code></div>
+    <div class="showcase-note">Grille des textOptions du type sélectionné. Se met à jour quand on change d'action.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="qp-text-grid">
+      <button class="btn-toggle" style="border-color:#4caf50;color:#4caf50;background:rgba(76,175,80,.18)">
+        <span class="qp-emoji">🌿</span>DEHORS
+      </button>
+      <button class="btn-toggle">
+        <span class="qp-emoji">🏠</span>DEDANS
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  QUICK PAGE — GAUGE COMPACT                -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Jauge rapide <code>.qp-gauge-section</code></div>
+    <div class="showcase-note">Version compacte de la jauge, utilisée dans la page rapide.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="qp-gauge-section">
+      <div class="qp-gauge-header">
+        <span class="qp-gauge-label">💧 Quantité</span>
+        <span class="qp-gauge-value">Normal</span>
+      </div>
+      <input type="range" id="qp-gauge" min="0" max="100" value="50" step="1"
+        style="background:linear-gradient(to right, rgba(76,201,240,.25), #4cc9f0)" />
+      <div class="qp-gauge-ends">
+        <span>Gouttes</span>
+        <span>Énorme</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  QUICK PAGE — TIME SCRUBBER                -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Slider heure <code>#qp-time-gauge</code></div>
+    <div class="showcase-note">Slider «il y a X minutes» (0–30 min). Valeur max = Maintenant.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="qp-gauge-section">
+      <div class="qp-gauge-header">
+        <span class="qp-gauge-label">🕐 Heure</span>
+        <span class="qp-gauge-value">-10 min</span>
+      </div>
+      <input type="range" id="qp-time-gauge" min="0" max="30" value="20" step="1"
+        style="background:linear-gradient(to right, rgba(255,255,255,.1), rgba(255,255,255,.25))" />
+      <div class="qp-gauge-ends">
+        <span>−30 min</span>
+        <span>Maintenant</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  QUICK STATS                               -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Quick stats <code>.quick-stats</code></div>
+    <div class="showcase-note">3 badges résumé : besoins dedans, total, durée balade.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="quick-stats">
+      <div class="qs-item pipi-in-color">
+        <div class="qs-value">1</div>
+        <div class="qs-label">Besoins<br>dedans</div>
+      </div>
+      <div class="qs-item pipi-color">
+        <div class="qs-value">5</div>
+        <div class="qs-label">Besoins<br>total</div>
+      </div>
+      <div class="qs-item walk-color">
+        <div class="qs-value">45</div>
+        <div class="qs-label">Balade<br>depuis 7h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  SCORE RING                                -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Score propreté <code>.score-ring</code></div>
+    <div class="showcase-note">Anneau SVG animé + détails par type en grille 2×2.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">🏆 Score propreté – aujourd'hui</div>
+      <div class="score-ring">
+        <div class="ring-wrap">
+          <svg class="ring-svg" viewBox="0 0 140 140" width="140" height="140">
+            <circle class="ring-bg" cx="70" cy="70" r="54" />
+            <circle class="ring-fill" cx="70" cy="70" r="54"
+              stroke-dasharray="339.3" stroke-dashoffset="67.86" />
+          </svg>
+          <div class="ring-text">
+            <span class="ring-pct">80%</span>
+            <span class="ring-label">Dehors</span>
+          </div>
+        </div>
+        <div class="score-details">
+          <div class="score-item green">
+            <span class="si-label">💧 Pipi dehors</span>
+            <span class="si-value">3</span>
+          </div>
+          <div class="score-item red">
+            <span class="si-label">💧 Pipi dedans</span>
+            <span class="si-value">1</span>
+          </div>
+          <div class="score-item green">
+            <span class="si-label">💩 Caca dehors</span>
+            <span class="si-value">1</span>
+          </div>
+          <div class="score-item red">
+            <span class="si-label">💩 Caca dedans</span>
+            <span class="si-value">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  CHART PLACEHOLDER                         -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Graphique <code>.chart-wrap canvas</code></div>
+    <div class="showcase-note">Conteneur Chart.js (200px). Les graphiques sont rendus dynamiquement.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">📈 Évolution propreté – 7 jours</div>
+      <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center;">
+        <span class="no-data">📊 Graphique Chart.js (rendu dynamique)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  TODAY WALKS SUMMARY                       -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Résumé balades <code>.today-walks-summary</code></div>
+    <div class="showcase-note">Texte résumé sous le graphique des balades.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="card">
+      <div class="card-title">🦮 Balades – 7 jours</div>
+      <div class="chart-wrap" style="display:flex;align-items:center;justify-content:center;">
+        <span class="no-data">📊 Graphique Chart.js</span>
+      </div>
+      <div class="today-walks-summary">
+        2 balades <span class="today-walks-dur">· 1h15 total</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  HISTORY — TIMELINE ENTRY                  -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Historique <code>.tl-entry</code></div>
+    <div class="showcase-note">Entrée timeline groupée par jour. Bord gauche coloré par type.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="tl-day-header">Samedi 7 mars</div>
+    <div class="tl-list">
+      <div class="tl-entry tl-entry-bathroom tl-entry-outside">
+        <span class="tl-entry-time">14:30</span>
+        <span class="tl-entry-icon">💧</span>
+        <div class="tl-entry-body">
+          <div class="tl-entry-title">Pipi – Dehors</div>
+          <div class="tl-entry-meta">Normal · a bien bu avant</div>
+        </div>
+      </div>
+      <div class="tl-entry tl-entry-bathroom tl-entry-inside">
+        <span class="tl-entry-time">12:15</span>
+        <span class="tl-entry-icon">💩</span>
+        <div class="tl-entry-body">
+          <div class="tl-entry-title">Caca – Dedans</div>
+          <div class="tl-entry-meta">Mou</div>
+        </div>
+      </div>
+      <div class="tl-entry tl-entry-walk">
+        <span class="tl-entry-time">10:00</span>
+        <span class="tl-entry-icon">🐾</span>
+        <div class="tl-entry-body">
+          <div class="tl-entry-title">Balade</div>
+          <div class="tl-entry-meta">45min · 10:00 → 10:45</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  EMPTY STATE                               -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">État vide <code>.empty-state</code></div>
+    <div class="showcase-note">Affiché quand il n'y a aucune donnée (historique, stats).</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="empty-state">
+      <div class="empty-icon">📋</div>
+      <p>Aucune entrée pour le moment.<br>Utilisez le bouton + pour commencer.</p>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  EDIT PAGE HEADER                          -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">En-tête édition <code>.edit-page-header</code></div>
+    <div class="showcase-note">Barre d'outils de la page d'édition : retour, titre, supprimer.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div style="background:var(--surface);border-radius:var(--radius);overflow:hidden;">
+      <div class="edit-page-header">
+        <button class="edit-back-btn">← Retour</button>
+        <h2 style="flex:1;font-size:1.05rem;font-weight:700;">Modifier</h2>
+        <button class="edit-delete-btn">🗑</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  MODAL (bottom sheet)                      -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Modal (bottom sheet) <code>.modal-sheet</code></div>
+    <div class="showcase-note">Feuille modale (legacy). Utilisée si besoin pour confirmations ou édition inline.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="modal-sheet" style="position:relative;border-radius:var(--radius);">
+      <div class="modal-header">
+        <span class="modal-title">Modifier l'entrée</span>
+        <button class="modal-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-field">
+          <label class="modal-label">Type</label>
+          <div class="segment modal-segment">
+            <button class="seg-btn active" style="background:#1565c0;color:#90caf9">💧 Pipi</button>
+            <button class="seg-btn">💩 Caca</button>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label class="modal-label">Heure</label>
+          <input class="modal-input" type="datetime-local" value="2026-03-07T14:30" />
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel">Annuler</button>
+        <button class="btn-modal-save">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  SETUP OVERLAY (excerpt)                   -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Setup Firebase <code>#setup-overlay</code></div>
+    <div class="showcase-note">Écran de configuration Firebase (premier lancement). Affiché en overlay plein écran.</div>
+  </div>
+  <div style="padding:0 16px">
+    <div style="background:var(--surface);border-radius:var(--radius);padding:24px 16px;display:flex;flex-direction:column;gap:14px;">
+      <div class="setup-icon">🔥</div>
+      <h2 class="setup-title">Connexion Firebase</h2>
+      <p class="setup-desc">Pour synchroniser les données entre vos téléphones, collez votre configuration Firebase.</p>
+      <div class="setup-steps">
+        <div class="setup-step">
+          <span class="step-num">1</span>
+          <span>Va sur <strong>console.firebase.google.com</strong></span>
+        </div>
+        <div class="setup-step">
+          <span class="step-num">2</span>
+          <span>Crée un projet → <strong>Realtime Database</strong></span>
+        </div>
+      </div>
+      <textarea class="setup-textarea" rows="3" placeholder='{"apiKey": "AIzaSy…", …}'></textarea>
+      <div class="setup-error" style="display:block">
+        ⚠️ Config invalide — vérifie que <code>apiKey</code> et <code>databaseURL</code> sont présents.
+      </div>
+      <button class="btn-submit">✓ Enregistrer et démarrer</button>
+      <button class="btn-demo">Essayer en mode démo →</button>
+    </div>
+  </div>
+
+  <!-- ========================================= -->
+  <!--  CSS VARIABLES REFERENCE                   -->
+  <!-- ========================================= -->
+  <div class="showcase-section">
+    <div class="showcase-label">Variables CSS <code>:root</code></div>
+    <div class="showcase-note">Palette de couleurs définie dans css/style.css.</div>
+  </div>
+  <div style="padding:0 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;">
+    <div style="background:var(--bg);padding:12px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--bg);margin:0 auto 6px;border:1px solid rgba(255,255,255,.2)"></div>
+      <div style="font-size:.7rem;color:var(--text2)">--bg</div>
+      <div style="font-size:.65rem;color:var(--text2)">#0f0f1a</div>
+    </div>
+    <div style="background:var(--bg);padding:12px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--surface);margin:0 auto 6px;"></div>
+      <div style="font-size:.7rem;color:var(--text2)">--surface</div>
+      <div style="font-size:.65rem;color:var(--text2)">#1a1a2e</div>
+    </div>
+    <div style="background:var(--bg);padding:12px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--accent);margin:0 auto 6px;"></div>
+      <div style="font-size:.7rem;color:var(--text2)">--accent</div>
+      <div style="font-size:.65rem;color:var(--text2)">#e94560</div>
+    </div>
+    <div style="background:var(--bg);padding:12px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--walk);margin:0 auto 6px;"></div>
+      <div style="font-size:.7rem;color:var(--text2)">--walk</div>
+      <div style="font-size:.65rem;color:var(--text2)">#4cc9f0</div>
+    </div>
+    <div style="background:var(--bg);padding:12px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--outside);margin:0 auto 6px;"></div>
+      <div style="font-size:.7rem;color:var(--text2)">--outside</div>
+      <div style="font-size:.65rem;color:var(--text2)">#4caf50</div>
+    </div>
+    <div style="background:var(--bg);padding:12px;border-radius:10px;text-align:center;border:1px solid rgba(255,255,255,.1);">
+      <div style="width:32px;height:32px;border-radius:50%;background:var(--inside);margin:0 auto 6px;"></div>
+      <div style="font-size:.7rem;color:var(--text2)">--inside</div>
+      <div style="font-size:.65rem;color:var(--text2)">#e94560</div>
+    </div>
+  </div>
+
+  <div style="height:40px"></div>
+
+</div>
+</body>
+</html>
