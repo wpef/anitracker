@@ -26,6 +26,9 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 - Ne saute jamais une phase sauf si l'utilisateur le demande explicitement
 - Respecte les conventions du projet (voir `CLAUDE.md` et `js/CLAUDE.md`)
 - Chaque phase doit etre testable independamment avant de passer a la suivante
+- **A chaque phase**, mets a jour la section "Actions manuelles" en bas de ce fichier :
+  ajoute les taches que l'utilisateur devra faire manuellement (console Firebase,
+  config provider, deploiement…) pour que la phase soit pleinement operationnelle
 
 ---
 
