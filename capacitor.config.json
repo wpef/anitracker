@@ -1,0 +1,9 @@
+{
+  "appId": "com.anitracker.app",
+  "appName": "AniTracker",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "appVersion": "1.0.0"
+}

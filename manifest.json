@@ -14,7 +14,11 @@
       "description": "Enregistrer un pipi ou caca rapidement",
       "url": "/quick.html",
       "icons": [
-        { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
       ]
     }
   ],
@@ -31,5 +35,6 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "version": "1.0.0"
 }

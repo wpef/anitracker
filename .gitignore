@@ -6,3 +6,13 @@ node_modules/
 .vscode/
 .idea/
 thumbs.db
+
+# Capacitor native build artifacts
+ios/App/Pods/
+android/.gradle/
+android/app/build/
+www/
+
+# Signing keys (never commit)
+*.keystore
+*.jks

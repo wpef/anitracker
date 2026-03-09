@@ -45,7 +45,7 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 | 7 | Gestion utilisateurs & auth | `phase-07-auth.md` | [x] | 2026-03-09 |
 | 8 | Modele freemium / premium | `phase-08-freemium.md` | [x] | 2026-03-09 |
 | 9 | Nouvelles features | `phase-09-features.md` | [x] | 2026-03-09 |
-| 10 | App native & CI/CD | `phase-10-native-cicd.md` | [ ] | — |
+| 10 | App native & CI/CD | `phase-10-native-cicd.md` | [x] | 2026-03-09 |
 
 ---
 
@@ -184,7 +184,30 @@ faites dans la console Firebase ou le dashboard du provider.
   Firebase Extension
 - [ ] **Tester le flow complet** : free → trial → premium → expiration
 
-### Apres Phase 10 — Native & CI/CD (a venir)
+### Apres Phase 10 — Native & CI/CD
 
-- [ ] Configurer les comptes Apple Developer / Google Play
-- [ ] Configurer le pipeline CI/CD (GitHub Actions, etc.)
+- [ ] **Creer un compte Apple Developer Program** (99$/an)
+  - https://developer.apple.com/programs/
+  - Necessaire pour publier sur l'App Store
+- [ ] **Creer un compte Google Play Console** (25$ one-time)
+  - https://play.google.com/console/
+  - Necessaire pour publier sur le Play Store
+- [ ] **Configurer le signing iOS** dans Xcode :
+  - Ouvrir `ios/App/App.xcworkspace`
+  - Team → selectionner le compte Apple Developer
+  - Capabilities → Push Notifications (si besoin)
+  - Ajouter les icones App Store (1024x1024)
+- [ ] **Generer une keystore Android** :
+  ```bash
+  keytool -genkey -v -keystore anitracker.keystore \
+    -alias anitracker -keyalg RSA -keysize 2048 -validity 10000
+  ```
+- [ ] **Configurer les secrets GitHub** (Settings > Secrets > Actions) :
+  - `NETLIFY_AUTH_TOKEN` — token Netlify CLI
+  - `NETLIFY_SITE_ID` — ID du site Netlify
+  - `ANDROID_KEYSTORE_BASE64` — `base64 anitracker.keystore`
+  - `ANDROID_KEY_ALIAS` — alias de la cle
+  - `ANDROID_KEY_PASSWORD` — mot de passe de la cle
+  - `ANDROID_STORE_PASSWORD` — mot de passe du keystore
+- [ ] **Premiere soumission** sur les stores (manuelle)
+- [ ] **Tester** : l'app native fonctionne identiquement a la version web

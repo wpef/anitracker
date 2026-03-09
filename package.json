@@ -1,0 +1,26 @@
+{
+  "name": "anitracker",
+  "version": "1.0.0",
+  "description": "Dog activity tracker PWA — web, iOS & Android",
+  "private": true,
+  "scripts": {
+    "sync-web": "bash scripts/sync-web.sh",
+    "cap:sync": "npm run sync-web && npx cap sync",
+    "cap:ios": "npm run sync-web && npx cap sync ios && npx cap open ios",
+    "cap:android": "npm run sync-web && npx cap sync android && npx cap open android",
+    "version:bump": "bash scripts/bump-version.sh"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:52594/git/wpef/anitracker"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
+    "@capacitor/ios": "^8.2.0"
+  }
+}
