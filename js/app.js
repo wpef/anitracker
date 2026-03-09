@@ -165,6 +165,16 @@ async function boot() {
   await handleQuickEntry();
   showPage('quick');
 
+  // ── Online/offline feedback (données gérées par Firebase offline persistence) ──
+  window.addEventListener('offline', () => {
+    setSyncState('error');
+    showToast('Hors ligne');
+  });
+  window.addEventListener('online', () => {
+    setSyncState('ok');
+    showToast('Reconnecté');
+  });
+
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js')
       .then(reg => reg.update())

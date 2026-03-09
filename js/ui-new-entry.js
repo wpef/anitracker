@@ -282,12 +282,21 @@ async function _handleAdd() {
   try {
     await db.saveEntry(entry);
     setSyncState('ok');
+    showToast(entryLabel(entry) + ' enregistré ✓');
   } catch {
-    setSyncState('error');
+    // Retry once after 2s
+    try {
+      await new Promise(r => setTimeout(r, 2000));
+      await db.saveEntry(entry);
+      showToast('Enregistré (2e tentative)');
+      setSyncState('ok');
+    } catch {
+      showToast('Échec de sauvegarde — vérifiez votre connexion');
+      setSyncState('error');
+    }
   } finally {
     btn.disabled = false;
   }
-  showToast(entryLabel(entry) + ' enregistré ✓');
 
   // Réinitialise le formulaire
   $('walk-end').value   = '';

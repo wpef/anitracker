@@ -3,6 +3,7 @@
  */
 
 import { $ } from './utils.js';
+import { db } from './db-context.js';
 
 // ── Toast ──────────────────────────────────────────────────────────────────
 
@@ -32,7 +33,13 @@ export function setSyncState(state) {
   const dot = $('sync-indicator');
   if (!dot) return;
   dot.className = `sync-dot sync-${state}`;
-  dot.title = state === 'ok'      ? 'Synchronisé'
-            : state === 'pending' ? 'Synchronisation…'
-                                  : 'Erreur de sync';
+  let title = { ok: 'Synchronisé', pending: 'Synchronisation…', error: 'Hors ligne' }[state] || '';
+  if (state === 'ok' && db.getLastSync) {
+    const last = db.getLastSync();
+    if (last) {
+      const ago = Math.round((Date.now() - last.getTime()) / 60000);
+      title += ago < 1 ? ' — à l\'instant' : ` — il y a ${ago} min`;
+    }
+  }
+  dot.title = title;
 }
