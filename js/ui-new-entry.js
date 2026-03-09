@@ -8,7 +8,7 @@
 
 import { $, setActive, setVisible, buildSegment, toLocalISO, localNow,
          formatDuration, formatWalkTime, formatDateTimeFriendly,
-         TYPE_DEF, allTypes, getTextLabel, validateEntry } from './utils.js';
+         getTypeDef, allTypes, getTextLabel, validateEntry } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
@@ -34,6 +34,11 @@ export function initNewEntry() {
 
   // Délégation click sur le sélecteur de type
   $('type-selector').addEventListener('click', e => {
+    // "+" button to add custom type
+    if (e.target.closest('#btn-add-type')) {
+      import('./ui-custom-type.js').then(m => m.openCustomTypePage());
+      return;
+    }
     const btn = e.target.closest('[data-type]');
     if (!btn) return;
     if (btn.classList.contains('locked')) {
@@ -49,7 +54,7 @@ export function initNewEntry() {
     if (!btn) return;
     currentTextVal = btn.dataset.loc;
     setActive('loc', currentTextVal);
-    _applyTextOptionColors(TYPE_DEF[currentType]);
+    _applyTextOptionColors(getTypeDef()[currentType]);
   });
 
   // Raccourcis temporels
@@ -139,11 +144,11 @@ function _buildTypeSelector() {
   container.innerHTML = allTypes().map(([key, def]) => {
     const locked = !canUseType(key);
     return `<button class="seg-btn${locked ? ' locked' : ''}" data-type="${key}">${def.icon} ${def.label}${locked ? ' \uD83D\uDD12' : ''}</button>`;
-  }).join('');
+  }).join('') + '<button class="seg-btn seg-btn-add" id="btn-add-type">+</button>';
 }
 
 function _selectType(type) {
-  const def = TYPE_DEF[type];
+  const def = getTypeDef()[type];
   if (!def) return;
   currentType = type;
   setActive('type', currentType);
@@ -247,7 +252,7 @@ async function _handleAdd() {
   if (btn.disabled) return;
   btn.disabled = true;
 
-  const def  = TYPE_DEF[currentType];
+  const def  = getTypeDef()[currentType];
   const note = $('entry-note').value.trim();
   let entry;
 
@@ -320,7 +325,7 @@ async function _handleAdd() {
  * Entièrement piloté par TYPE_DEF.
  */
 export function entryLabel(entry) {
-  const def = TYPE_DEF[entry.type];
+  const def = getTypeDef()[entry.type];
   if (!def) return entry.type || '?';
 
   if (def.hasDuration) {

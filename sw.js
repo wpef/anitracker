@@ -1,5 +1,5 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v47';
+const CACHE_NAME = 'anitracker-v48';
 const ASSETS = [
   '/index.html',
   '/quick.html',
@@ -25,6 +25,10 @@ const ASSETS = [
   '/js/quick.js',
   '/js/ui-quick.js',
   '/js/firebase-config.js',
+  '/js/ui-custom-type.js',
+  '/js/ui-gantt.js',
+  '/js/permissions.js',
+  '/js/ui-premium.js',
   // ── Icons ──────────────────────────────────────────────────────────────
   '/icons/icon.svg',
   '/icons/icon-192.png',

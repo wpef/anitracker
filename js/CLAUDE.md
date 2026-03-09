@@ -23,6 +23,8 @@
 | `household.js` | Household management: create household, get user's household, migrate legacy entries, subscription listener | — |
 | `permissions.js` | [Phase 8] Freemium/premium feature gating. `canUseType()`, `getMaxHistoryDays()`, `canSwipeStats()` | — |
 | `ui-premium.js` | [Phase 8] Reusable premium CTA modal (bottom sheet). `showPremiumCTA(msg)` | `utils` |
+| `ui-custom-type.js` | [Phase 9] Custom type creation form (premium only). `initCustomType()`, `openCustomTypePage()` | `utils`, `permissions`, `ui-premium` |
+| `ui-gantt.js` | [Phase 9] Gantt chart component for today's timeline. `renderGantt()` | `utils` |
 | `firebase-config.js` | Read/write Firebase config from localStorage | — |
 | `quick.js` | Standalone quick.html logic (not used by main app) | `utils`, `ui-gauge` |
 

@@ -5,7 +5,7 @@
  * dynamiquement selon le type de l'entrée (gauge, textOptions, hasDuration).
  */
 
-import { $, buildSegment, toLocalISO, formatDuration, formatWalkTime, TYPE_DEF, getTextLabel, gaugeLabel } from './utils.js';
+import { $, buildSegment, toLocalISO, formatDuration, formatWalkTime, getTypeDef, getTextLabel, gaugeLabel } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage } from './navigation.js';
@@ -42,7 +42,7 @@ $('edit-page-save-btn')?.addEventListener('click', async () => {
   const entry = db.getAllEntries().find(e => e.id === editingId);
   if (!entry) return;
 
-  const def   = TYPE_DEF[entry.type];
+  const def   = getTypeDef()[entry.type];
   const body  = $('edit-page-body');
   let updated = {};
 
@@ -89,7 +89,7 @@ export function openEditPage(id) {
   if (!entry) return;
   editingId = id;
 
-  const def  = TYPE_DEF[entry.type];
+  const def  = getTypeDef()[entry.type];
   const body = $('edit-page-body');
   body.innerHTML = def?.hasDuration
     ? _buildDurationForm(entry, def)

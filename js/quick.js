@@ -3,7 +3,7 @@
  */
 
 import { initGauge } from './ui-gauge.js';
-import { TYPE_DEF } from './utils.js';
+import { getTypeDef } from './utils.js';
 
 // ── État local ─────────────────────────────────────────────────────────────
 // Nommage aligné avec ui-new-entry.js. Note : ne pas nommer la variable 'location'
@@ -42,10 +42,10 @@ timeInput.addEventListener('input', updateTimeGauge);
 
 // ── Mise à jour apparence de la jauge lors du changement de type ───────────
 function setupGauge() {
-  const cfg = TYPE_DEF[currentAction].gauge;
+  const cfg = getTypeDef()[currentAction].gauge;
   gaugeEndL.textContent  = cfg.ends[0];
   gaugeEndR.textContent  = cfg.ends[1];
-  gaugeLabel.textContent = TYPE_DEF[currentAction].icon + ' ' + cfg.title;
+  gaugeLabel.textContent = getTypeDef()[currentAction].icon + ' ' + cfg.title;
   gaugeInput.className   = currentAction === 'pipi' ? 'taille' : 'fermete';
   gauge.setType(currentAction);
 }

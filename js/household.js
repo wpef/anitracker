@@ -125,3 +125,40 @@ export function onSubscriptionChange(householdId, onChange) {
     onChange(isActive);
   });
 }
+
+/**
+ * Listen to custom types for a household.
+ * Calls onChange with the custom types object whenever it changes.
+ *
+ * @param {string} householdId
+ * @param {(customTypes: Record<string, object>) => void} onChange
+ */
+export function onCustomTypesChange(householdId, onChange) {
+  const ctRef = ref(_db, `households/${householdId}/customTypes`);
+  onValue(ctRef, (snapshot) => {
+    onChange(snapshot.val() || {});
+  });
+}
+
+/**
+ * Save a custom type definition to Firebase.
+ *
+ * @param {string} householdId
+ * @param {string} typeKey
+ * @param {object} typeDef
+ * @returns {Promise<void>}
+ */
+export async function saveCustomType(householdId, typeKey, typeDef) {
+  await set(ref(_db, `households/${householdId}/customTypes/${typeKey}`), typeDef);
+}
+
+/**
+ * Delete a custom type definition from Firebase.
+ *
+ * @param {string} householdId
+ * @param {string} typeKey
+ * @returns {Promise<void>}
+ */
+export async function deleteCustomType(householdId, typeKey) {
+  await remove(ref(_db, `households/${householdId}/customTypes/${typeKey}`));
+}

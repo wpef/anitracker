@@ -5,7 +5,7 @@
  * définition de type. Pour ajouter un nouveau type, aucun changement ici.
  */
 
-import { $, formatDuration, TYPE_DEF, getTextLabel, gaugeLabel } from './utils.js';
+import { $, formatDuration, getTypeDef, getTextLabel, gaugeLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
 import { getMaxHistoryDays, isPremium } from './permissions.js';
@@ -103,7 +103,7 @@ function _dayLabel(key, sample, todayKey, yestKey) {
  * Badge : valeur texte avec couleur associée (depuis textOptions)
  */
 function _entryRow(e, fmt) {
-  const def  = TYPE_DEF[e.type] || { label: e.type || '?', icon: '?' };
+  const def  = getTypeDef()[e.type] || { label: e.type || '?', icon: '?' };
   const icon = def.icon;
   const startStr = fmt(e.timestamp);
 
@@ -159,7 +159,7 @@ function _buildPremiumGate(allEntries, visibleCount) {
   const preview = allEntries.slice(visibleCount, visibleCount + 3);
   let blurredHtml = '';
   for (const e of preview) {
-    const def = TYPE_DEF[e.type] || { label: '?', icon: '?' };
+    const def = getTypeDef()[e.type] || { label: '?', icon: '?' };
     blurredHtml += `<div class="tl-entry" style="border-left-color:${def.color || ''}">
       <div class="tl-entry-time">${fmt(e.timestamp)}</div>
       <div class="tl-entry-icon">${def.icon}</div>
