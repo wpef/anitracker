@@ -1160,3 +1160,114 @@ nav {
   color: var(--walk);
   padding: 4px 0 8px;
 }
+
+/* ===== Auth Page ===== */
+#page-auth {
+  justify-content: center;
+  align-items: center;
+  padding: 40px 20px;
+}
+.auth-container {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.auth-icon { font-size: 3rem; }
+.auth-title { font-size: 1.6rem; font-weight: 800; text-align: center; }
+.auth-desc { color: var(--text2); font-size: .88rem; text-align: center; line-height: 1.5; }
+.auth-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.auth-input {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: .95rem;
+  font-family: inherit;
+  padding: 14px 16px;
+  outline: none;
+  color-scheme: dark;
+  transition: border-color .2s;
+}
+.auth-input:focus { border-color: var(--accent); }
+.auth-input::placeholder { color: var(--text2); }
+.auth-error {
+  background: rgba(233,69,96,.15);
+  border: 1px solid var(--inside);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .82rem;
+  color: var(--inside);
+}
+.auth-toggle-btn, .auth-forgot-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: .82rem;
+  cursor: pointer;
+  padding: 4px;
+  text-align: center;
+  font-family: inherit;
+}
+.auth-toggle-btn:hover, .auth-forgot-btn:hover { color: var(--text); }
+.auth-separator {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--text2);
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.auth-separator::before, .auth-separator::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,.1);
+}
+.auth-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .2s, border-color .2s;
+}
+.auth-google-btn:hover { background: var(--surface2); border-color: rgba(255,255,255,.3); }
+.auth-google-icon { flex-shrink: 0; }
+.auth-demo-btn {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* ===== Header logout button ===== */
+.header-logout-btn {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  transition: color .2s;
+  line-height: 1;
+}
+.header-logout-btn:hover { color: var(--inside); }

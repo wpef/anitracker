@@ -26,6 +26,9 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 - Ne saute jamais une phase sauf si l'utilisateur le demande explicitement
 - Respecte les conventions du projet (voir `CLAUDE.md` et `js/CLAUDE.md`)
 - Chaque phase doit etre testable independamment avant de passer a la suivante
+- **A chaque phase**, mets a jour la section "Actions manuelles" en bas de ce fichier :
+  ajoute les taches que l'utilisateur devra faire manuellement (console Firebase,
+  config provider, deploiement…) pour que la phase soit pleinement operationnelle
 
 ---
 
@@ -39,7 +42,7 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 | 4 | Debounce Firebase & stats | `phase-04-perf-data.md` | [x] | 2026-03-09 |
 | 5 | UX reseau & resilience | `phase-05-network-ux.md` | [x] | 2026-03-09 |
 | 6 | Performance CSS/HTML | `phase-06-perf-frontend.md` | [x] | 2026-03-09 |
-| 7 | Gestion utilisateurs & auth | `phase-07-auth.md` | [ ] | — |
+| 7 | Gestion utilisateurs & auth | `phase-07-auth.md` | [x] | 2026-03-09 |
 | 8 | Modele freemium / premium | `phase-08-freemium.md` | [ ] | — |
 | 9 | Nouvelles features | `phase-09-features.md` | [ ] | — |
 | 10 | App native & CI/CD | `phase-10-native-cicd.md` | [ ] | — |
@@ -92,6 +95,7 @@ anitracker/
     ├── utils.js               TYPE_DEF + helpers + validation
     ├── firebase-config.js     Config Firebase (localStorage)
     ├── auth.js                [Phase 7] Auth Firebase
+    ├── household.js           [Phase 7] Gestion foyers multi-utilisateurs
     ├── permissions.js         [Phase 8] Gestion freemium/premium
     ├── navigation.js          Navigation SPA
     ├── toast.js               Toasts + sync indicator
@@ -104,3 +108,61 @@ anitracker/
     ├── ui-stats.js            Page stats
     └── ui-gauge.js            Composant gauge
 ```
+
+---
+
+## Actions manuelles (a faire par l'utilisateur)
+
+Ces actions ne peuvent pas etre automatisees par Claude et doivent etre
+faites dans la console Firebase ou le dashboard du provider.
+
+### Apres Phase 7 — Auth & households
+
+- [ ] **Creer un nouveau projet Firebase** (ou reconfigurer l'existant)
+  - Console : https://console.firebase.google.com
+  - Creer un projet → activer **Realtime Database**
+- [ ] **Activer Authentication** dans la console Firebase :
+  - Sign-in method → **Email/Password** : activer
+  - Sign-in method → **Google** : activer + configurer le domaine autorise
+- [ ] **Configurer les Security Rules** du Realtime Database :
+  ```json
+  {
+    "rules": {
+      "households": {
+        "$householdId": {
+          ".read": "root.child('households/' + $householdId + '/members/' + auth.uid).exists()",
+          ".write": "root.child('households/' + $householdId + '/members/' + auth.uid).exists()"
+        }
+      },
+      "users": {
+        "$uid": {
+          ".read": "$uid === auth.uid",
+          ".write": "$uid === auth.uid"
+        }
+      },
+      "entries": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+  ```
+  Note : la regle `/entries/` reste ouverte temporairement pour
+  permettre la migration des donnees existantes. Une fois tous les
+  utilisateurs migres, supprimer cette regle.
+- [ ] **Ajouter le domaine de deploiement** dans Firebase Auth → Settings →
+  Authorized domains (ex: `anitracker.netlify.app`)
+- [ ] **Mettre a jour la config Firebase** dans l'app (premier lancement
+  apres deploiement — l'ecran setup demandera la nouvelle config)
+- [ ] **Supprimer l'ancienne base de donnees** une fois la migration
+  confirmee pour tous les utilisateurs
+
+### Apres Phase 8 — Freemium (a venir)
+
+- [ ] Configurer un provider de paiement (Stripe, etc.)
+- [ ] Definir les limites free/premium
+
+### Apres Phase 10 — Native & CI/CD (a venir)
+
+- [ ] Configurer les comptes Apple Developer / Google Play
+- [ ] Configurer le pipeline CI/CD (GitHub Actions, etc.)

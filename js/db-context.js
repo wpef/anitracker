@@ -15,14 +15,22 @@
  *   saveEntry(entry)         – Promise, ajoute une entrée
  *   deleteEntry(id)          – Promise, supprime par id
  *   updateEntry(id, data)    – Promise, merge partiel par id
+ *   setEntriesPath(path)     – Change le chemin des entrées (households)
+ *   getFirebaseApp()         – Retourne l'instance Firebase App (db.js seulement)
+ *   getFirebaseDb()          – Retourne l'instance Firebase Database (db.js seulement)
  *
  * @type {{ initDB: Function|null, getAllEntries: Function|null, saveEntry: Function|null,
- *          deleteEntry: Function|null, updateEntry: Function|null }}
+ *          deleteEntry: Function|null, updateEntry: Function|null,
+ *          setEntriesPath: Function|null, getFirebaseApp: Function|null,
+ *          getFirebaseDb: Function|null }}
  */
 export const db = {
-  initDB:       null,
-  getAllEntries: null,
-  saveEntry:    null,
-  deleteEntry:  null,
-  updateEntry:  null,
+  initDB:         null,
+  getAllEntries:   null,
+  saveEntry:      null,
+  deleteEntry:    null,
+  updateEntry:    null,
+  setEntriesPath: null,
+  getFirebaseApp: null,
+  getFirebaseDb:  null,
 };

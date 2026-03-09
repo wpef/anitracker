@@ -23,16 +23,30 @@ export function onShowPage(pageId, fn) {
   _renderers[pageId] = fn;
 }
 
+// ── Nav bar visibility ────────────────────────────────────────────────────
+
+/**
+ * Show or hide the bottom nav bar (hidden on auth page).
+ * @param {boolean} visible
+ */
+export function setNavVisible(visible) {
+  const nav = document.querySelector('nav');
+  if (nav) nav.style.display = visible ? 'flex' : 'none';
+}
+
 // ── Navigation ─────────────────────────────────────────────────────────────
 
 /**
  * Affiche la page donnée, met à jour la nav bar et déclenche son renderer.
  *
- * @param {string} id  Identifiant de page ('new', 'history', 'stats', 'edit')
+ * @param {string} id  Identifiant de page ('new', 'history', 'stats', 'edit', 'auth')
  */
 export function showPage(id) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   $(`page-${id}`).classList.add('active');
+
+  // Auth page: hide nav
+  if (id === 'auth') return;
 
   // La page 'edit' est une sous-page de 'history' : on garde la nav active
   if (id !== 'edit') {

@@ -84,6 +84,11 @@ Components documented (in order):
 | Edit header | `.edit-page-header` | Back / title / delete toolbar |
 | Modal sheet | `.modal-sheet` | Bottom sheet overlay |
 | Setup screen | `.setup-screen` | Firebase config overlay |
+| Auth page | `.auth-container .auth-form` | Login/signup form with Google sign-in |
+| Auth error | `.auth-error` | Inline error message on auth form |
+| Auth separator | `.auth-separator` | "ou" divider between email and Google |
+| Google button | `.auth-google-btn` | Google sign-in button with logo |
+| Header logout | `.header-logout-btn` | Logout button in header |
 | CSS variables | `:root` | Color palette swatches |
 
 **Keep `showcase.html` updated** when adding or modifying UI components.
