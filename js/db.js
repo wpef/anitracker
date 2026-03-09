@@ -19,6 +19,15 @@ const fbApp  = initializeApp(firebaseConfig);
 const fbDb   = getDatabase(fbApp);
 const ENTRIES_PATH = 'entries';
 
+// ── Debounce utilitaire (regroupe les updates rapides) ────────────────────
+function debounce(fn, ms) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+}
+
 // ── Cache mémoire (reste synchrone pour getAllEntries/renderHistory) ───────
 let entriesCache = [];
 
@@ -51,11 +60,15 @@ async function migrateFromLocalStorage() {
 export async function initDB(onUpdate) {
   await migrateFromLocalStorage();
 
+  const debouncedUpdate = typeof onUpdate === 'function'
+    ? debounce(onUpdate, 300)
+    : null;
+
   onValue(ref(fbDb, ENTRIES_PATH), snapshot => {
     const data = snapshot.val() || {};
     entriesCache = Object.values(data)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    if (typeof onUpdate === 'function') onUpdate();
+    if (debouncedUpdate) debouncedUpdate();
   });
 }
 

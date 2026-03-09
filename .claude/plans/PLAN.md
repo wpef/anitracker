@@ -36,7 +36,7 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 | 1 | Securite & deploiement | `phase-01-security.md` | [x] | 2026-03-08 |
 | 2 | Service Worker robuste | `phase-02-service-worker.md` | [x] | 2026-03-08 |
 | 3 | Validation des donnees | `phase-03-data-validation.md` | [x] | 2026-03-09 |
-| 4 | Debounce Firebase & stats | `phase-04-perf-data.md` | [ ] | — |
+| 4 | Debounce Firebase & stats | `phase-04-perf-data.md` | [x] | 2026-03-09 |
 | 5 | UX reseau & resilience | `phase-05-network-ux.md` | [ ] | — |
 | 6 | Performance CSS/HTML | `phase-06-perf-frontend.md` | [ ] | — |
 | 7 | Gestion utilisateurs & auth | `phase-07-auth.md` | [ ] | — |
