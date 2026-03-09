@@ -31,6 +31,10 @@ function debounce(fn, ms) {
 // ── Cache mémoire (reste synchrone pour getAllEntries/renderHistory) ───────
 let entriesCache = [];
 
+// ── Dernière synchronisation réussie ─────────────────────────────────────
+let lastSyncAt = null;
+export function getLastSync() { return lastSyncAt; }
+
 // ── Migration localStorage → Firebase (one-time) ──────────────────────────
 const LS_KEY = 'anitracker_entries';
 
@@ -68,6 +72,7 @@ export async function initDB(onUpdate) {
     const data = snapshot.val() || {};
     entriesCache = Object.values(data)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    lastSyncAt = new Date();
     if (debouncedUpdate) debouncedUpdate();
   });
 }

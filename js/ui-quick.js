@@ -7,7 +7,7 @@
 
 import { initGauge } from './ui-gauge.js';
 import { TYPE_DEF, allTypes, validateEntry } from './utils.js';
-import { showToast } from './toast.js';
+import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
 
 // ── État local ──────────────────────────────────────────────────────────────
@@ -184,8 +184,10 @@ btnSave.addEventListener('click', async () => {
     return;
   }
 
+  setSyncState('pending');
   try {
     await db.saveEntry(entry);
+    setSyncState('ok');
     const orig = btnSave.textContent;
     btnSave.classList.add('success');
     btnSave.textContent = '✓ Enregistré !';
@@ -196,11 +198,23 @@ btnSave.addEventListener('click', async () => {
       reset();
     }, 1200);
   } catch {
-    btnSave.textContent = '✗ Erreur';
-    setTimeout(() => {
-      btnSave.textContent = 'Enregistrer ✓';
+    // Retry once after 2s
+    try {
+      await new Promise(r => setTimeout(r, 2000));
+      await db.saveEntry(entry);
+      setSyncState('ok');
+      showToast('Enregistré (2e tentative)');
       btnSave.disabled = false;
-    }, 2000);
+      reset();
+    } catch {
+      setSyncState('error');
+      btnSave.textContent = '✗ Erreur';
+      showToast('Échec de sauvegarde — vérifiez votre connexion');
+      setTimeout(() => {
+        btnSave.textContent = 'Enregistrer ✓';
+        btnSave.disabled = false;
+      }, 2000);
+    }
   }
 });
 
