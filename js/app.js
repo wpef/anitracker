@@ -13,7 +13,7 @@
 
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
-import { $, normalizeEntry, TYPE_DEF } from './utils.js';
+import { $, normalizeEntry, TYPE_DEF, validateEntry } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage, onShowPage } from './navigation.js';
 import { db } from './db-context.js';
@@ -108,7 +108,25 @@ async function handleQuickEntry() {
       type: quick,
       timestamp: new Date().toISOString(), note: '',
     };
-    if (def.textOptions) entry.text_val = params.get('loc') || def.defaultTextVal || def.textOptions[0]?.value;
+    if (def.textOptions) {
+      const loc = params.get('loc');
+      if (loc) {
+        const validValues = def.textOptions.map(o => o.value);
+        if (!validValues.includes(loc)) {
+          showToast('Option invalide');
+          return;
+        }
+        entry.text_val = loc;
+      } else {
+        entry.text_val = def.defaultTextVal || def.textOptions[0]?.value;
+      }
+    }
+  }
+
+  const error = validateEntry(entry, def);
+  if (error) {
+    showToast(error);
+    return;
   }
 
   await db.saveEntry(entry);

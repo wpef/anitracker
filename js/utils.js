@@ -367,3 +367,33 @@ export function formatDateTimeFriendly(isoOrLocal) {
   const dayStr = d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' });
   return `${dayStr} ${time}`;
 }
+
+// ── Validation ──────────────────────────────────────────────────────────────
+
+/**
+ * Validates an entry before save. Returns null if valid,
+ * or a French error message string if invalid.
+ *
+ * @param {BaseEntry} entry
+ * @param {object} typeDef  TYPE_DEF entry for this type
+ * @returns {string|null}
+ */
+export function validateEntry(entry, typeDef) {
+  if (typeDef?.gauge && (entry.num_val < 0 || entry.num_val > 100))
+    return 'Valeur hors limites (0-100)';
+
+  if (typeDef?.textOptions) {
+    const validValues = typeDef.textOptions.map(o => o.value);
+    if (entry.text_val && !validValues.includes(entry.text_val))
+      return 'Option invalide';
+  }
+
+  if (entry.note && entry.note.length > 500)
+    return 'Note trop longue (max 500 caractères)';
+
+  const ts = new Date(entry.timestamp).getTime();
+  if (ts > Date.now() + 5 * 60 * 1000)
+    return 'La date ne peut pas être dans le futur';
+
+  return null;
+}

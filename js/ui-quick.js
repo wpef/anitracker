@@ -6,7 +6,8 @@
  */
 
 import { initGauge } from './ui-gauge.js';
-import { TYPE_DEF, allTypes } from './utils.js';
+import { TYPE_DEF, allTypes, validateEntry } from './utils.js';
+import { showToast } from './toast.js';
 import { db } from './db-context.js';
 
 // ── État local ──────────────────────────────────────────────────────────────
@@ -175,6 +176,13 @@ btnSave.addEventListener('click', async () => {
   };
   if (currentTextVal !== null) entry.text_val = currentTextVal;
   if (def?.gauge)              entry.num_val  = gauge.getValue();
+
+  const validationError = validateEntry(entry, def);
+  if (validationError) {
+    showToast(validationError);
+    btnSave.disabled = false;
+    return;
+  }
 
   try {
     await db.saveEntry(entry);
