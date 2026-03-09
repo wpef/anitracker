@@ -6,8 +6,8 @@
 |---|---|---|
 | `utils.js` | **TYPE_DEF** (single source of truth), `BaseEntry` typedef, DOM helpers (`$`, `setActive`, `setVisible`, `buildSegment`), formatters, `gaugeLabel()`, `normalizeEntry()` | — |
 | `db-context.js` | Shared `db` singleton (populated at boot via dynamic import) | — |
-| `app.js` | Boot sequence, Firebase setup, quick-entry URL, SW registration | all modules |
-| `navigation.js` | `showPage(id)` + renderer registry `onShowPage(id, fn)` | `utils` |
+| `app.js` | Boot sequence, Firebase setup, auth flow, household resolution, quick-entry URL, SW registration | all modules |
+| `navigation.js` | `showPage(id)` + `setNavVisible()` + renderer registry `onShowPage(id, fn)` | `utils` |
 | `toast.js` | `showToast()`, `setSyncState()` | `utils` |
 | `ui-gauge.js` | Reusable gauge component. Reads `gauge.steps` from TYPE_DEF | `utils` |
 | `ui-new-entry.js` | "Complet" new-entry form. Generates type/gauge/text selectors from TYPE_DEF | `utils`, `ui-gauge`, `toast`, `db-context` |
@@ -17,8 +17,10 @@
 | `ui-stats.js` | Stats page. Score details + gauge charts generated from TYPE_DEF | `utils`, `db-context`, `stats`, `charts` |
 | `stats.js` | Pure stats computation (zero DOM). Iterates `needTypes()` for cleanliness score | `utils` |
 | `charts.js` | Chart.js wrappers: `renderScoreRing`, `renderBarChart`, `renderLineChart` | `utils` |
-| `db.js` | Firebase Realtime DB adapter. Type-agnostic CRUD | — |
+| `db.js` | Firebase Realtime DB adapter. Type-agnostic CRUD. Configurable entries path via `setEntriesPath()` | — |
 | `demo-db.js` | In-memory demo data. Same API as `db.js` | — |
+| `auth.js` | Firebase Authentication (email/password + Google). `initAuth()`, `signup()`, `login()`, `loginWithGoogle()`, `logout()` | — |
+| `household.js` | Household management: create household, get user's household, migrate legacy entries | — |
 | `firebase-config.js` | Read/write Firebase config from localStorage | — |
 | `quick.js` | Standalone quick.html logic (not used by main app) | `utils`, `ui-gauge` |
 

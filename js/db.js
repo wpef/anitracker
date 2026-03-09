@@ -4,12 +4,16 @@
  * Maintient un cache mémoire local pour des lectures synchrones (getAllEntries).
  * Toutes les écritures sont asynchrones et se propagent en temps réel via onValue.
  *
- * Interface publique : initDB, getAllEntries, saveEntry, deleteEntry, updateEntry
+ * The entries path is configurable via setEntriesPath() to support
+ * household-based data isolation (/households/{id}/entries).
+ *
+ * Interface publique : initDB, getAllEntries, saveEntry, deleteEntry, updateEntry,
+ *                      setEntriesPath, getFirebaseApp, getFirebaseDb
  */
 
 import { initializeApp }                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, remove, update,
-         onValue, get }                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+         onValue, get, off }                         from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { getFirebaseConfig }                        from './firebase-config.js';
 
 // ── Firebase init (config lue depuis localStorage) ─────────────────────────
@@ -17,7 +21,31 @@ const firebaseConfig = getFirebaseConfig();
 if (!firebaseConfig) throw new Error('FIREBASE_NOT_CONFIGURED');
 const fbApp  = initializeApp(firebaseConfig);
 const fbDb   = getDatabase(fbApp);
-const ENTRIES_PATH = 'entries';
+
+/** Expose Firebase app for auth module initialization. */
+export function getFirebaseApp() { return fbApp; }
+/** Expose Firebase database for household module. */
+export function getFirebaseDb() { return fbDb; }
+
+// ── Configurable entries path ──────────────────────────────────────────────
+let ENTRIES_PATH = 'entries';
+let _currentRef = null;
+let _currentOnUpdate = null;
+
+/**
+ * Change the entries path (e.g. from 'entries' to 'households/xyz/entries').
+ * If a listener is active, it will be detached and reattached on the new path.
+ *
+ * @param {string} path
+ */
+export function setEntriesPath(path) {
+  ENTRIES_PATH = path;
+  if (_currentRef && _currentOnUpdate) {
+    off(_currentRef);
+    _currentRef = null;
+    _attachListener(_currentOnUpdate);
+  }
+}
 
 // ── Debounce utilitaire (regroupe les updates rapides) ────────────────────
 function debounce(fn, ms) {
@@ -53,10 +81,22 @@ async function migrateFromLocalStorage() {
   }
 }
 
+// ── Listener attachment (reusable for path changes) ──────────────────────
+function _attachListener(debouncedUpdate) {
+  _currentRef = ref(fbDb, ENTRIES_PATH);
+  onValue(_currentRef, snapshot => {
+    const data = snapshot.val() || {};
+    entriesCache = Object.values(data)
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    lastSyncAt = new Date();
+    if (debouncedUpdate) debouncedUpdate();
+  });
+}
+
 // ── Initialisation + listener temps réel ──────────────────────────────────
 /**
  * Initialise la connexion Firebase, migre les données localStorage existantes,
- * puis établit un listener temps réel sur le nœud "entries".
+ * puis établit un listener temps réel sur le nœud entries.
  *
  * @param {() => void} onUpdate  Appelé à chaque mise à jour distante (ajout/modif/suppression)
  * @returns {Promise<void>}
@@ -68,13 +108,8 @@ export async function initDB(onUpdate) {
     ? debounce(onUpdate, 300)
     : null;
 
-  onValue(ref(fbDb, ENTRIES_PATH), snapshot => {
-    const data = snapshot.val() || {};
-    entriesCache = Object.values(data)
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    lastSyncAt = new Date();
-    if (debouncedUpdate) debouncedUpdate();
-  });
+  _currentOnUpdate = debouncedUpdate;
+  _attachListener(debouncedUpdate);
 }
 
 // ── Lecture synchrone depuis le cache ─────────────────────────────────────

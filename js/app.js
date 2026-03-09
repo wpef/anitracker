@@ -3,6 +3,8 @@
  *
  * Responsabilités :
  *  - Chargement dynamique de la couche DB (Firebase ou démo)
+ *  - Authentification Firebase (email/password + Google)
+ *  - Gestion des households (foyers) multi-utilisateurs
  *  - Écran de configuration Firebase
  *  - Saisie rapide via URL (?quick=pipi&loc=outside)
  *  - Enregistrement du Service Worker
@@ -15,13 +17,19 @@ import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
 import { $, normalizeEntry, TYPE_DEF, validateEntry } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
-import { showPage, onShowPage } from './navigation.js';
+import { showPage, onShowPage, setNavVisible } from './navigation.js';
 import { db } from './db-context.js';
 import { initNewEntry, entryLabel } from './ui-new-entry.js';
 import { initQuick } from './ui-quick.js';
 import { renderHistory } from './ui-history.js';
 import { openEditPage } from './ui-edit.js';
 import { renderStats } from './ui-stats.js';
+
+// ── Auth state ────────────────────────────────────────────────────────────
+let _authModule = null;
+let _householdModule = null;
+let _appInitialized = false;  // prevents double-init on rapid auth changes
+let _isDemo = false;
 
 // ── Chargement DB ──────────────────────────────────────────────────────────
 
@@ -67,9 +75,10 @@ $('setup-reset')?.addEventListener('click', () => {
 
 $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
 
-// ── Mode démo ─────────────────────────────────────────────────────────────
+// ── Mode démo (pas d'auth) ──────────────────────────────────────────────
 
 async function startDemo() {
+  _isDemo = true;
   $('setup-overlay').style.display = 'none';
   await loadDemoDb();
   db.initDB(() => {
@@ -78,10 +87,169 @@ async function startDemo() {
     if (active?.id === 'page-history') renderHistory();
   });
   $('demo-banner').style.display = 'flex';
+  setNavVisible(true);
   setSyncState('ok');
   initNewEntry();
   initQuick();
   showPage('quick');
+}
+
+// ── Auth UI ───────────────────────────────────────────────────────────────
+
+let _isSignup = false;
+
+function showAuthPage() {
+  setNavVisible(false);
+  $('header-logout-btn').style.display = 'none';
+  showPage('auth');
+}
+
+function showAuthError(msg) {
+  const el = $('auth-error');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+function hideAuthError() {
+  $('auth-error').style.display = 'none';
+}
+
+function authErrorMessage(code) {
+  const map = {
+    'auth/invalid-email':            'Adresse email invalide',
+    'auth/user-disabled':            'Compte désactivé',
+    'auth/user-not-found':           'Aucun compte avec cet email',
+    'auth/wrong-password':           'Mot de passe incorrect',
+    'auth/invalid-credential':       'Email ou mot de passe incorrect',
+    'auth/email-already-in-use':     'Un compte existe déjà avec cet email',
+    'auth/weak-password':            'Le mot de passe doit avoir au moins 6 caractères',
+    'auth/too-many-requests':        'Trop de tentatives. Réessayez plus tard.',
+    'auth/popup-closed-by-user':     'Connexion Google annulée',
+    'auth/network-request-failed':   'Erreur réseau. Vérifiez votre connexion.',
+  };
+  return map[code] || 'Erreur de connexion';
+}
+
+// Auth form: toggle between login/signup
+$('auth-toggle-btn')?.addEventListener('click', () => {
+  _isSignup = !_isSignup;
+  $('auth-submit-btn').textContent = _isSignup ? 'Créer un compte' : 'Se connecter';
+  $('auth-toggle-btn').textContent = _isSignup
+    ? 'Déjà un compte ? Se connecter'
+    : 'Pas encore de compte ? Créer un compte';
+  $('auth-password').autocomplete = _isSignup ? 'new-password' : 'current-password';
+  hideAuthError();
+});
+
+// Auth form: submit
+$('auth-submit-btn')?.addEventListener('click', async () => {
+  hideAuthError();
+  const email    = $('auth-email').value.trim();
+  const password = $('auth-password').value;
+  if (!email || !password) {
+    showAuthError('Veuillez remplir tous les champs');
+    return;
+  }
+  try {
+    if (_isSignup) {
+      await _authModule.signup(email, password);
+    } else {
+      await _authModule.login(email, password);
+    }
+    // onAuthStateChanged will handle the rest
+  } catch (err) {
+    showAuthError(authErrorMessage(err.code));
+  }
+});
+
+// Auth form: Google sign-in
+$('auth-google-btn')?.addEventListener('click', async () => {
+  hideAuthError();
+  try {
+    await _authModule.loginWithGoogle();
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user') {
+      showAuthError(authErrorMessage(err.code));
+    }
+  }
+});
+
+// Auth form: password reset
+$('auth-forgot-btn')?.addEventListener('click', async () => {
+  hideAuthError();
+  const email = $('auth-email').value.trim();
+  if (!email) {
+    showAuthError('Entrez votre email pour réinitialiser le mot de passe');
+    return;
+  }
+  try {
+    await _authModule.resetPassword(email);
+    showToast('Email de réinitialisation envoyé');
+  } catch (err) {
+    showAuthError(authErrorMessage(err.code));
+  }
+});
+
+// Auth form: demo mode button
+$('auth-demo-btn')?.addEventListener('click', startDemo);
+
+// Header: logout
+$('header-logout-btn')?.addEventListener('click', async () => {
+  if (_authModule) {
+    await _authModule.logout();
+    // onAuthStateChanged will redirect to auth page
+  }
+});
+
+// ── App initialization after successful auth ─────────────────────────────
+
+async function initApp(user) {
+  if (_appInitialized) return;
+  _appInitialized = true;
+
+  setSyncState('pending');
+
+  // Resolve household
+  let householdId = await _householdModule.getUserHouseholdId(user.uid);
+
+  if (!householdId) {
+    // First login: check for legacy data and migrate
+    householdId = await _householdModule.createHousehold(
+      user.uid, user.email, user.displayName
+    );
+
+    try {
+      const migrated = await _householdModule.migrateLegacyEntries(householdId, user.uid);
+      if (migrated > 0) {
+        showToast(`${migrated} entrées migrées vers votre foyer`);
+      }
+    } catch {
+      // Migration failure is non-fatal
+    }
+  }
+
+  // Point DB at household entries
+  db.setEntriesPath(_householdModule.getEntriesPath(householdId));
+
+  db.initDB(() => {
+    const active = document.querySelector('.page.active');
+    if (active?.id === 'page-stats')   renderStats();
+    if (active?.id === 'page-history') renderHistory();
+    setSyncState('ok');
+  });
+
+  setNavVisible(true);
+  $('header-logout-btn').style.display = 'block';
+  initNewEntry();
+  initQuick();
+  await handleQuickEntry();
+  showPage('quick');
+}
+
+function resetApp() {
+  _appInitialized = false;
+  setNavVisible(false);
+  $('header-logout-btn').style.display = 'none';
 }
 
 // ── Saisie rapide (?quick=pipi|caca|walk) ─────────────────────────────────
@@ -137,6 +305,7 @@ async function handleQuickEntry() {
 // ── Boot ───────────────────────────────────────────────────────────────────
 
 async function boot() {
+  // No Firebase config → show setup screen (config-first flow)
   if (!getFirebaseConfig()) {
     showSetupScreen();
     $('btn-demo').addEventListener('click', startDemo);
@@ -151,21 +320,26 @@ async function boot() {
     return;
   }
 
-  setSyncState('pending');
+  // Load auth + household modules
+  _authModule = await import('./auth.js');
+  _householdModule = await import('./household.js');
 
-  db.initDB(() => {
-    const active = document.querySelector('.page.active');
-    if (active?.id === 'page-stats')   renderStats();
-    if (active?.id === 'page-history') renderHistory();
-    setSyncState('ok');
+  // Init household module with the Firebase database
+  _householdModule.initHousehold(db.getFirebaseDb());
+
+  // Init auth — onAuthStateChanged drives the app lifecycle
+  _authModule.initAuth(db.getFirebaseApp(), async (user) => {
+    if (_isDemo) return; // ignore auth changes in demo mode
+
+    if (user) {
+      await initApp(user);
+    } else {
+      resetApp();
+      showAuthPage();
+    }
   });
 
-  initNewEntry();
-  initQuick();
-  await handleQuickEntry();
-  showPage('quick');
-
-  // ── Online/offline feedback (données gérées par Firebase offline persistence) ──
+  // ── Online/offline feedback ──
   window.addEventListener('offline', () => {
     setSyncState('error');
     showToast('Hors ligne');
