@@ -147,7 +147,7 @@ nav {
   font-size: .85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all .2s;
+  transition: background-color .2s, color .2s, box-shadow .2s;
   background: transparent;
   color: var(--text2);
   display: flex;
@@ -177,7 +177,7 @@ nav {
   font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: all .2s;
+  transition: background-color .2s, transform .2s, box-shadow .2s;
   background: linear-gradient(135deg, var(--accent), #c62a47);
   color: #fff;
   box-shadow: 0 4px 16px rgba(233,69,96,.4);
@@ -200,6 +200,7 @@ nav {
   box-shadow: 0 4px 20px rgba(0,0,0,.5);
   opacity: 0;
   transition: opacity .3s, transform .3s;
+  will-change: transform, opacity;
   z-index: 200;
   white-space: nowrap;
   pointer-events: none;
@@ -712,6 +713,7 @@ nav {
   flex-direction: column;
   gap: 14px;
   box-shadow: 0 -8px 40px rgba(0,0,0,.5);
+  will-change: transform;
 }
 .modal-header {
   display: flex;
