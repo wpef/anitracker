@@ -8,6 +8,8 @@
 import { $, formatDuration, TYPE_DEF, getTextLabel, gaugeLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
+import { getMaxHistoryDays, isPremium } from './permissions.js';
+import { showPremiumCTA } from './ui-premium.js';
 
 // ── Rendu principal ────────────────────────────────────────────────────────
 
@@ -23,7 +25,27 @@ export function renderHistory() {
     return;
   }
 
-  container.innerHTML = _buildHTML(allEntries);
+  // Filter entries by max history days for free users
+  const maxDays = getMaxHistoryDays();
+  const cutoff = maxDays === Infinity
+    ? null
+    : new Date(Date.now() - maxDays * 24 * 60 * 60 * 1000);
+
+  const visibleEntries = cutoff
+    ? allEntries.filter(e => new Date(e.timestamp) >= cutoff)
+    : allEntries;
+
+  const hasHiddenEntries = cutoff && visibleEntries.length < allEntries.length;
+
+  container.innerHTML = _buildHTML(visibleEntries);
+
+  // Show blurred premium gate if entries are hidden
+  if (hasHiddenEntries) {
+    container.innerHTML += _buildPremiumGate(allEntries, visibleEntries.length);
+    container.querySelector('.premium-gate-btn')?.addEventListener('click', () => {
+      showPremiumCTA('Passez en Premium pour voir tout l\'historique');
+    });
+  }
 
   container.querySelectorAll('.tl-entry[data-id]').forEach(el => {
     el.addEventListener('click', () => openEditPage(el.dataset.id));
@@ -125,4 +147,33 @@ function _entryRow(e, fmt) {
             </div>
             ${badgeHtml}
           </div>`;
+}
+
+// ── Premium gate (blurred entries + CTA) ────────────────────────────────────
+
+function _buildPremiumGate(allEntries, visibleCount) {
+  const hiddenCount = allEntries.length - visibleCount;
+  const fmt = t => new Date(t).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  // Show 3 fake blurred entries from hidden data
+  const preview = allEntries.slice(visibleCount, visibleCount + 3);
+  let blurredHtml = '';
+  for (const e of preview) {
+    const def = TYPE_DEF[e.type] || { label: '?', icon: '?' };
+    blurredHtml += `<div class="tl-entry" style="border-left-color:${def.color || ''}">
+      <div class="tl-entry-time">${fmt(e.timestamp)}</div>
+      <div class="tl-entry-icon">${def.icon}</div>
+      <div class="tl-entry-body">
+        <div class="tl-entry-title">${def.label}</div>
+      </div>
+    </div>`;
+  }
+
+  return `<div class="premium-gate">
+    <div class="blurred-entries">${blurredHtml}</div>
+    <div class="premium-cta">
+      <p class="premium-cta-text">${hiddenCount} entrée${hiddenCount > 1 ? 's' : ''} masquée${hiddenCount > 1 ? 's' : ''}</p>
+      <button class="btn-premium premium-gate-btn">Voir tout l'historique</button>
+    </div>
+  </div>`;
 }

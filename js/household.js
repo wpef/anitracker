@@ -11,7 +11,7 @@
  * and migrating legacy flat /entries data.
  */
 
-import { getDatabase, ref, set, get, remove }
+import { getDatabase, ref, set, get, remove, onValue }
   from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 let _db = null;
@@ -103,4 +103,25 @@ export async function migrateLegacyEntries(householdId, uid) {
  */
 export function getEntriesPath(householdId) {
   return `households/${householdId}/entries`;
+}
+
+/**
+ * Listen to the household subscription node for premium status changes.
+ * Calls onChange(isPremium) whenever the subscription data changes.
+ *
+ * @param {string} householdId
+ * @param {(isPremium: boolean) => void} onChange
+ */
+export function onSubscriptionChange(householdId, onChange) {
+  const subRef = ref(_db, `households/${householdId}/subscription`);
+  onValue(subRef, (snapshot) => {
+    const sub = snapshot.val();
+    if (!sub) {
+      onChange(false);
+      return;
+    }
+    const isActive = sub.plan === 'premium'
+      && (!sub.expiresAt || new Date(sub.expiresAt) > new Date());
+    onChange(isActive);
+  });
 }

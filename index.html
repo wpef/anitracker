@@ -181,6 +181,9 @@
   <!-- ===== Page 2 : Statistiques ===== -->
   <main id="page-stats" class="page">
 
+    <!-- Week navigation (premium: arrows, free: locked CTA) -->
+    <div id="stats-week-nav" class="stats-week-nav"></div>
+
     <!-- Quick-stats -->
     <div class="quick-stats">
       <div class="qs-item pipi-in-color">
@@ -392,6 +395,24 @@
     <button class="setup-reset-btn" id="setup-reset" style="display:none">
       🔄 Réinitialiser la configuration
     </button>
+  </div>
+</div>
+
+<!-- ===== Modal Premium CTA ===== -->
+<div id="premium-modal" class="premium-modal">
+  <div class="premium-sheet">
+    <div class="premium-sheet-icon">⭐</div>
+    <h3 class="premium-sheet-title">AniTracker Premium</h3>
+    <p id="premium-modal-msg" class="premium-sheet-msg"></p>
+    <ul class="premium-advantages">
+      <li>Tous les types d'entrées débloqués</li>
+      <li>Historique illimité</li>
+      <li>Stats par semaine avec navigation</li>
+      <li>Types personnalisés (bientôt)</li>
+      <li>Export de données</li>
+    </ul>
+    <button id="premium-subscribe-btn" class="btn-premium">Essai gratuit 14 jours</button>
+    <button id="premium-close-btn" class="premium-close-btn">Plus tard</button>
   </div>
 </div>
 

@@ -12,6 +12,8 @@ import { $, setActive, setVisible, buildSegment, toLocalISO, localNow,
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
+import { canUseType } from './permissions.js';
+import { showPremiumCTA } from './ui-premium.js';
 
 // ── État local ─────────────────────────────────────────────────────────────
 
@@ -34,6 +36,10 @@ export function initNewEntry() {
   $('type-selector').addEventListener('click', e => {
     const btn = e.target.closest('[data-type]');
     if (!btn) return;
+    if (btn.classList.contains('locked')) {
+      showPremiumCTA('Passez en Premium pour débloquer ce type');
+      return;
+    }
     _selectType(btn.dataset.type);
   });
 
@@ -130,9 +136,10 @@ export function initNewEntry() {
 
 function _buildTypeSelector() {
   const container = $('type-selector');
-  container.innerHTML = allTypes().map(([key, def]) =>
-    `<button class="seg-btn" data-type="${key}">${def.icon} ${def.label}</button>`
-  ).join('');
+  container.innerHTML = allTypes().map(([key, def]) => {
+    const locked = !canUseType(key);
+    return `<button class="seg-btn${locked ? ' locked' : ''}" data-type="${key}">${def.icon} ${def.label}${locked ? ' \uD83D\uDD12' : ''}</button>`;
+  }).join('');
 }
 
 function _selectType(type) {

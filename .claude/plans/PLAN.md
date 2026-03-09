@@ -43,7 +43,7 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 | 5 | UX reseau & resilience | `phase-05-network-ux.md` | [x] | 2026-03-09 |
 | 6 | Performance CSS/HTML | `phase-06-perf-frontend.md` | [x] | 2026-03-09 |
 | 7 | Gestion utilisateurs & auth | `phase-07-auth.md` | [x] | 2026-03-09 |
-| 8 | Modele freemium / premium | `phase-08-freemium.md` | [ ] | — |
+| 8 | Modele freemium / premium | `phase-08-freemium.md` | [x] | 2026-03-09 |
 | 9 | Nouvelles features | `phase-09-features.md` | [ ] | — |
 | 10 | App native & CI/CD | `phase-10-native-cicd.md` | [ ] | — |
 
@@ -157,10 +157,32 @@ faites dans la console Firebase ou le dashboard du provider.
 - [ ] **Supprimer l'ancienne base de donnees** une fois la migration
   confirmee pour tous les utilisateurs
 
-### Apres Phase 8 — Freemium (a venir)
+### Apres Phase 8 — Freemium / Premium
 
-- [ ] Configurer un provider de paiement (Stripe, etc.)
-- [ ] Definir les limites free/premium
+- [ ] **Creer un compte RevenueCat** sur https://app.revenuecat.com
+  - Creer un projet "AniTracker"
+  - Configurer un produit "AniTracker Premium" avec :
+    - Abonnement mensuel
+    - Abonnement annuel (avec reduction)
+    - Essai gratuit de 14 jours
+- [ ] **Configurer le paywall** dans RevenueCat (entitlement "premium")
+- [ ] **Mettre a jour l'URL du bouton subscribe** dans `js/ui-premium.js`
+  (remplacer le placeholder `https://app.revenuecat.com` par l'URL
+  du paywall ou du checkout RevenueCat)
+- [ ] **Configurer un webhook RevenueCat → Firebase** pour mettre a jour
+  `/households/{id}/subscription` automatiquement quand un utilisateur
+  souscrit ou annule :
+  ```json
+  {
+    "plan": "premium",
+    "expiresAt": "2026-04-09T...",
+    "rcCustomerId": "...",
+    "rcSubscriptionId": "..."
+  }
+  ```
+  Options : Netlify Function, Firebase Cloud Function, ou RevenueCat
+  Firebase Extension
+- [ ] **Tester le flow complet** : free → trial → premium → expiration
 
 ### Apres Phase 10 — Native & CI/CD (a venir)
 
