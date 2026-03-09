@@ -6,7 +6,7 @@
  */
 
 import { initGauge } from './ui-gauge.js';
-import { TYPE_DEF, allTypes, validateEntry } from './utils.js';
+import { getTypeDef, allTypes, validateEntry } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
 import { canUseType } from './permissions.js';
@@ -52,7 +52,7 @@ function _buildActionButtons() {
 }
 
 function _buildTextButtons() {
-  const def = TYPE_DEF[currentAction];
+  const def = getTypeDef()[currentAction];
   if (!def?.textOptions?.length) {
     textRow.style.display = 'none';
     return;
@@ -70,7 +70,7 @@ function _buildTextButtons() {
 function _highlightActionButton() {
   actionRow.querySelectorAll('[data-qp-action]').forEach(btn => {
     const key = btn.dataset.qpAction;
-    const def = TYPE_DEF[key];
+    const def = getTypeDef()[key];
     if (key === currentAction) {
       btn.style.borderColor = def.color;
       btn.style.color       = def.color;
@@ -84,7 +84,7 @@ function _highlightActionButton() {
 }
 
 function _highlightTextButton() {
-  const def = TYPE_DEF[currentAction];
+  const def = getTypeDef()[currentAction];
   textRow.querySelectorAll('[data-qp-text]').forEach(btn => {
     const val = btn.dataset.qpText;
     if (val === currentTextVal) {
@@ -119,7 +119,7 @@ function updateTimeGauge() {
 
 // ── Jauge action ────────────────────────────────────────────────────────────
 function setupGauge() {
-  const def = TYPE_DEF[currentAction];
+  const def = getTypeDef()[currentAction];
   if (!def?.gauge) {
     gaugeSection.style.display = 'none';
     return;
@@ -136,7 +136,7 @@ function setupGauge() {
 function reset() {
   const types = quickTypes();
   currentAction = types[0]?.[0] || 'pipi';
-  const def = TYPE_DEF[currentAction];
+  const def = getTypeDef()[currentAction];
   currentTextVal = def?.defaultTextVal || def?.textOptions?.[0]?.value || null;
   _highlightActionButton();
   _buildTextButtons();
@@ -155,7 +155,7 @@ actionRow.addEventListener('click', e => {
     return;
   }
   currentAction = btn.dataset.qpAction;
-  const def = TYPE_DEF[currentAction];
+  const def = getTypeDef()[currentAction];
   _highlightActionButton();
   _buildTextButtons();
   gauge.setValue(def?.gauge?.def ?? 50);
@@ -176,7 +176,7 @@ btnSave.addEventListener('click', async () => {
 
   btnSave.disabled = true;
 
-  const def   = TYPE_DEF[currentAction];
+  const def   = getTypeDef()[currentAction];
   const entry = {
     type:      currentAction,
     timestamp: new Date(Date.now() - (30 - parseInt(timeInput.value, 10)) * 60_000).toISOString(),

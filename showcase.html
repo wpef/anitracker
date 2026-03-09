@@ -855,6 +855,105 @@
     </div>
   </div>
 
+  <!-- ===== Period Selector ===== -->
+  <h2 class="showcase-section">Period Selector</h2>
+  <div style="padding:0 16px;">
+    <div id="stats-period-selector">
+      <div class="segment stat-period">
+        <button class="seg-btn active" data-days="7">7j</button>
+        <button class="seg-btn" data-days="14">14j</button>
+        <button class="seg-btn" data-days="30">30j</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Gantt Chart ===== -->
+  <h2 class="showcase-section">Gantt Chart (Timeline)</h2>
+  <div style="padding:0 16px;">
+    <div class="card">
+      <div class="card-title">📅 Timeline du jour</div>
+      <div class="gantt-chart">
+        <div class="gantt-axis" style="position:relative;height:1rem;margin-left:4.5rem">
+          <span class="gantt-axis-label" style="left:2%">6h</span>
+          <span class="gantt-axis-label" style="left:10%">8h</span>
+          <span class="gantt-axis-label" style="left:19%">10h</span>
+          <span class="gantt-axis-label" style="left:27%">12h</span>
+          <span class="gantt-axis-label" style="left:35%">14h</span>
+          <span class="gantt-axis-label" style="left:52%">18h</span>
+          <span class="gantt-axis-label" style="left:69%">22h</span>
+        </div>
+        <div class="gantt-row">
+          <span class="gantt-label">🐾 Balade</span>
+          <div class="gantt-track">
+            <div class="gantt-bar" style="left:12%;width:6%;background:#4cc9f0"></div>
+            <div class="gantt-bar" style="left:55%;width:8%;background:#4cc9f0"></div>
+          </div>
+        </div>
+        <div class="gantt-row">
+          <span class="gantt-label">🧩 Occupation</span>
+          <div class="gantt-track">
+            <div class="gantt-bar" style="left:30%;width:4%;background:#ab47bc"></div>
+          </div>
+        </div>
+        <div class="gantt-row">
+          <span class="gantt-label">💧 Pipi</span>
+          <div class="gantt-track">
+            <div class="gantt-dot" style="left:15%;background:#4cc9f0"></div>
+            <div class="gantt-dot" style="left:40%;background:#4cc9f0"></div>
+            <div class="gantt-dot" style="left:60%;background:#4cc9f0"></div>
+          </div>
+        </div>
+        <div class="gantt-row">
+          <span class="gantt-label">💩 Caca</span>
+          <div class="gantt-track">
+            <div class="gantt-dot" style="left:18%;background:#f77f00"></div>
+            <div class="gantt-dot" style="left:58%;background:#f77f00"></div>
+          </div>
+        </div>
+        <div class="gantt-row">
+          <span class="gantt-label">🍽️ Repas</span>
+          <div class="gantt-track">
+            <div class="gantt-dot" style="left:10%;background:#ff9800"></div>
+            <div class="gantt-dot" style="left:45%;background:#ff9800"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Custom Type Form ===== -->
+  <h2 class="showcase-section">Custom Type Form</h2>
+  <div style="padding:0 16px;">
+    <div class="card">
+      <div class="card-title">Nom du type</div>
+      <input type="text" class="ct-input" value="Medicament" disabled />
+    </div>
+    <div class="card">
+      <div class="card-title">Icone</div>
+      <div class="ct-emoji-grid">
+        <button class="ct-emoji-btn active">💊</button>
+        <button class="ct-emoji-btn">💉</button>
+        <button class="ct-emoji-btn">🩺</button>
+        <button class="ct-emoji-btn">🧴</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Couleur</div>
+      <div class="ct-color-grid">
+        <button class="ct-color-swatch active" style="background:#e94560"></button>
+        <button class="ct-color-swatch" style="background:#f77f00"></button>
+        <button class="ct-color-swatch" style="background:#4caf50"></button>
+        <button class="ct-color-swatch" style="background:#4cc9f0"></button>
+      </div>
+    </div>
+    <div class="card">
+      <label class="ct-toggle-row">
+        <span>Activer la jauge ?</span>
+        <input type="checkbox" checked disabled />
+      </label>
+    </div>
+  </div>
+
   <div style="height:40px"></div>
 
 </div>

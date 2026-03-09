@@ -15,7 +15,7 @@
 
 import { getFirebaseConfig, saveFirebaseConfig,
          clearFirebaseConfig, parseConfigInput } from './firebase-config.js';
-import { $, normalizeEntry, TYPE_DEF, validateEntry } from './utils.js';
+import { $, normalizeEntry, getTypeDef, validateEntry, registerCustomTypes } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { showPage, onShowPage, setNavVisible } from './navigation.js';
 import { db } from './db-context.js';
@@ -29,8 +29,10 @@ import { setPremiumStatus, setDemoMode } from './permissions.js';
 // ── Auth state ────────────────────────────────────────────────────────────
 let _authModule = null;
 let _householdModule = null;
+let _customTypeModule = null;
 let _appInitialized = false;  // prevents double-init on rapid auth changes
 let _isDemo = false;
+let _currentHouseholdId = null;
 
 // ── Chargement DB ──────────────────────────────────────────────────────────
 
@@ -233,9 +235,21 @@ async function initApp(user) {
   // Point DB at household entries
   db.setEntriesPath(_householdModule.getEntriesPath(householdId));
 
+  _currentHouseholdId = householdId;
+
   // Listen for premium subscription changes
   _householdModule.onSubscriptionChange(householdId, (isPremium) => {
     setPremiumStatus(isPremium);
+  });
+
+  // Listen for custom types changes
+  _householdModule.onCustomTypesChange(householdId, (customTypes) => {
+    registerCustomTypes(customTypes);
+    // Rebuild UI if already initialized
+    if (_customTypeModule) {
+      initNewEntry();
+      initQuick();
+    }
   });
 
   db.initDB(() => {
@@ -249,6 +263,11 @@ async function initApp(user) {
   $('header-logout-btn').style.display = 'block';
   initNewEntry();
   initQuick();
+
+  // Lazy-load custom type module
+  _customTypeModule = await import('./ui-custom-type.js');
+  _customTypeModule.initCustomType(() => _currentHouseholdId, _householdModule);
+
   await handleQuickEntry();
   showPage('quick');
 }
@@ -264,9 +283,9 @@ function resetApp() {
 async function handleQuickEntry() {
   const params = new URLSearchParams(location.search);
   const quick  = params.get('quick');
-  if (!quick || !TYPE_DEF[quick]) return;
+  if (!quick || !getTypeDef()[quick]) return;
 
-  const def = TYPE_DEF[quick];
+  const def = getTypeDef()[quick];
   let entry;
 
   if (def.hasDuration) {

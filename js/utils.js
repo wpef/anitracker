@@ -34,13 +34,13 @@
 // Déduits de TYPE_DEF — plus aucun type n'est hardcodé ici.
 
 /** @param {BaseEntry} e @returns {boolean} */
-export const isWalk     = e => TYPE_DEF[e.type]?.hasDuration === true;
+export const isWalk     = e => getTypeDef()[e.type]?.hasDuration === true;
 /** @param {BaseEntry} e @returns {boolean} */
-export const isBathroom = e => TYPE_DEF[e.type]?.category === 'need';
+export const isBathroom = e => getTypeDef()[e.type]?.category === 'need';
 /** @param {BaseEntry} e @returns {boolean} */
-export const isNeed     = e => TYPE_DEF[e.type]?.category === 'need';
+export const isNeed     = e => getTypeDef()[e.type]?.category === 'need';
 /** @param {BaseEntry} e @returns {boolean} */
-export const hasDuration = e => TYPE_DEF[e.type]?.hasDuration === true;
+export const hasDuration = e => getTypeDef()[e.type]?.hasDuration === true;
 
 // ── Label générique de jauge ────────────────────────────────────────────────
 
@@ -84,8 +84,9 @@ export function normalizeEntry(e) {
   if (!e) return null;
   if (e.type === 'walk' && e.action === 'end') return null;
   // Types connus dans TYPE_DEF → déjà au format BaseEntry (+ fix timestamp legacy walk)
-  if (TYPE_DEF[e.type]) {
-    if (TYPE_DEF[e.type].hasDuration && !e.timestamp && e.start_time) {
+  const td = getTypeDef();
+  if (td[e.type]) {
+    if (td[e.type].hasDuration && !e.timestamp && e.start_time) {
       return { ...e, timestamp: e.start_time };
     }
     return e;
@@ -219,14 +220,35 @@ export const TYPE_DEF = {
   },
 };
 
+// ── Custom types merging ──────────────────────────────────────────────────
+
+let _mergedTypeDef = { ...TYPE_DEF };
+
+/**
+ * Registers custom types (from Firebase) and merges them with built-in types.
+ * @param {Record<string, object>} customTypes
+ */
+export function registerCustomTypes(customTypes) {
+  _mergedTypeDef = { ...TYPE_DEF, ...customTypes };
+}
+
+/**
+ * Returns the merged type definitions (built-in + custom).
+ * All modules should use this instead of TYPE_DEF directly.
+ * @returns {Record<string, object>}
+ */
+export function getTypeDef() {
+  return _mergedTypeDef;
+}
+
 // ── Helpers TYPE_DEF ─────────────────────────────────────────────────────
 
 /** Types de la catégorie 'need' (besoins — entrent dans le score propreté). */
-export const needTypes     = () => Object.entries(TYPE_DEF).filter(([, d]) => d.category === 'need');
+export const needTypes     = () => Object.entries(getTypeDef()).filter(([, d]) => d.category === 'need');
 /** Types de la catégorie 'activity' (hasDuration). */
-export const activityTypes = () => Object.entries(TYPE_DEF).filter(([, d]) => d.category === 'activity');
+export const activityTypes = () => Object.entries(getTypeDef()).filter(([, d]) => d.category === 'activity');
 /** Tous les types sous forme [key, def]. */
-export const allTypes      = () => Object.entries(TYPE_DEF);
+export const allTypes      = () => Object.entries(getTypeDef());
 
 /**
  * Retourne le label lisible d'une text_val pour un type donné.
@@ -235,7 +257,7 @@ export const allTypes      = () => Object.entries(TYPE_DEF);
  * @returns {string}
  */
 export function getTextLabel(type, value) {
-  const opt = TYPE_DEF[type]?.textOptions?.find(o => o.value === value);
+  const opt = getTypeDef()[type]?.textOptions?.find(o => o.value === value);
   return opt ? opt.label : (value || '');
 }
 

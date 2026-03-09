@@ -1450,3 +1450,159 @@ nav {
   text-decoration: underline;
   padding: .25rem;
 }
+
+/* ===== Custom Type Form ===== */
+.ct-form { padding: .5rem; }
+.ct-input {
+  width: 100%;
+  padding: .6rem .8rem;
+  background: var(--bg);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: .5rem;
+  color: var(--text);
+  font-size: .9rem;
+  font-family: inherit;
+  margin-top: .5rem;
+}
+.ct-input:focus { outline: none; border-color: var(--walk); }
+select.ct-input { appearance: auto; }
+
+.ct-color-grid, .ct-emoji-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+.ct-color-swatch {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+.ct-color-swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px rgba(255,255,255,.3);
+}
+.ct-emoji-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: 1.3rem;
+  background: var(--bg);
+  border: 2px solid transparent;
+  border-radius: .5rem;
+  cursor: pointer;
+}
+.ct-emoji-btn.active {
+  border-color: var(--walk);
+  background: rgba(76,201,240,.15);
+}
+.ct-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text);
+  font-size: .9rem;
+}
+.ct-toggle-row input[type="checkbox"] {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--walk);
+}
+.ct-text-opt-row {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  margin-top: .5rem;
+}
+.ct-text-opt-row .ct-input { margin-top: 0; flex: 1; }
+.ct-remove-opt {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: .25rem;
+}
+.ct-add-opt-btn {
+  background: none;
+  border: 1px dashed rgba(255,255,255,.2);
+  color: var(--text2);
+  padding: .5rem;
+  border-radius: .5rem;
+  width: 100%;
+  cursor: pointer;
+  margin-top: .5rem;
+  font-size: .85rem;
+}
+.seg-btn-add {
+  min-width: 2.5rem;
+  font-size: 1.2rem;
+  opacity: .6;
+}
+
+/* ===== Stats Period Selector ===== */
+.stat-period {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: .75rem;
+}
+.stat-period .seg-btn {
+  min-width: 3rem;
+  font-size: .8rem;
+  padding: .4rem .8rem;
+}
+
+/* ===== Gantt Chart ===== */
+.gantt-chart { padding: .5rem 0; }
+.gantt-axis {
+  display: flex;
+  margin-left: 4.5rem;
+  margin-bottom: .25rem;
+  position: relative;
+}
+.gantt-axis-label {
+  position: absolute;
+  font-size: .6rem;
+  color: var(--text2);
+  transform: translateX(-50%);
+}
+.gantt-row {
+  display: flex;
+  align-items: center;
+  height: 2rem;
+  margin-bottom: .25rem;
+}
+.gantt-label {
+  width: 4.5rem;
+  font-size: .75rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gantt-track {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  background: rgba(255,255,255,.04);
+  border-radius: .25rem;
+}
+.gantt-bar {
+  position: absolute;
+  height: 60%;
+  top: 20%;
+  border-radius: .25rem;
+  opacity: 0.85;
+  min-width: 3px;
+}
+.gantt-dot {
+  position: absolute;
+  width: .5rem;
+  height: .5rem;
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+}

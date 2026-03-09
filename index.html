@@ -181,6 +181,9 @@
   <!-- ===== Page 2 : Statistiques ===== -->
   <main id="page-stats" class="page">
 
+    <!-- Period selector (7j / 14j / 30j) -->
+    <div id="stats-period-selector"></div>
+
     <!-- Week navigation (premium: arrows, free: locked CTA) -->
     <div id="stats-week-nav" class="stats-week-nav"></div>
 
@@ -231,13 +234,19 @@
 
     <!-- Graphiques de jauge (générés dynamiquement par ui-stats.js) -->
 
-    <!-- Balades 7 jours -->
+    <!-- Balades N jours -->
     <div class="card">
-      <div class="card-title">🦮 Balades – 7 jours</div>
+      <div class="card-title">🦮 Balades</div>
       <div class="chart-wrap">
         <canvas id="chart-walks"></canvas>
       </div>
       <div class="today-walks-summary" id="today-walks-summary">—</div>
+    </div>
+
+    <!-- Gantt chart: today's timeline -->
+    <div class="card">
+      <div class="card-title">📅 Timeline du jour</div>
+      <div id="gantt-container"></div>
     </div>
 
   </main>
@@ -257,6 +266,69 @@
     <div id="edit-page-body" class="edit-page-body"></div>
     <div class="edit-page-footer">
       <button class="btn-submit" id="edit-page-save-btn">✓ Enregistrer</button>
+    </div>
+  </main>
+
+  <!-- ===== Page 6 : Création de type custom (hors nav) ===== -->
+  <main id="page-custom-type" class="page">
+    <div class="edit-page-header">
+      <button id="ct-back-btn" class="edit-back-btn">&larr; Retour</button>
+      <h2>Nouveau type</h2>
+      <div></div>
+    </div>
+    <div class="ct-form">
+      <div class="card">
+        <div class="card-title">Nom du type</div>
+        <input type="text" id="ct-name" class="ct-input" placeholder="Ex: Medicament" maxlength="30" />
+      </div>
+
+      <div class="card">
+        <div class="card-title">Icone</div>
+        <div class="ct-emoji-grid" id="ct-emoji-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Couleur</div>
+        <div class="ct-color-grid" id="ct-color-grid"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Categorie</div>
+        <select id="ct-category" class="ct-input">
+          <option value="activity">Activite</option>
+          <option value="need">Besoin (score proprete)</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <label class="ct-toggle-row">
+          <span>Activer la duree ?</span>
+          <input type="checkbox" id="ct-duration-toggle" />
+        </label>
+      </div>
+
+      <div class="card">
+        <label class="ct-toggle-row">
+          <span>Activer la jauge ?</span>
+          <input type="checkbox" id="ct-gauge-toggle" />
+        </label>
+        <div id="ct-gauge-config" style="display:none">
+          <input type="text" id="ct-gauge-title" class="ct-input" placeholder="Titre de la jauge (ex: Intensite)" />
+        </div>
+      </div>
+
+      <div class="card">
+        <label class="ct-toggle-row">
+          <span>Options textuelles ?</span>
+          <input type="checkbox" id="ct-text-toggle" />
+        </label>
+        <div id="ct-text-config" style="display:none">
+          <div id="ct-text-list"></div>
+          <button class="ct-add-opt-btn" id="ct-add-text-opt">+ Ajouter une option</button>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="ct-save-btn">Creer le type</button>
     </div>
   </main>
 
@@ -408,7 +480,7 @@
       <li>Tous les types d'entrées débloqués</li>
       <li>Historique illimité</li>
       <li>Stats par semaine avec navigation</li>
-      <li>Types personnalisés (bientôt)</li>
+      <li>Types personnalises</li>
       <li>Export de données</li>
     </ul>
     <button id="premium-subscribe-btn" class="btn-premium">Essai gratuit 14 jours</button>

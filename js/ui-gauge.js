@@ -14,7 +14,7 @@
  *   g.getValue() / g.setValue(42) / g.setType('caca') / g.setConfig(cfg)
  */
 
-import { TYPE_DEF, gaugeLabel } from './utils.js';
+import { getTypeDef, gaugeLabel } from './utils.js';
 
 // ── Initialisation ──────────────────────────────────────────────────────────
 
@@ -57,7 +57,7 @@ export function initGauge(input, valueEl, typeOrConfig) {
 
 function _resolve(typeOrConfig) {
   if (typeof typeOrConfig === 'string') {
-    return TYPE_DEF[typeOrConfig]?.gauge ?? TYPE_DEF.pipi.gauge;
+    return getTypeDef()[typeOrConfig]?.gauge ?? getTypeDef().pipi.gauge;
   }
   return typeOrConfig;
 }
