@@ -6,13 +6,21 @@
  * Pour ajouter un nouveau besoin, aucun changement ici.
  *
  * Deux fenêtres temporelles :
- *  - 7 jours glissants (fenêtres 7h→7h) → tendance long terme
- *  - Depuis 7h du matin → stats "du jour" (score ring, quick-stats)
+ *  - 7 jours glissants (fenêtres 5h30→5h30) → tendance long terme
+ *  - Depuis 5h30 du matin → stats "du jour" (score ring, quick-stats)
  *
  * Score de propreté = 100 − (besoins dedans / besoins totaux × 100)
+ *
+ * Optimisations :
+ *  - Single-pass : une seule itération sur les entries pour accumuler
+ *    tous les compteurs (7 jours, jour courant, jauges)
+ *  - Memoization : résultat mis en cache tant que les entries ne changent pas
  */
 
 import { TYPE_DEF, needTypes, formatDayShort } from './utils.js';
+
+// ── Memoization cache ─────────────────────────────────────────────────────
+let _statsCache = { hash: null, result: null };
 
 /**
  * Calcule l'ensemble des statistiques.
@@ -21,144 +29,198 @@ import { TYPE_DEF, needTypes, formatDayShort } from './utils.js';
  * @returns {object}
  */
 export function getStats(entries) {
+  // Memoization: skip recalculation if entries haven't changed
+  const hash = entries.length + '_' + (entries[0]?.id || '') + '_' + (entries[entries.length - 1]?.id || '');
+  if (hash === _statsCache.hash) return _statsCache.result;
+
   const now = new Date();
   const needs = needTypes(); // [[key, def], ...]
+  const needKeys = new Set(needs.map(([k]) => k));
 
-  // ── 7 derniers jours (compteurs globaux) ──────────────────────────────────
-  const sevenDaysAgo = new Date(now);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-  sevenDaysAgo.setHours(0, 0, 0, 0);
-  const recent = entries.filter(e => new Date(e.timestamp) >= sevenDaysAgo);
+  // ── Pre-compute time boundaries ───────────────────────────────────────
 
-  const walkStarts = recent.filter(e => TYPE_DEF[e.type]?.hasDuration);
-
-  // Compteurs par type de besoin (7 jours)
-  const needCounts = {};
-  for (const [key, def] of needs) {
-    const typed = recent.filter(e => e.type === key);
-    const inside  = def.insideValue ? typed.filter(e => e.text_val === def.insideValue).length : 0;
-    const outside = typed.length - inside;
-    needCounts[key] = { total: typed.length, inside, outside };
+  // 7-day window bounds (day 0 = oldest, day 6 = today)
+  const dayBounds = [];
+  for (let i = 6; i >= 0; i--) {
+    const start = new Date(now);
+    start.setDate(start.getDate() - i);
+    start.setHours(5, 30, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+    dayBounds.push({ start, end, dayIndex: 6 - i }); // dayIndex 0..6 (0=oldest)
   }
 
-  // ── Fenêtre "du jour" : depuis 7h ────────────────────────────────────────
+  const sevenDaysStart = dayBounds[0].start;
+
+  // Today window (5:30 AM boundary)
   const todayFrom = new Date(now);
   if (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30))
     todayFrom.setDate(todayFrom.getDate() - 1);
   todayFrom.setHours(5, 30, 0, 0);
-  const todayEntries = entries.filter(e => new Date(e.timestamp) >= todayFrom);
 
-  // Compteurs du jour par type de besoin
+  // 3-day window for gauge data
+  const threeDaysAgo = new Date(now);
+  threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
+  threeDaysAgo.setHours(0, 0, 0, 0);
+
+  // ── Initialize accumulators ───────────────────────────────────────────
+
+  let recentCount = 0;
+  let walkStartsCount = 0;
+
+  // 7-day need counts (global)
+  const needCounts = {};
+  for (const [key] of needs) needCounts[key] = { total: 0, inside: 0, outside: 0 };
+
+  // Today counters
   const todayNeedCounts = {};
-  let todayNeedTotal  = 0;
+  for (const [key] of needs) todayNeedCounts[key] = { total: 0, inside: 0, outside: 0 };
+  let todayNeedTotal = 0;
   let todayNeedInside = 0;
+  let todayWalkMinSince7am = 0;
+  const todayWalks = [];
+
+  // Daily arrays (7 days) — per-day accumulators
+  const dailyWalkCount = new Array(7).fill(0);
+  const dailyWalkMinArr = new Array(7).fill(0);
+  const dailyInsideArr = new Array(7).fill(0);
+  const dailyNeedTotalArr = new Array(7).fill(0);
+  const dailyNeedInsideArr = new Array(7).fill(0);
+  const dailyNeedCountsMap = {};
+  for (const [key] of needs) dailyNeedCountsMap[key] = new Array(7).fill(0);
+
+  // Gauge data collectors (3 days, sorted ascending later)
+  const gaugeCollectors = {};
   for (const [key, def] of needs) {
-    const typed   = todayEntries.filter(e => e.type === key);
-    const inside  = def.insideValue ? typed.filter(e => e.text_val === def.insideValue).length : 0;
-    const outside = typed.length - inside;
-    todayNeedCounts[key] = { total: typed.length, inside, outside };
-    todayNeedTotal  += typed.length;
-    todayNeedInside += inside;
+    if (def.gauge) gaugeCollectors[key] = [];
   }
 
-  // Score de propreté
+  // ── SINGLE PASS over all entries ──────────────────────────────────────
+
+  for (const entry of entries) {
+    const ts = new Date(entry.timestamp);
+    const def = TYPE_DEF[entry.type];
+    if (!def) continue;
+
+    const isNeed = needKeys.has(entry.type);
+    const hasDuration = def.hasDuration;
+    const isInside = isNeed && def.insideValue && entry.text_val === def.insideValue;
+
+    // --- 7-day recent window ---
+    if (ts >= sevenDaysStart) {
+      recentCount++;
+      if (hasDuration) walkStartsCount++;
+
+      // 7-day need counts (global)
+      if (isNeed) {
+        needCounts[entry.type].total++;
+        if (isInside) needCounts[entry.type].inside++;
+        else needCounts[entry.type].outside++;
+      }
+
+      // Assign to daily bucket
+      for (const { start, end, dayIndex } of dayBounds) {
+        if (ts >= start && ts < end) {
+          if (hasDuration) {
+            dailyWalkCount[dayIndex]++;
+            dailyWalkMinArr[dayIndex] += entry.duration_min || 0;
+          }
+          if (isNeed) {
+            dailyNeedCountsMap[entry.type][dayIndex]++;
+            dailyNeedTotalArr[dayIndex]++;
+            if (isInside) {
+              dailyNeedInsideArr[dayIndex]++;
+              dailyInsideArr[dayIndex]++;
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // --- Today window ---
+    if (ts >= todayFrom) {
+      if (isNeed) {
+        todayNeedCounts[entry.type].total++;
+        todayNeedTotal++;
+        if (isInside) {
+          todayNeedCounts[entry.type].inside++;
+          todayNeedInside++;
+        } else {
+          todayNeedCounts[entry.type].outside++;
+        }
+      }
+      if (hasDuration) {
+        todayWalkMinSince7am += entry.duration_min || 0;
+        todayWalks.push({
+          id:          entry.id,
+          startTime:   entry.timestamp,
+          endTime:     entry.end_time || null,
+          durationMin: entry.duration_min || null,
+        });
+      }
+    }
+
+    // --- Gauge data (3 days) ---
+    if (isNeed && def.gauge && entry.num_val !== undefined && ts >= threeDaysAgo) {
+      gaugeCollectors[entry.type].push(entry);
+    }
+  }
+
+  // ── Post-processing ───────────────────────────────────────────────────
+
+  // Today walks: sort ascending by timestamp
+  todayWalks.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+
+  // Today score
   const todayScore = todayNeedTotal > 0
     ? Math.max(0, Math.round(100 - (todayNeedInside / todayNeedTotal * 100)))
     : null;
 
-  // Balades du jour
-  const todayWalkMinSince7am = todayEntries
-    .filter(e => TYPE_DEF[e.type]?.hasDuration)
-    .reduce((s, e) => s + (e.duration_min || 0), 0);
+  // Need counts: compute outside from total/inside (already done in-loop for todayNeedCounts)
+  for (const [key] of needs) {
+    needCounts[key].outside = needCounts[key].total - needCounts[key].inside;
+  }
 
-  const todayWalks = todayEntries
-    .filter(e => TYPE_DEF[e.type]?.hasDuration)
-    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))
-    .map(e => ({
-      id:          e.id,
-      startTime:   e.timestamp,
-      endTime:     e.end_time   || null,
-      durationMin: e.duration_min || null,
-    }));
-
-  // ── Tendance 7 jours (graphiques) ─────────────────────────────────────────
-  const dailyLabels       = [];
-  const dailyWalks        = [];
-  const dailyWalkMin      = [];
+  // Daily arrays
+  const dailyLabels = [];
   const dailyPropretScore = [];
-  const dailyNeedCounts   = {};
-  const dailyInside       = [];
-  for (const [key] of needs) dailyNeedCounts[key] = [];
-
-  for (let i = 6; i >= 0; i--) {
-    const dayStart = new Date(now);
-    dayStart.setDate(dayStart.getDate() - i);
-    dayStart.setHours(5, 30, 0, 0);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayEnd.getDate() + 1);
-
-    const dayEntries = entries.filter(e => {
-      const t = new Date(e.timestamp);
-      return t >= dayStart && t < dayEnd;
-    });
-
-    dailyLabels.push(formatDayShort(dayStart));
-
-    const dayWalks = dayEntries.filter(e => TYPE_DEF[e.type]?.hasDuration);
-    dailyWalks.push(dayWalks.length);
-    dailyWalkMin.push(dayWalks.reduce((s, e) => s + (e.duration_min || 0), 0));
-
-    let dayNeedTotal  = 0;
-    let dayNeedInside = 0;
-    for (const [key, def] of needs) {
-      const typed   = dayEntries.filter(e => e.type === key);
-      const inside  = def.insideValue ? typed.filter(e => e.text_val === def.insideValue).length : 0;
-      dailyNeedCounts[key].push(typed.length);
-      dayNeedTotal  += typed.length;
-      dayNeedInside += inside;
-    }
-    dailyInside.push(dayEntries.filter(e => {
-      const def = TYPE_DEF[e.type];
-      return def?.insideValue && e.text_val === def.insideValue;
-    }).length);
-
+  for (let i = 0; i < 7; i++) {
+    dailyLabels.push(formatDayShort(dayBounds[i].start));
     dailyPropretScore.push(
-      dayNeedTotal > 0
-        ? Math.max(0, Math.round(100 - (dayNeedInside / dayNeedTotal * 100)))
+      dailyNeedTotalArr[i] > 0
+        ? Math.max(0, Math.round(100 - (dailyNeedInsideArr[i] / dailyNeedTotalArr[i] * 100)))
         : null
     );
   }
 
-  // ── Données de jauge – 3 derniers jours, points individuels ───────────────
-  const gaugeData = {};
-  const threeDaysAgo = new Date(now);
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
-  threeDaysAgo.setHours(0, 0, 0, 0);
-  const todayStr = now.toDateString();
+  const dailyNeedCounts = {};
+  for (const [key] of needs) dailyNeedCounts[key] = dailyNeedCountsMap[key];
 
+  // Gauge data: sort ascending and format
+  const gaugeData = {};
+  const todayStr = now.toDateString();
   for (const [key, def] of needs) {
     if (!def.gauge) continue;
-    const recentItems = entries
-      .filter(e => e.type === key && e.num_val !== undefined)
-      .filter(e => new Date(e.timestamp) >= threeDaysAgo)
-      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
+    const items = gaugeCollectors[key].sort(
+      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
+    );
     gaugeData[key] = {
-      labels: recentItems.map(e => {
-        const d      = new Date(e.timestamp);
+      labels: items.map(e => {
+        const d = new Date(e.timestamp);
         const dayStr = d.toDateString() === todayStr ? 'Auj.' : formatDayShort(d);
         return dayStr + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
       }),
-      data:  recentItems.map(e => e.num_val),
+      data: items.map(e => e.num_val),
       title: `${def.icon} ${def.gauge.title} – 3 jours`,
       color: def.color || '#ffcc80',
     };
   }
 
-  return {
-    total:  entries.length,
-    recent: recent.length,
-    walkStarts: walkStarts.length,
+  const result = {
+    total: entries.length,
+    recent: recentCount,
+    walkStarts: walkStartsCount,
     needCounts,
     todayNeedCounts,
     todayNeedTotal,
@@ -167,11 +229,14 @@ export function getStats(entries) {
     todayWalks,
     todayWalkMinSince7am,
     dailyLabels,
-    dailyWalks,
-    dailyWalkMin,
+    dailyWalks: dailyWalkCount,
+    dailyWalkMin: dailyWalkMinArr,
     dailyNeedCounts,
-    dailyInside,
+    dailyInside: dailyInsideArr,
     dailyPropretScore,
     gaugeData,
   };
+
+  _statsCache = { hash, result };
+  return result;
 }
