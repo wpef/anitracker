@@ -8,7 +8,7 @@
 
 import { $, setActive, setVisible, buildSegment, toLocalISO, localNow,
          formatDuration, formatWalkTime, formatDateTimeFriendly,
-         TYPE_DEF, allTypes, getTextLabel } from './utils.js';
+         TYPE_DEF, allTypes, getTextLabel, validateEntry } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
@@ -236,6 +236,10 @@ function _updateWalkDurationDisplay() {
 // ── Soumission ─────────────────────────────────────────────────────────────
 
 async function _handleAdd() {
+  const btn = $('btn-add');
+  if (btn.disabled) return;
+  btn.disabled = true;
+
   const def  = TYPE_DEF[currentType];
   const note = $('entry-note').value.trim();
   let entry;
@@ -246,6 +250,7 @@ async function _handleAdd() {
     const durationMin = _getWalkDurationMin();
     if (!startVal || durationMin <= 0) {
       showToast('⚠️ Renseigne un début et une fin');
+      btn.disabled = false;
       return;
     }
     entry = {
@@ -266,12 +271,21 @@ async function _handleAdd() {
     if (def?.gauge)              entry.num_val  = gauge.getValue();
   }
 
+  const error = validateEntry(entry, def);
+  if (error) {
+    showToast(error);
+    btn.disabled = false;
+    return;
+  }
+
   setSyncState('pending');
   try {
     await db.saveEntry(entry);
     setSyncState('ok');
   } catch {
     setSyncState('error');
+  } finally {
+    btn.disabled = false;
   }
   showToast(entryLabel(entry) + ' enregistré ✓');
 
