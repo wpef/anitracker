@@ -20,7 +20,9 @@
 | `db.js` | Firebase Realtime DB adapter. Type-agnostic CRUD. Configurable entries path via `setEntriesPath()` | — |
 | `demo-db.js` | In-memory demo data. Same API as `db.js` | — |
 | `auth.js` | Firebase Authentication (email/password + Google). `initAuth()`, `signup()`, `login()`, `loginWithGoogle()`, `logout()` | — |
-| `household.js` | Household management: create household, get user's household, migrate legacy entries | — |
+| `household.js` | Household management: create household, get user's household, migrate legacy entries, subscription listener | — |
+| `permissions.js` | [Phase 8] Freemium/premium feature gating. `canUseType()`, `getMaxHistoryDays()`, `canSwipeStats()` | — |
+| `ui-premium.js` | [Phase 8] Reusable premium CTA modal (bottom sheet). `showPremiumCTA(msg)` | `utils` |
 | `firebase-config.js` | Read/write Firebase config from localStorage | — |
 | `quick.js` | Standalone quick.html logic (not used by main app) | `utils`, `ui-gauge` |
 

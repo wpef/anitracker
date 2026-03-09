@@ -89,6 +89,12 @@ Components documented (in order):
 | Auth separator | `.auth-separator` | "ou" divider between email and Google |
 | Google button | `.auth-google-btn` | Google sign-in button with logo |
 | Header logout | `.header-logout-btn` | Logout button in header |
+| Locked type btn | `.seg-btn.locked` | Greyed-out type button with lock icon |
+| Premium gate | `.premium-gate .blurred-entries` | Blurred history entries + CTA overlay |
+| Week nav (premium) | `.stats-week-nav .week-nav-btn` | Week arrows + label for stats |
+| Week nav (locked) | `.week-nav-locked` | Free-tier locked state with CTA |
+| Premium CTA btn | `.btn-premium` | Gradient subscribe/trial button |
+| Premium modal | `.premium-modal .premium-sheet` | Bottom sheet with advantages list |
 | CSS variables | `:root` | Color palette swatches |
 
 **Keep `showcase.html` updated** when adding or modifying UI components.

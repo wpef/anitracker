@@ -766,6 +766,97 @@
 
   <div style="height:40px"></div>
 
+  <!-- ===== Premium gating components ===== -->
+
+  <div class="showcase-section">
+    <div class="showcase-label">LOCKED TYPE BUTTON · <code>.seg-btn.locked</code></div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="segment seg-scroll">
+      <button class="seg-btn active" style="background-color:#4cc9f0">💧 Pipi</button>
+      <button class="seg-btn">💩 Caca</button>
+      <button class="seg-btn locked">🍽 Repas 🔒</button>
+      <button class="seg-btn locked">🧸 Occupation 🔒</button>
+    </div>
+  </div>
+
+  <div class="showcase-section">
+    <div class="showcase-label">PREMIUM GATE (BLURRED HISTORY) · <code>.premium-gate</code></div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="premium-gate" style="position:relative;">
+      <div class="blurred-entries">
+        <div class="tl-entry" style="border-left-color:#4cc9f0">
+          <div class="tl-entry-time">08:30</div>
+          <div class="tl-entry-icon">💧</div>
+          <div class="tl-entry-body"><div class="tl-entry-title">Pipi</div></div>
+        </div>
+        <div class="tl-entry" style="border-left-color:#e94560">
+          <div class="tl-entry-time">07:15</div>
+          <div class="tl-entry-icon">💩</div>
+          <div class="tl-entry-body"><div class="tl-entry-title">Caca</div></div>
+        </div>
+      </div>
+      <div class="premium-cta">
+        <p class="premium-cta-text">12 entrées masquées</p>
+        <button class="btn-premium">Voir tout l'historique</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="showcase-section">
+    <div class="showcase-label">WEEK NAVIGATION (PREMIUM) · <code>.stats-week-nav</code></div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="stats-week-nav">
+      <button class="week-nav-btn">‹</button>
+      <span class="week-nav-label">Semaine du 3 mars au 9 mars</span>
+      <button class="week-nav-btn" disabled>›</button>
+    </div>
+  </div>
+
+  <div class="showcase-section">
+    <div class="showcase-label">WEEK NAVIGATION (FREE/LOCKED) · <code>.week-nav-locked</code></div>
+  </div>
+  <div style="padding:0 16px">
+    <div class="stats-week-nav">
+      <div class="week-nav-locked">
+        <span>Semaine en cours</span>
+        <button class="week-nav-lock-btn">Voir les semaines précédentes 🔒</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="showcase-section">
+    <div class="showcase-label">PREMIUM CTA BUTTON · <code>.btn-premium</code></div>
+  </div>
+  <div style="padding:0 16px;text-align:center;">
+    <button class="btn-premium">Essai gratuit 14 jours</button>
+  </div>
+
+  <div class="showcase-section">
+    <div class="showcase-label">PREMIUM MODAL (BOTTOM SHEET) · <code>.premium-modal</code></div>
+  </div>
+  <div style="padding:0 16px;">
+    <div style="background:var(--surface);border-radius:20px;padding:2rem 1.5rem;text-align:center;">
+      <div style="font-size:2.5rem;margin-bottom:.5rem;">⭐</div>
+      <h3 style="color:var(--text);font-size:1.3rem;margin:0 0 .5rem;">AniTracker Premium</h3>
+      <p style="color:var(--text2);font-size:.9rem;margin-bottom:1rem;">Passez en Premium pour tout débloquer</p>
+      <ul class="premium-advantages">
+        <li>Tous les types d'entrées débloqués</li>
+        <li>Historique illimité</li>
+        <li>Stats par semaine avec navigation</li>
+        <li>Types personnalisés (bientôt)</li>
+        <li>Export de données</li>
+      </ul>
+      <button class="btn-premium" style="margin-bottom:.5rem;">Essai gratuit 14 jours</button>
+      <br>
+      <button class="premium-close-btn">Plus tard</button>
+    </div>
+  </div>
+
+  <div style="height:40px"></div>
+
 </div>
 </body>
 </html>

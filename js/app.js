@@ -24,6 +24,7 @@ import { initQuick } from './ui-quick.js';
 import { renderHistory } from './ui-history.js';
 import { openEditPage } from './ui-edit.js';
 import { renderStats } from './ui-stats.js';
+import { setPremiumStatus, setDemoMode } from './permissions.js';
 
 // ── Auth state ────────────────────────────────────────────────────────────
 let _authModule = null;
@@ -79,6 +80,7 @@ $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
 
 async function startDemo() {
   _isDemo = true;
+  setDemoMode(true);
   $('setup-overlay').style.display = 'none';
   await loadDemoDb();
   db.initDB(() => {
@@ -230,6 +232,11 @@ async function initApp(user) {
 
   // Point DB at household entries
   db.setEntriesPath(_householdModule.getEntriesPath(householdId));
+
+  // Listen for premium subscription changes
+  _householdModule.onSubscriptionChange(householdId, (isPremium) => {
+    setPremiumStatus(isPremium);
+  });
 
   db.initDB(() => {
     const active = document.querySelector('.page.active');

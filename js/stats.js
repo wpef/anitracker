@@ -25,15 +25,19 @@ let _statsCache = { hash: null, result: null };
 /**
  * Calcule l'ensemble des statistiques.
  *
- * @param {object[]} entries  Toutes les entrées triées par timestamp décroissant
+ * @param {object[]} entries     Toutes les entrées triées par timestamp décroissant
+ * @param {number}   [weekOffset=0]  Number of weeks back (0 = current, 1 = last week, etc.)
  * @returns {object}
  */
-export function getStats(entries) {
+export function getStats(entries, weekOffset = 0) {
   // Memoization: skip recalculation if entries haven't changed
-  const hash = entries.length + '_' + (entries[0]?.id || '') + '_' + (entries[entries.length - 1]?.id || '');
+  const hash = entries.length + '_' + (entries[0]?.id || '') + '_' + (entries[entries.length - 1]?.id || '') + '_w' + weekOffset;
   if (hash === _statsCache.hash) return _statsCache.result;
 
   const now = new Date();
+  if (weekOffset > 0) {
+    now.setDate(now.getDate() - weekOffset * 7);
+  }
   const needs = needTypes(); // [[key, def], ...]
   const needKeys = new Set(needs.map(([k]) => k));
 

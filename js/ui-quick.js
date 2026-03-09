@@ -9,6 +9,8 @@ import { initGauge } from './ui-gauge.js';
 import { TYPE_DEF, allTypes, validateEntry } from './utils.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
+import { canUseType } from './permissions.js';
+import { showPremiumCTA } from './ui-premium.js';
 
 // ── État local ──────────────────────────────────────────────────────────────
 let currentAction   = null;
@@ -41,11 +43,12 @@ function quickTypes() {
 
 function _buildActionButtons() {
   const types = quickTypes();
-  actionRow.innerHTML = types.map(([key, def]) =>
-    `<button class="btn-toggle" data-qp-action="${key}">
-      <span class="qp-emoji">${def.icon}</span>${def.label.toUpperCase()}
-    </button>`
-  ).join('');
+  actionRow.innerHTML = types.map(([key, def]) => {
+    const locked = !canUseType(key);
+    return `<button class="btn-toggle${locked ? ' locked' : ''}" data-qp-action="${key}">
+      <span class="qp-emoji">${def.icon}</span>${def.label.toUpperCase()}${locked ? ' \uD83D\uDD12' : ''}
+    </button>`;
+  }).join('');
 }
 
 function _buildTextButtons() {
@@ -147,6 +150,10 @@ function reset() {
 actionRow.addEventListener('click', e => {
   const btn = e.target.closest('[data-qp-action]');
   if (!btn) return;
+  if (btn.classList.contains('locked')) {
+    showPremiumCTA('Passez en Premium pour débloquer ce type');
+    return;
+  }
   currentAction = btn.dataset.qpAction;
   const def = TYPE_DEF[currentAction];
   _highlightActionButton();
