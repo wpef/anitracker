@@ -19,8 +19,8 @@ export function renderStats() {
   const s = getStats(db.getAllEntries());
 
   // ── Quick-stats (bandeau du haut) ──────────────────────────────────────
-  $('qs-pipi-in').textContent    = s.todayNeedInside;
-  $('qs-pipi-total').textContent = s.todayNeedTotal;
+  $('qs-needs-in').textContent    = s.todayNeedInside;
+  $('qs-needs-total').textContent = s.todayNeedTotal;
   $('qs-walk-time').textContent  = s.todayWalkMinSince7am > 0
     ? formatDuration(s.todayWalkMinSince7am) : '0';
 

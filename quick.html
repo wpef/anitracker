@@ -51,7 +51,7 @@
     /* ── Big toggle buttons ── */
     .btn-toggle {
       flex: 1;
-      border: none;
+      border: 2px solid transparent;
       border-radius: var(--radius);
       background: var(--surface);
       color: var(--text2);
@@ -64,16 +64,9 @@
       justify-content: center;
       gap: 6px;
       transition: background .15s, color .15s, transform .1s;
-      border: 2px solid transparent;
     }
     .btn-toggle .emoji { font-size: clamp(1.8rem, 8vw, 2.6rem); }
     .btn-toggle:active { transform: scale(.96); }
-
-    /* Active states */
-    .btn-toggle.active-pipi  { background: rgba(76,201,240,.18); border-color: var(--walk); color: var(--walk); }
-    .btn-toggle.active-caca  { background: rgba(247,127,0,.18);  border-color: #f77f00;     color: #f77f00; }
-    .btn-toggle.active-dehors { background: rgba(76,175,80,.18); border-color: var(--outside); color: var(--outside); }
-    .btn-toggle.active-dedans { background: rgba(233,69,96,.18); border-color: var(--accent);  color: var(--accent); }
 
     /* ── Gauge section ── */
     #gauge-section {
@@ -103,14 +96,6 @@
       border-radius: 4px;
       outline: none;
       cursor: pointer;
-    }
-    /* Taille (pipi) – blue */
-    #quick-gauge.taille {
-      background: linear-gradient(to right, rgba(76,201,240,.25), var(--walk));
-    }
-    /* Fermété (caca) – red→green */
-    #quick-gauge.fermete {
-      background: linear-gradient(to right, #e94560, #ffcc80, #4caf50);
     }
 
     #quick-gauge::-webkit-slider-thumb {
@@ -197,36 +182,22 @@
 </head>
 <body>
 <div id="app">
-  <!-- Row 1: Action -->
-  <div class="row" id="row-action">
-    <button class="btn-toggle active-pipi" id="btn-pipi" data-action="pipi">
-      <span class="emoji">💧</span>PIPI
-    </button>
-    <button class="btn-toggle" id="btn-caca" data-action="caca">
-      <span class="emoji">💩</span>CACA
-    </button>
-  </div>
+  <!-- Row 1: Action (generated from TYPE_DEF needTypes) -->
+  <div class="row" id="row-action"></div>
 
-  <!-- Row 2: Location -->
-  <div class="row" id="row-location">
-    <button class="btn-toggle active-dehors" id="btn-dehors" data-location="dehors">
-      <span class="emoji">🌿</span>DEHORS
-    </button>
-    <button class="btn-toggle" id="btn-dedans" data-location="dedans">
-      <span class="emoji">🏠</span>DEDANS
-    </button>
-  </div>
+  <!-- Row 2: Text options (generated from current type's textOptions) -->
+  <div class="row" id="row-text" style="display:none"></div>
 
   <!-- Row 3: Gauge -->
   <div id="gauge-section">
     <div class="gauge-header">
-      <span class="gauge-label" id="gauge-label">💧 Quantité</span>
-      <span class="gauge-value" id="gauge-val">Normal</span>
+      <span class="gauge-label" id="gauge-label"></span>
+      <span class="gauge-value" id="gauge-val"></span>
     </div>
-    <input type="range" id="quick-gauge" class="taille" min="0" max="100" value="50" step="1" />
+    <input type="range" id="quick-gauge" min="0" max="100" value="50" step="1" />
     <div class="gauge-ends">
-      <span id="gauge-end-left">Gouttes</span>
-      <span id="gauge-end-right">Énorme</span>
+      <span id="gauge-end-left"></span>
+      <span id="gauge-end-right"></span>
     </div>
   </div>
 
