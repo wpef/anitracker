@@ -45,7 +45,7 @@ ouvrira le prompt correspondant dans `.claude/plans/`, et executera les taches.
 | 7 | Gestion utilisateurs & auth | `phase-07-auth.md` | [x] | 2026-03-09 |
 | 8 | Modele freemium / premium | `phase-08-freemium.md` | [x] | 2026-03-09 |
 | 9 | Nouvelles features | `phase-09-features.md` | [x] | 2026-03-09 |
-| 10 | App native & CI/CD | `phase-10-native-cicd.md` | [ ] | — |
+| 10 | App native & CI/CD | `phase-10-native-cicd.md` | [x] | 2026-03-17 |
 
 ---
 
@@ -184,7 +184,9 @@ faites dans la console Firebase ou le dashboard du provider.
   Firebase Extension
 - [ ] **Tester le flow complet** : free → trial → premium → expiration
 
-### Apres Phase 10 — Native & CI/CD (a venir)
+### Apres Phase 10 — Native & CI/CD
 
-- [ ] Configurer les comptes Apple Developer / Google Play
-- [ ] Configurer le pipeline CI/CD (GitHub Actions, etc.)
+- [x] Setup Capacitor + projet Android genere
+- [x] GitHub Actions: build debug APK sur chaque push main (artifact telechargeable)
+- [ ] Pour sideload: telecharger l'APK depuis GitHub Actions > onglet Actions > artifact
+- [ ] Pour publier sur Play Store: generer une signing key + configurer le workflow release
