@@ -1,0 +1,10 @@
+{
+  "appId": "com.anitracker.app",
+  "appName": "AniTracker",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}
