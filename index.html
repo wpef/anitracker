@@ -372,6 +372,15 @@
 <!-- Toast -->
 <div id="toast"></div>
 
+<!-- Sync dot → setup screen (standalone, survives module crashes) -->
+<script>
+document.getElementById('sync-indicator')?.addEventListener('click', function() {
+  var overlay = document.getElementById('setup-overlay');
+  if (overlay) overlay.style.display = 'flex';
+  var resetBtn = document.getElementById('setup-reset');
+  if (resetBtn && localStorage.getItem('anitracker_firebase_config')) resetBtn.style.display = 'block';
+});
+</script>
 <script type="module" src="js/app.js"></script>
 </body>
 </html>

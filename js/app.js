@@ -67,8 +67,7 @@ $('setup-reset')?.addEventListener('click', () => {
 
 $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
 
-// Sync dot tap → always open setup screen
-$('sync-indicator')?.addEventListener('click', () => showSetupScreen());
+// Sync dot click handler is in index.html (inline script, crash-proof)
 
 // ── Mode démo ─────────────────────────────────────────────────────────────
 
