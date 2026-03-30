@@ -94,6 +94,7 @@ nav {
   display: flex;
   border-top: 1px solid var(--border);
   z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .nav-btn {
   flex: 1;
@@ -1037,9 +1038,10 @@ nav {
 
 /* ===== Page Rapide ===== */
 #page-quick {
-  padding: 12px 12px calc(12px + 64px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 12px calc(20px + 64px + env(safe-area-inset-bottom, 0px));
   gap: 10px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 /* Action row & text row — horizontal scroll, square buttons, fill height */
@@ -1201,7 +1203,7 @@ nav {
   gap: 16px;
 }
 .edit-page-footer {
-  padding: 12px 16px calc(12px + 64px + env(safe-area-inset-bottom, 0px));
+  padding: 12px 16px calc(20px + 64px + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid rgba(255,255,255,.06);
   flex-shrink: 0;
 }
