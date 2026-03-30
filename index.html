@@ -391,7 +391,7 @@
       var m = text.match(/\{[\s\S]*\}/);
       if (m) {
         var j = m[0]
-          .replace(/\/\/[^\n]*/g, '')
+          .replace(/^\s*\/\/[^\n]*/gm, '')
           .replace(/,(\s*[\}\]])/g, '$1')
           .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":')
           .replace(/:\s*'([^']*)'/g, ':"$1"');
