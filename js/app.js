@@ -67,13 +67,7 @@ $('setup-reset')?.addEventListener('click', () => {
 
 $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
 
-// Sync dot tap → open setup screen when connection is broken
-$('sync-indicator')?.addEventListener('click', () => {
-  const dot = $('sync-indicator');
-  if (dot?.classList.contains('sync-error') || dot?.classList.contains('sync-pending')) {
-    showSetupScreen();
-  }
-});
+// Sync dot click handler is in index.html (inline script, crash-proof)
 
 // ── Mode démo ─────────────────────────────────────────────────────────────
 

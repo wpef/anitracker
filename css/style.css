@@ -65,7 +65,7 @@ header h1 {
   background-clip: text;
   letter-spacing: -.01em;
 }
-.header-icon { width: 32px; height: 32px; flex-shrink: 0; }
+.header-icon { width: 32px; height: 32px; min-width: 32px; max-width: 32px; flex-shrink: 0; display: block; }
 .header-sub { font-size: .72rem; color: var(--text2); margin-top: 2px; letter-spacing: .03em; }
 
 /* ===== Page System ===== */
@@ -570,21 +570,40 @@ nav {
 
 /* ===== Sync indicator ===== */
 .sync-dot {
-  width: 10px;
-  height: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   flex-shrink: 0;
   transition: background .4s;
   border: none;
   padding: 0;
+  margin: -15px -10px -15px 0;
   cursor: pointer;
-  /* Larger tap target via padding trick */
-  box-shadow: 0 0 0 10px transparent;
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  background: transparent;
   -webkit-tap-highlight-color: transparent;
 }
-.sync-ok      { background: var(--outside); }
-.sync-pending { background: #ffcc80; animation: pulse .8s infinite alternate; }
-.sync-error   { background: var(--inside); animation: pulse .8s infinite alternate; }
+/* Visible dot rendered via pseudo-element */
+.sync-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: background .4s;
+}
+.sync-ok::after      { background: var(--outside); }
+.sync-pending::after { background: #ffcc80; animation: pulse .8s infinite alternate; }
+.sync-error::after   { background: var(--inside); animation: pulse .8s infinite alternate; }
+/* sync-dot colors are on ::after pseudo-element above */
 @keyframes pulse { from { opacity: 1; } to { opacity: .3; } }
 
 /* ===== Quick-stats – nouvelle couleur pipi dedans ===== */
