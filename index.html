@@ -372,14 +372,56 @@
 <!-- Toast -->
 <div id="toast"></div>
 
-<!-- Sync dot → setup screen (standalone, survives module crashes) -->
+<!-- Setup + sync dot handlers (standalone, survives module crashes) -->
 <script>
-document.getElementById('sync-indicator')?.addEventListener('click', function() {
-  var overlay = document.getElementById('setup-overlay');
-  if (overlay) overlay.style.display = 'flex';
-  var resetBtn = document.getElementById('setup-reset');
-  if (resetBtn && localStorage.getItem('anitracker_firebase_config')) resetBtn.style.display = 'block';
-});
+(function() {
+  var CONFIG_KEY = 'anitracker_firebase_config';
+
+  function openSetup() {
+    var overlay = document.getElementById('setup-overlay');
+    if (overlay) overlay.style.display = 'flex';
+    var resetBtn = document.getElementById('setup-reset');
+    if (resetBtn && localStorage.getItem(CONFIG_KEY)) resetBtn.style.display = 'block';
+  }
+
+  function parseConfig(text) {
+    if (!text || !text.trim()) return null;
+    try { var c = JSON.parse(text.trim()); if (c.apiKey && c.databaseURL) return c; } catch(e) {}
+    try {
+      var m = text.match(/\{[\s\S]*\}/);
+      if (m) {
+        var j = m[0]
+          .replace(/^\s*\/\/[^\n]*/gm, '')
+          .replace(/,(\s*[\}\]])/g, '$1')
+          .replace(/([{,]\s*)(\w+)\s*:/g, '$1"$2":')
+          .replace(/:\s*'([^']*)'/g, ':"$1"');
+        var c2 = JSON.parse(j);
+        if (c2.apiKey && c2.databaseURL) return c2;
+      }
+    } catch(e) {}
+    return null;
+  }
+
+  // Sync dot → open setup
+  document.getElementById('sync-indicator')?.addEventListener('click', openSetup);
+
+  // Save config
+  document.getElementById('setup-save')?.addEventListener('click', function() {
+    var text = document.getElementById('setup-input').value.trim();
+    var config = parseConfig(text);
+    var errEl = document.getElementById('setup-error');
+    if (errEl) errEl.style.display = config ? 'none' : 'block';
+    if (!config) return;
+    localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
+    location.reload();
+  });
+
+  // Reset config
+  document.getElementById('setup-reset')?.addEventListener('click', function() {
+    localStorage.removeItem(CONFIG_KEY);
+    location.reload();
+  });
+})();
 </script>
 <script type="module" src="js/app.js"></script>
 </body>
