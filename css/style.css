@@ -72,7 +72,7 @@ header h1 {
 .page {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 16px 100px;
+  padding: 20px 16px calc(16px + 64px + env(safe-area-inset-bottom, 0px));
   display: none;
   flex-direction: column;
   gap: 20px;
@@ -493,7 +493,7 @@ nav {
 }
 
 /* ===== Timeline (History Page) – liste épurée ===== */
-#page-history { padding: 8px 0 100px; gap: 0; }
+#page-history { padding: 8px 0 calc(16px + 64px + env(safe-area-inset-bottom, 0px)); gap: 0; }
 #entry-list   { display: flex; flex-direction: column; flex: 1; min-height: 0; }
 
 .tl-day-header {
@@ -567,7 +567,7 @@ nav {
 }
 
 /* Compenser le bouton flottant dans le scroll de page-new */
-#page-new { padding-bottom: 160px; }
+#page-new { padding-bottom: calc(96px + 64px + env(safe-area-inset-bottom, 0px)); }
 
 /* ===== Sync indicator ===== */
 .sync-dot {
