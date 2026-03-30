@@ -67,6 +67,14 @@ $('setup-reset')?.addEventListener('click', () => {
 
 $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
 
+// Sync dot tap → open setup screen when connection is broken
+$('sync-indicator')?.addEventListener('click', () => {
+  const dot = $('sync-indicator');
+  if (dot?.classList.contains('sync-error') || dot?.classList.contains('sync-pending')) {
+    showSetupScreen();
+  }
+});
+
 // ── Mode démo ─────────────────────────────────────────────────────────────
 
 async function startDemo() {
@@ -135,11 +143,20 @@ async function boot() {
 
   setSyncState('pending');
 
+  // Monitor real-time Firebase connection state
+  db.onConnectionStateChange?.(connected => {
+    if (!connected) setSyncState('pending');
+  });
+
   db.initDB(() => {
     const active = document.querySelector('.page.active');
     if (active?.id === 'page-stats')   renderStats();
     if (active?.id === 'page-history') renderHistory();
     setSyncState('ok');
+  }, err => {
+    console.error('Firebase listener error:', err);
+    setSyncState('error');
+    showToast('Erreur Firebase : ' + (err.message || 'accès refusé'));
   });
 
   initNewEntry();

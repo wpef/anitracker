@@ -32,13 +32,33 @@
 
   <!-- ===== Header ===== -->
   <header>
-    <span class="header-icon">🐾</span>
+    <svg class="header-icon" viewBox="0 0 512 512" aria-hidden="true">
+      <defs>
+        <linearGradient id="hi-paw" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4cc9f0"/>
+          <stop offset="100%" stop-color="#e94560"/>
+        </linearGradient>
+        <linearGradient id="hi-toe-l" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#4cc9f0"/>
+          <stop offset="100%" stop-color="#7b8ff7"/>
+        </linearGradient>
+        <linearGradient id="hi-toe-r" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#7b8ff7"/>
+          <stop offset="100%" stop-color="#e94560"/>
+        </linearGradient>
+      </defs>
+      <ellipse cx="256" cy="312" rx="84" ry="70" fill="url(#hi-paw)"/>
+      <ellipse cx="166" cy="232" rx="35" ry="42" fill="url(#hi-toe-l)"/>
+      <ellipse cx="216" cy="188" rx="33" ry="40" fill="url(#hi-toe-l)"/>
+      <ellipse cx="296" cy="188" rx="33" ry="40" fill="url(#hi-toe-r)"/>
+      <ellipse cx="346" cy="232" rx="35" ry="42" fill="url(#hi-toe-r)"/>
+    </svg>
     <div>
       <h1>AniTracker</h1>
       <div class="header-sub">Journal de mon chien</div>
     </div>
     <div class="header-right">
-      <div id="sync-indicator" class="sync-dot sync-pending" title="Synchronisation…"></div>
+      <button id="sync-indicator" class="sync-dot sync-pending" title="Synchronisation…" aria-label="État de la connexion"></button>
     </div>
   </header>
 
