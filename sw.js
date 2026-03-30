@@ -1,10 +1,15 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v36';
+const CACHE_NAME = 'anitracker-v37';
 const ASSETS = [
   '/index.html',
   '/quick.html',
   '/css/style.css',
   '/manifest.json',
+  // ── Icônes ──────────────────────────────────────────────────────────────
+  '/icons/icon.svg',
+  '/icons/icon-maskable.svg',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
   // ── Modules JS ──────────────────────────────────────────────────────────
   '/js/app.js',
   '/js/utils.js',

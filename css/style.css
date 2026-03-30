@@ -2,28 +2,33 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:       #0f0f1a;
-  --surface:  #1a1a2e;
-  --surface2: #16213e;
+  --bg:       #0a0a16;
+  --surface:  #14142a;
+  --surface2: #1a1a36;
   --accent:   #e94560;
   --accent2:  #0f3460;
+  --mid:      #7b8ff7;
   --walk:     #4cc9f0;
   --bathroom: #f77f00;
   --outside:  #4caf50;
   --inside:   #e94560;
-  --text:     #eaeaea;
-  --text2:    #9a9ab0;
+  --text:     #ededf0;
+  --text2:    #8888a8;
   --radius:   16px;
-  --shadow:   0 4px 24px rgba(0,0,0,.4);
+  --shadow:   0 4px 24px rgba(0,0,0,.5);
+  --border:   rgba(255,255,255,.06);
+  --glass:    rgba(255,255,255,.03);
 }
 
 html, body {
   height: 100%;
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
   font-size: 16px;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ===== App Shell ===== */
@@ -39,25 +44,27 @@ html, body {
 
 /* ===== Header ===== */
 header {
-  background: var(--surface);
+  background: linear-gradient(180deg, var(--surface2) 0%, var(--surface) 100%);
   padding: 16px 20px 12px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  box-shadow: 0 2px 16px rgba(0,0,0,.4);
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
   z-index: 10;
 }
 header h1 {
   font-size: 1.3rem;
-  font-weight: 700;
-  background: linear-gradient(135deg, var(--walk), var(--accent));
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--walk), var(--mid), var(--accent));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  letter-spacing: -.01em;
 }
 .header-icon { font-size: 1.6rem; }
-.header-sub { font-size: .75rem; color: var(--text2); margin-top: 1px; }
+.header-sub { font-size: .72rem; color: var(--text2); margin-top: 2px; letter-spacing: .03em; }
 
 /* ===== Page System ===== */
 .page {
@@ -79,9 +86,11 @@ nav {
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  background: var(--surface);
+  background: rgba(20,20,42,.92);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  backdrop-filter: blur(20px) saturate(1.4);
   display: flex;
-  border-top: 1px solid rgba(255,255,255,.06);
+  border-top: 1px solid var(--border);
   z-index: 100;
 }
 .nav-btn {
@@ -112,6 +121,7 @@ nav {
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: var(--shadow);
+  border: 1px solid var(--border);
 }
 .card-title {
   font-size: .8rem;
@@ -180,10 +190,10 @@ nav {
   transition: all .2s;
   background: linear-gradient(135deg, var(--accent), #c62a47);
   color: #fff;
-  box-shadow: 0 4px 16px rgba(233,69,96,.4);
-  letter-spacing: .03em;
+  box-shadow: 0 4px 20px rgba(233,69,96,.35);
+  letter-spacing: .02em;
 }
-.btn-submit:active { transform: scale(.97); box-shadow: none; }
+.btn-submit:active { transform: scale(.97); box-shadow: 0 2px 8px rgba(233,69,96,.2); }
 
 /* ===== Toast ===== */
 #toast {
@@ -191,13 +201,16 @@ nav {
   bottom: 90px;
   left: 50%;
   transform: translateX(-50%) translateY(20px);
-  background: #23233a;
+  background: rgba(30,30,56,.9);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   color: #fff;
   padding: 12px 24px;
   border-radius: 24px;
   font-size: .9rem;
   font-weight: 600;
   box-shadow: 0 4px 20px rgba(0,0,0,.5);
+  border: 1px solid var(--border);
   opacity: 0;
   transition: opacity .3s, transform .3s;
   z-index: 200;
@@ -341,6 +354,7 @@ nav {
   padding: 14px 10px;
   text-align: center;
   box-shadow: var(--shadow);
+  border: 1px solid var(--border);
 }
 .qs-value { font-size: 1.6rem; font-weight: 800; }
 .qs-label { font-size: .65rem; color: var(--text2); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
@@ -495,8 +509,11 @@ nav {
   background: var(--surface);
   border-radius: 12px;
   cursor: pointer;
-  transition: background .15s;
+  transition: background .15s, border-color .15s;
   border-left: 3px solid transparent;
+  border-top: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 .tl-entry:active { background: var(--surface2); }
 .tl-entry-walk              { border-left-color: var(--walk); }
@@ -712,6 +729,7 @@ nav {
   flex-direction: column;
   gap: 14px;
   box-shadow: 0 -8px 40px rgba(0,0,0,.5);
+  border-top: 1px solid rgba(255,255,255,.08);
 }
 .modal-header {
   display: flex;
@@ -781,6 +799,7 @@ nav {
 .btn-modal-save {
   background: linear-gradient(135deg, var(--accent), #c62a47);
   color: #fff;
+  box-shadow: 0 4px 16px rgba(233,69,96,.3);
 }
 .btn-modal-cancel:active, .btn-modal-save:active { transform: scale(.97); }
 
@@ -1005,7 +1024,7 @@ nav {
 .qp-text-grid::-webkit-scrollbar { display: none; }
 
 .btn-toggle {
-  border: 2px solid transparent;
+  border: 2px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
   color: var(--text2);
@@ -1017,7 +1036,7 @@ nav {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  transition: background .15s, color .15s, transform .1s;
+  transition: background .15s, color .15s, border-color .15s, transform .1s;
   -webkit-tap-highlight-color: transparent;
   padding: 10px;
   flex: 0 0 auto;
@@ -1035,6 +1054,7 @@ nav {
 .qp-gauge-section {
   flex: 0 0 auto;
   background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   padding: 14px 16px 10px;
   display: flex;
@@ -1078,12 +1098,13 @@ nav {
   height: clamp(48px, 8dvh, 60px);
   border: none;
   border-radius: 18px;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #c62a47);
   color: #fff;
   font-size: clamp(1rem, 4vw, 1.25rem);
   font-weight: 700;
   cursor: pointer;
-  transition: background .15s, transform .1s;
+  transition: background .15s, transform .1s, box-shadow .15s;
+  box-shadow: 0 4px 20px rgba(233,69,96,.3);
 }
 .qp-save-btn:active    { transform: scale(.97); }
 .qp-save-btn.success   { background: var(--outside); }
@@ -1097,7 +1118,7 @@ nav {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #c62a47);
   color: #fff;
   font-size: 2rem;
   line-height: 1;
@@ -1105,7 +1126,7 @@ nav {
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  box-shadow: 0 4px 20px rgba(233,69,96,.55);
+  box-shadow: 0 4px 24px rgba(233,69,96,.45);
   z-index: 90;
   transition: transform .15s, box-shadow .15s;
 }

@@ -16,42 +16,35 @@
       <stop offset="0%" stop-color="#7b8ff7"/>
       <stop offset="100%" stop-color="#e94560"/>
     </linearGradient>
-    <filter id="glow">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
     <filter id="shadow">
-      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity=".35"/>
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity=".3"/>
     </filter>
   </defs>
 
-  <!-- Background -->
-  <rect width="512" height="512" rx="112" fill="url(#bg-grad)"/>
+  <!-- Full bleed background (maskable safe zone = 80% center) -->
+  <rect width="512" height="512" fill="url(#bg-grad)"/>
 
   <!-- Subtle radial highlight -->
-  <circle cx="256" cy="240" r="200" fill="url(#paw-grad)" opacity=".06"/>
+  <circle cx="256" cy="245" r="160" fill="url(#paw-grad)" opacity=".06"/>
 
-  <!-- Paw group with drop shadow -->
-  <g filter="url(#shadow)">
+  <!-- Paw group — scaled down ~20% to fit maskable safe zone -->
+  <g filter="url(#shadow)" transform="translate(256,260) scale(.78) translate(-256,-260)">
     <!-- Main pad -->
     <ellipse cx="256" cy="312" rx="84" ry="70" fill="url(#paw-grad)"/>
 
-    <!-- Toes — left to right gradient transition -->
+    <!-- Toes -->
     <ellipse cx="166" cy="232" rx="35" ry="42" fill="url(#toe-l)"/>
     <ellipse cx="216" cy="188" rx="33" ry="40" fill="url(#toe-l)"/>
     <ellipse cx="296" cy="188" rx="33" ry="40" fill="url(#toe-r)"/>
     <ellipse cx="346" cy="232" rx="35" ry="42" fill="url(#toe-r)"/>
   </g>
 
-  <!-- Specular highlights on toes -->
-  <ellipse cx="162" cy="222" rx="14" ry="16" fill="#fff" opacity=".18"/>
-  <ellipse cx="212" cy="178" rx="13" ry="15" fill="#fff" opacity=".15"/>
-  <ellipse cx="292" cy="178" rx="13" ry="15" fill="#fff" opacity=".12"/>
-  <ellipse cx="342" cy="222" rx="14" ry="16" fill="#fff" opacity=".10"/>
-
-  <!-- Specular on main pad -->
-  <ellipse cx="240" cy="296" rx="32" ry="22" fill="#fff" opacity=".10"/>
+  <!-- Specular highlights (also scaled) -->
+  <g transform="translate(256,260) scale(.78) translate(-256,-260)" opacity=".85">
+    <ellipse cx="162" cy="222" rx="14" ry="16" fill="#fff" opacity=".18"/>
+    <ellipse cx="212" cy="178" rx="13" ry="15" fill="#fff" opacity=".15"/>
+    <ellipse cx="292" cy="178" rx="13" ry="15" fill="#fff" opacity=".12"/>
+    <ellipse cx="342" cy="222" rx="14" ry="16" fill="#fff" opacity=".10"/>
+    <ellipse cx="240" cy="296" rx="32" ry="22" fill="#fff" opacity=".10"/>
+  </g>
 </svg>
