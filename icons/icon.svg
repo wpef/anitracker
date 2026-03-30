@@ -1,11 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="100" fill="#1a1a2e"/>
-  <!-- Paw print -->
-  <!-- Main pad -->
-  <ellipse cx="256" cy="320" rx="90" ry="75" fill="#e94560"/>
-  <!-- Four toes -->
-  <ellipse cx="160" cy="235" rx="38" ry="44" fill="#4cc9f0"/>
-  <ellipse cx="210" cy="190" rx="38" ry="44" fill="#4cc9f0"/>
-  <ellipse cx="302" cy="190" rx="38" ry="44" fill="#4cc9f0"/>
-  <ellipse cx="352" cy="235" rx="38" ry="44" fill="#4cc9f0"/>
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1e1e3a"/>
+      <stop offset="100%" stop-color="#0f0f1a"/>
+    </linearGradient>
+    <linearGradient id="paw-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4cc9f0"/>
+      <stop offset="100%" stop-color="#e94560"/>
+    </linearGradient>
+    <linearGradient id="toe-l" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#4cc9f0"/>
+      <stop offset="100%" stop-color="#7b8ff7"/>
+    </linearGradient>
+    <linearGradient id="toe-r" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7b8ff7"/>
+      <stop offset="100%" stop-color="#e94560"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity=".35"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" rx="112" fill="url(#bg-grad)"/>
+
+  <!-- Subtle radial highlight -->
+  <circle cx="256" cy="240" r="200" fill="url(#paw-grad)" opacity=".06"/>
+
+  <!-- Paw group with drop shadow -->
+  <g filter="url(#shadow)">
+    <!-- Main pad -->
+    <ellipse cx="256" cy="312" rx="84" ry="70" fill="url(#paw-grad)"/>
+
+    <!-- Toes — left to right gradient transition -->
+    <ellipse cx="166" cy="232" rx="35" ry="42" fill="url(#toe-l)"/>
+    <ellipse cx="216" cy="188" rx="33" ry="40" fill="url(#toe-l)"/>
+    <ellipse cx="296" cy="188" rx="33" ry="40" fill="url(#toe-r)"/>
+    <ellipse cx="346" cy="232" rx="35" ry="42" fill="url(#toe-r)"/>
+  </g>
+
+  <!-- Specular highlights on toes -->
+  <ellipse cx="162" cy="222" rx="14" ry="16" fill="#fff" opacity=".18"/>
+  <ellipse cx="212" cy="178" rx="13" ry="15" fill="#fff" opacity=".15"/>
+  <ellipse cx="292" cy="178" rx="13" ry="15" fill="#fff" opacity=".12"/>
+  <ellipse cx="342" cy="222" rx="14" ry="16" fill="#fff" opacity=".10"/>
+
+  <!-- Specular on main pad -->
+  <ellipse cx="240" cy="296" rx="32" ry="22" fill="#fff" opacity=".10"/>
 </svg>

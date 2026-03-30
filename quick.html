@@ -3,22 +3,29 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="theme-color" content="#0a0a16" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <title>Quick – AniTracker</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:      #0f0f1a;
-      --surface: #1a1a2e;
+      --bg:      #0a0a16;
+      --surface: #14142a;
       --walk:    #4cc9f0;
       --accent:  #e94560;
       --outside: #4caf50;
-      --text:    #eaeaea;
-      --text2:   #9a9ab0;
+      --text:    #ededf0;
+      --text2:   #8888a8;
+      --border:  rgba(255,255,255,.06);
       --radius:  18px;
     }
 
@@ -26,8 +33,9 @@
       height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', 'SF Pro Display', -apple-system, system-ui, sans-serif;
       -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
       overflow: hidden;
     }
 
