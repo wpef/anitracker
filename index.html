@@ -24,6 +24,13 @@
 <body>
 <div id="app">
 
+  <!-- ===== Bannière Installer PWA ===== -->
+  <div id="install-banner" class="install-banner" style="display:none">
+    <span class="install-banner-text">Installer AniTracker</span>
+    <button id="install-btn" class="install-btn">Installer</button>
+    <button id="install-dismiss" class="install-dismiss" aria-label="Fermer">✕</button>
+  </div>
+
   <!-- ===== Bannière Mode Démo ===== -->
   <div id="demo-banner" style="display:none">
     ⚡ Mode démo · données fictives ·
@@ -420,6 +427,63 @@
   document.getElementById('setup-reset')?.addEventListener('click', function() {
     localStorage.removeItem(CONFIG_KEY);
     location.reload();
+  });
+})();
+
+// ── PWA Install banner ────────────────────────────────────────────────────
+(function() {
+  var DISMISSED_KEY = 'anitracker_install_dismissed';
+  var banner = document.getElementById('install-banner');
+  var installBtn = document.getElementById('install-btn');
+  var dismissBtn = document.getElementById('install-dismiss');
+  var deferredPrompt = null;
+
+  // Already installed or running as standalone PWA → hide
+  if (window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true) return;
+
+  // User dismissed recently (7 days)
+  var dismissed = localStorage.getItem(DISMISSED_KEY);
+  if (dismissed && Date.now() - Number(dismissed) < 7 * 86400000) return;
+
+  // Android/Chrome: capture beforeinstallprompt
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (banner) banner.style.display = 'flex';
+  });
+
+  // iOS Safari: show manual instructions
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  var isSafari = /Safari/.test(navigator.userAgent) && !/Chrome|CriOS/.test(navigator.userAgent);
+  if (isIOS && isSafari) {
+    if (banner) {
+      banner.querySelector('.install-banner-text').textContent =
+        'Installer : partager ⎋ → Sur l\u2019écran d\u2019accueil';
+      if (installBtn) installBtn.style.display = 'none';
+      banner.style.display = 'flex';
+    }
+  }
+
+  // Install button click (Android/Chrome)
+  installBtn?.addEventListener('click', function() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(function() {
+      deferredPrompt = null;
+      if (banner) banner.style.display = 'none';
+    });
+  });
+
+  // Dismiss
+  dismissBtn?.addEventListener('click', function() {
+    if (banner) banner.style.display = 'none';
+    localStorage.setItem(DISMISSED_KEY, String(Date.now()));
+  });
+
+  // Hide after app is installed
+  window.addEventListener('appinstalled', function() {
+    if (banner) banner.style.display = 'none';
   });
 })();
 </script>
