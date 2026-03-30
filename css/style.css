@@ -65,7 +65,7 @@ header h1 {
   background-clip: text;
   letter-spacing: -.01em;
 }
-.header-icon { width: 32px; height: 32px; flex-shrink: 0; }
+.header-icon { width: 32px; height: 32px; min-width: 32px; max-width: 32px; flex-shrink: 0; display: block; }
 .header-sub { font-size: .72rem; color: var(--text2); margin-top: 2px; letter-spacing: .03em; }
 
 /* ===== Page System ===== */
@@ -570,15 +570,24 @@ nav {
 
 /* ===== Sync indicator ===== */
 .sync-dot {
+  -webkit-appearance: none;
+  appearance: none;
   width: 10px;
   height: 10px;
+  min-width: 10px;
+  min-height: 10px;
   border-radius: 50%;
   flex-shrink: 0;
   transition: background .4s;
   border: none;
   padding: 0;
+  margin: 0;
   cursor: pointer;
-  /* Larger tap target via padding trick */
+  font-size: 0;
+  line-height: 0;
+  color: transparent;
+  overflow: hidden;
+  /* Larger tap target */
   box-shadow: 0 0 0 10px transparent;
   -webkit-tap-highlight-color: transparent;
 }
