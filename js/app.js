@@ -135,11 +135,20 @@ async function boot() {
 
   setSyncState('pending');
 
+  // Monitor real-time Firebase connection state
+  db.onConnectionStateChange?.(connected => {
+    if (!connected) setSyncState('pending');
+  });
+
   db.initDB(() => {
     const active = document.querySelector('.page.active');
     if (active?.id === 'page-stats')   renderStats();
     if (active?.id === 'page-history') renderHistory();
     setSyncState('ok');
+  }, err => {
+    console.error('Firebase listener error:', err);
+    setSyncState('error');
+    showToast('Erreur Firebase : ' + (err.message || 'accès refusé'));
   });
 
   initNewEntry();

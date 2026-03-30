@@ -10,14 +10,15 @@
  * avant la fin de boot() dans app.js.
  *
  * Interface attendue (implémentée par db.js et demo-db.js) :
- *   initDB(onUpdate)         – initialise, appelle onUpdate() à chaque sync
+ *   initDB(onUpdate, onError) – initialise, appelle onUpdate() à chaque sync
  *   getAllEntries()           – retourne la liste en cache (sync)
  *   saveEntry(entry)         – Promise, ajoute une entrée
  *   deleteEntry(id)          – Promise, supprime par id
  *   updateEntry(id, data)    – Promise, merge partiel par id
+ *   onConnectionStateChange(cb) – callback(connected: bool) quand la connexion change
  *
  * @type {{ initDB: Function|null, getAllEntries: Function|null, saveEntry: Function|null,
- *          deleteEntry: Function|null, updateEntry: Function|null }}
+ *          deleteEntry: Function|null, updateEntry: Function|null, onConnectionStateChange: Function|null }}
  */
 export const db = {
   initDB:       null,
@@ -25,4 +26,5 @@ export const db = {
   saveEntry:    null,
   deleteEntry:  null,
   updateEntry:  null,
+  onConnectionStateChange: null,
 };

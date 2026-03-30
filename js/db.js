@@ -9,7 +9,7 @@
 
 import { initializeApp }                            from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import { getDatabase, ref, set, remove, update,
-         onValue, get }                             from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+         onValue, get, onDisconnect }               from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 import { getFirebaseConfig }                        from './firebase-config.js';
 
 // ── Firebase init (config lue depuis localStorage) ─────────────────────────
@@ -40,15 +40,35 @@ async function migrateFromLocalStorage() {
   }
 }
 
+// ── Connection state monitoring ───────────────────────────────────────────
+let _onConnectionChange = null;
+
+/**
+ * Registers a callback fired whenever Firebase connectivity changes.
+ * @param {(connected: boolean) => void} cb
+ */
+export function onConnectionStateChange(cb) {
+  _onConnectionChange = cb;
+}
+
+function _startConnectionMonitor() {
+  const connRef = ref(fbDb, '.info/connected');
+  onValue(connRef, snap => {
+    const connected = snap.val() === true;
+    if (typeof _onConnectionChange === 'function') _onConnectionChange(connected);
+  });
+}
+
 // ── Initialisation + listener temps réel ──────────────────────────────────
 /**
  * Initialise la connexion Firebase, migre les données localStorage existantes,
  * puis établit un listener temps réel sur le nœud "entries".
  *
  * @param {() => void} onUpdate  Appelé à chaque mise à jour distante (ajout/modif/suppression)
+ * @param {(err: Error) => void} [onError]  Appelé si le listener échoue (permissions, etc.)
  * @returns {Promise<void>}
  */
-export async function initDB(onUpdate) {
+export async function initDB(onUpdate, onError) {
   await migrateFromLocalStorage();
 
   onValue(ref(fbDb, ENTRIES_PATH), snapshot => {
@@ -56,7 +76,11 @@ export async function initDB(onUpdate) {
     entriesCache = Object.values(data)
       .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     if (typeof onUpdate === 'function') onUpdate();
+  }, err => {
+    if (typeof onError === 'function') onError(err);
   });
+
+  _startConnectionMonitor();
 }
 
 // ── Lecture synchrone depuis le cache ─────────────────────────────────────
