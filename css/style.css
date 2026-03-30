@@ -1001,6 +1001,43 @@ nav {
   border-color: rgba(255,255,255,.3);
 }
 
+/* ===== Bannière installer PWA ===== */
+.install-banner {
+  background: linear-gradient(135deg, var(--accent2), #1a1a36);
+  border-bottom: 1px solid var(--border);
+  color: #fff;
+  font-size: .82rem;
+  font-weight: 600;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+.install-banner-text { flex: 1; }
+.install-btn {
+  background: var(--walk);
+  color: var(--bg);
+  border: none;
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.install-btn:active { opacity: .8; }
+.install-dismiss {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+}
+
 /* ===== Bannière mode démo ===== */
 #demo-banner {
   background: #b45309;
