@@ -567,10 +567,16 @@ nav {
   border-radius: 50%;
   flex-shrink: 0;
   transition: background .4s;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  /* Larger tap target via padding trick */
+  box-shadow: 0 0 0 10px transparent;
+  -webkit-tap-highlight-color: transparent;
 }
 .sync-ok      { background: var(--outside); }
 .sync-pending { background: #ffcc80; animation: pulse .8s infinite alternate; }
-.sync-error   { background: var(--inside); }
+.sync-error   { background: var(--inside); animation: pulse .8s infinite alternate; }
 @keyframes pulse { from { opacity: 1; } to { opacity: .3; } }
 
 /* ===== Quick-stats – nouvelle couleur pipi dedans ===== */

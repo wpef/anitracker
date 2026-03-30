@@ -67,6 +67,14 @@ $('setup-reset')?.addEventListener('click', () => {
 
 $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
 
+// Sync dot tap → open setup screen when connection is broken
+$('sync-indicator')?.addEventListener('click', () => {
+  const dot = $('sync-indicator');
+  if (dot?.classList.contains('sync-error') || dot?.classList.contains('sync-pending')) {
+    showSetupScreen();
+  }
+});
+
 // ── Mode démo ─────────────────────────────────────────────────────────────
 
 async function startDemo() {
