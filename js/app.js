@@ -128,16 +128,28 @@ async function boot() {
     if (!connected) setSyncState('pending');
   });
 
+  // Timeout: if still pending after 8s, warn the user
+  let connected = false;
+
   db.initDB(() => {
+    connected = true;
     const active = document.querySelector('.page.active');
     if (active?.id === 'page-stats')   renderStats();
     if (active?.id === 'page-history') renderHistory();
     setSyncState('ok');
   }, err => {
+    connected = true;
     console.error('Firebase listener error:', err);
     setSyncState('error');
     showToast('Erreur Firebase : ' + (err.message || 'accès refusé'));
   });
+
+  setTimeout(() => {
+    if (!connected) {
+      setSyncState('error');
+      showToast('Firebase ne répond pas — vérifie tes rules et ta connexion');
+    }
+  }, 8000);
 
   initNewEntry();
   initQuick();
