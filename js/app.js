@@ -51,23 +51,9 @@ function showSetupScreen() {
   if (getFirebaseConfig()) $('setup-reset').style.display = 'block';
 }
 
-$('setup-save')?.addEventListener('click', () => {
-  const text   = $('setup-input').value.trim();
-  const config = parseConfigInput(text);
-  $('setup-error').style.display = config ? 'none' : 'block';
-  if (!config) return;
-  saveFirebaseConfig(config);
-  location.reload();
-});
-
-$('setup-reset')?.addEventListener('click', () => {
-  clearFirebaseConfig();
-  location.reload();
-});
+// Setup save/reset/sync-dot handlers are in index.html (inline script, crash-proof)
 
 $('exit-demo-btn')?.addEventListener('click', () => showSetupScreen());
-
-// Sync dot click handler is in index.html (inline script, crash-proof)
 
 // ── Mode démo ─────────────────────────────────────────────────────────────
 
