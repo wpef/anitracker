@@ -7,7 +7,7 @@ const fs   = require('fs');
 const path = require('path');
 
 const DEST    = 'www';
-const INCLUDE = ['index.html', 'quick.html', 'showcase.html', 'css', 'js', 'icons', 'manifest.json', 'sw.js'];
+const INCLUDE = ['index.html', 'quick.html', 'showcase.html', 'privacy.html', 'css', 'js', 'icons', 'manifest.json', 'sw.js'];
 
 if (fs.existsSync(DEST)) fs.rmSync(DEST, { recursive: true });
 fs.mkdirSync(DEST);

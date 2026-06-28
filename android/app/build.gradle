@@ -1,8 +1,36 @@
 apply plugin: 'com.android.application'
 
+// Release signing material is never committed. It comes from either:
+//  - a local keystore.properties (storeFile/storePassword/keyAlias/keyPassword), or
+//  - CI environment variables (the workflow decodes the keystore from a secret).
+// When neither is present, the release build stays unsigned (e.g. CI debug builds).
+def keystorePropsFile = rootProject.file("keystore.properties")
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) {
+    keystoreProps.load(new FileInputStream(keystorePropsFile))
+}
+def hasReleaseSigning = keystorePropsFile.exists() || System.getenv("ANDROID_KEYSTORE_PASSWORD") != null
+
 android {
     namespace "com.anitracker.app"
     compileSdk rootProject.ext.compileSdkVersion
+
+    signingConfigs {
+        release {
+            if (keystorePropsFile.exists()) {
+                storeFile rootProject.file(keystoreProps['storeFile'] ?: 'upload-keystore.jks')
+                storePassword keystoreProps['storePassword']
+                keyAlias keystoreProps['keyAlias']
+                keyPassword keystoreProps['keyPassword']
+            } else if (System.getenv("ANDROID_KEYSTORE_PASSWORD") != null) {
+                storeFile rootProject.file("upload-keystore.jks")
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "com.anitracker.app"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -20,6 +48,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }
