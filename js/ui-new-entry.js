@@ -8,7 +8,7 @@
 
 import { $, setActive, setVisible, buildSegment, toLocalISO, localNow,
          formatDuration, formatWalkTime, formatDateTimeFriendly,
-         getTypeDef, allTypes, getTextLabel, validateEntry } from './utils.js';
+         getTypeDef, allTypes, getTextLabel, validateEntry, sortTypesByAccess } from './utils.js';
 import { initGauge } from './ui-gauge.js';
 import { showToast, setSyncState } from './toast.js';
 import { db } from './db-context.js';
@@ -42,7 +42,7 @@ export function initNewEntry() {
     const btn = e.target.closest('[data-type]');
     if (!btn) return;
     if (btn.classList.contains('locked')) {
-      showPremiumCTA('Passez en Premium pour débloquer ce type');
+      showPremiumCTA('Débloquez ce type avec Premium', 'paid');
       return;
     }
     _selectType(btn.dataset.type);
@@ -141,7 +141,9 @@ export function initNewEntry() {
 
 function _buildTypeSelector() {
   const container = $('type-selector');
-  container.innerHTML = allTypes().map(([key, def]) => {
+  // Unlocked first (needs before activities), locked types last
+  const ordered = sortTypesByAccess(allTypes(), canUseType);
+  container.innerHTML = ordered.map(([key, def]) => {
     const locked = !canUseType(key);
     return `<button class="seg-btn${locked ? ' locked' : ''}" data-type="${key}">${def.icon} ${def.label}${locked ? ' \uD83D\uDD12' : ''}</button>`;
   }).join('') + '<button class="seg-btn seg-btn-add" id="btn-add-type">+</button>';

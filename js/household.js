@@ -106,23 +106,96 @@ export function getEntriesPath(householdId) {
 }
 
 /**
- * Listen to the household subscription node for premium status changes.
- * Calls onChange(isPremium) whenever the subscription data changes.
+ * Read the household creation timestamp (acts as `installed_at` for
+ * grandfathering). Written by createHousehold() at first login.
  *
  * @param {string} householdId
- * @param {(isPremium: boolean) => void} onChange
+ * @returns {Promise<string|null>} ISO timestamp, or null if absent
+ */
+export async function getHouseholdCreatedAt(householdId) {
+  const snap = await get(ref(_db, `households/${householdId}/settings/createdAt`));
+  return snap.exists() ? snap.val() : null;
+}
+
+/**
+ * Read the raw subscription node (or null).
+ * @param {string} householdId
+ * @returns {Promise<object|null>}
+ */
+export async function getSubscription(householdId) {
+  const snap = await get(ref(_db, `households/${householdId}/subscription`));
+  return snap.exists() ? snap.val() : null;
+}
+
+/**
+ * Grant lifetime founder premium, idempotently.
+ *
+ * No-op if a premium subscription already exists (never overwrites a
+ * `purchase` with `founder`, nor re-stamps an existing `founder`). The grant
+ * is a one-shot (no `expiresAt`), so onSubscriptionChange() treats it as
+ * active for life.
+ *
+ * @param {string} householdId
+ * @returns {Promise<boolean>} true if a new founder grant was written
+ */
+export async function setFounderSubscription(householdId) {
+  const existing = await getSubscription(householdId);
+  if (existing && (existing.plan === 'pro' || existing.plan === 'paid' || existing.plan === 'premium')) {
+    return false;
+  }
+  await set(ref(_db, `households/${householdId}/subscription`), {
+    plan:      'pro',            // founders get the top tier for life
+    source:    'founder',
+    grantedAt: new Date().toISOString(),
+  });
+  return true;
+}
+
+/**
+ * Record a one-shot purchase (lifetime, no expiry) at the given tier.
+ *
+ * Optimistic client write — the RevenueCat → Firebase webhook is the
+ * authoritative source of truth for entitlements (see plan.md, Lane D).
+ *
+ * @param {string} householdId
+ * @param {'paid'|'pro'} [plan='paid']
+ * @returns {Promise<void>}
+ */
+export async function setPurchaseSubscription(householdId, plan = 'paid') {
+  await set(ref(_db, `households/${householdId}/subscription`), {
+    plan:        plan === 'pro' ? 'pro' : 'paid',
+    source:      'purchase',
+    purchasedAt: new Date().toISOString(),
+  });
+}
+
+/**
+ * Map a raw subscription node to a tier ('free' | 'paid' | 'pro').
+ * Legacy `plan:'premium'` → 'pro' for founders, else 'paid'.
+ * @param {object|null} sub
+ * @returns {'free'|'paid'|'pro'}
+ */
+export function subscriptionTier(sub) {
+  if (!sub) return 'free';
+  const active = (sub.plan === 'pro' || sub.plan === 'paid' || sub.plan === 'premium')
+    && (!sub.expiresAt || new Date(sub.expiresAt) > new Date());
+  if (!active) return 'free';
+  if (sub.plan === 'pro') return 'pro';
+  if (sub.plan === 'premium') return sub.source === 'founder' ? 'pro' : 'paid';
+  return 'paid';
+}
+
+/**
+ * Listen to the household subscription node for tier changes.
+ * Calls onChange(tier) — 'free' | 'paid' | 'pro' — on every change.
+ *
+ * @param {string} householdId
+ * @param {(tier: 'free'|'paid'|'pro') => void} onChange
  */
 export function onSubscriptionChange(householdId, onChange) {
   const subRef = ref(_db, `households/${householdId}/subscription`);
   onValue(subRef, (snapshot) => {
-    const sub = snapshot.val();
-    if (!sub) {
-      onChange(false);
-      return;
-    }
-    const isActive = sub.plan === 'premium'
-      && (!sub.expiresAt || new Date(sub.expiresAt) > new Date());
-    onChange(isActive);
+    onChange(subscriptionTier(snapshot.val()));
   });
 }
 

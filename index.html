@@ -10,12 +10,11 @@
   <meta name="description" content="Tracker les habitudes de votre chien" />
   <title>AniTracker 🐾</title>
   <link rel="manifest" href="manifest.json" />
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <link rel="dns-prefetch" href="https://www.gstatic.com">
   <link rel="stylesheet" href="css/style.css" />
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <!-- Chart.js bundled locally (no CDN/SRI dependency — reliable in WebView/offline) -->
+  <script src="js/vendor/chart.umd.min.js"></script>
 </head>
 <body>
 <div id="app">
@@ -181,78 +180,119 @@
   <!-- ===== Page 2 : Statistiques ===== -->
   <main id="page-stats" class="page">
 
-    <!-- Period selector (7j / 14j / 30j) -->
-    <div id="stats-period-selector"></div>
-
-    <!-- Week navigation (premium: arrows, free: locked CTA) -->
-    <div id="stats-week-nav" class="stats-week-nav"></div>
-
-    <!-- Quick-stats -->
-    <div class="quick-stats">
-      <div class="qs-item pipi-in-color">
-        <div class="qs-value" id="qs-pipi-in">0</div>
-        <div class="qs-label">Besoins<br>dedans</div>
-      </div>
-      <div class="qs-item pipi-color">
-        <div class="qs-value" id="qs-pipi-total">0</div>
-        <div class="qs-label">Besoins<br>total</div>
-      </div>
-      <div class="qs-item walk-color">
-        <div class="qs-value" id="qs-walk-time">0</div>
-        <div class="qs-label">Balade<br>depuis 7h</div>
-      </div>
+    <!-- Onglets : Aujourd'hui (défaut) / Période -->
+    <div class="segment stats-tabs">
+      <button class="seg-btn active" data-stats-tab="today">Aujourd'hui</button>
+      <button class="seg-btn" data-stats-tab="period">Période</button>
     </div>
 
-    <!-- Score propreté -->
-    <div class="card">
-      <div class="card-title">🏆 Score propreté – aujourd'hui</div>
-      <div class="score-ring">
-        <div class="ring-wrap">
-          <svg class="ring-svg" viewBox="0 0 140 140" width="140" height="140">
-            <circle class="ring-bg"   cx="70" cy="70" r="54" />
-            <circle class="ring-fill" cx="70" cy="70" r="54"
-              stroke-dasharray="339.3" stroke-dashoffset="339.3" />
-          </svg>
-          <div class="ring-text">
-            <span class="ring-pct" id="ring-pct">—</span>
-            <span class="ring-label" id="ring-label">Dehors</span>
+    <!-- ===================== Onglet AUJOURD'HUI ===================== -->
+    <div id="stats-today">
+
+      <!-- En-tête de jour (navigation par swipe) -->
+      <div class="stats-day-nav">
+        <span class="stats-day-label" id="stats-day-label">Aujourd'hui</span>
+        <span class="stats-day-hint" id="stats-day-hint"></span>
+      </div>
+
+      <!-- Quick-stats -->
+      <div class="quick-stats">
+        <div class="qs-item pipi-in-color">
+          <div class="qs-value" id="qs-pipi-in">0</div>
+          <div class="qs-label">Besoins<br>dedans</div>
+        </div>
+        <div class="qs-item pipi-color">
+          <div class="qs-value" id="qs-pipi-total">0</div>
+          <div class="qs-label">Besoins<br>total</div>
+        </div>
+        <div class="qs-item walk-color">
+          <div class="qs-value" id="qs-walk-time">0</div>
+          <div class="qs-label">Balade<br>depuis 7h</div>
+        </div>
+      </div>
+
+      <!-- Score propreté -->
+      <div class="card">
+        <div class="card-title" id="score-card-title">🏆 Score propreté – aujourd'hui</div>
+        <div class="score-ring">
+          <div class="ring-wrap">
+            <svg class="ring-svg" viewBox="0 0 140 140" width="140" height="140">
+              <circle class="ring-bg"   cx="70" cy="70" r="54" />
+              <circle class="ring-fill" cx="70" cy="70" r="54"
+                stroke-dasharray="339.3" stroke-dashoffset="339.3" />
+            </svg>
+            <div class="ring-text">
+              <span class="ring-pct" id="ring-pct">—</span>
+              <span class="ring-label" id="ring-label">Dehors</span>
+            </div>
+          </div>
+          <div class="score-details" id="score-details">
+            <!-- Généré dynamiquement depuis TYPE_DEF (needTypes) -->
           </div>
         </div>
-        <div class="score-details" id="score-details">
-          <!-- Généré dynamiquement depuis TYPE_DEF (needTypes) -->
+      </div>
+
+      <!-- Résumé balades du jour -->
+      <div class="card">
+        <div class="card-title">🦮 Balades du jour</div>
+        <div class="today-walks-summary" id="today-walks-summary">—</div>
+      </div>
+
+      <!-- Activités à durée du jour (durée vs heure) -->
+      <div class="card">
+        <div class="card-title">⏱ Activités du jour</div>
+        <div class="chart-wrap">
+          <canvas id="chart-day-duration"></canvas>
+        </div>
+        <div class="today-duration-empty" id="today-duration-empty" style="display:none">
+          Aucune activité à durée aujourd'hui.
         </div>
       </div>
-    </div>
 
-    <!-- Graphique évolution propreté (barres par jour) -->
-    <div class="card">
-      <div class="card-title">📈 Évolution propreté – 7 jours</div>
-      <div class="chart-wrap">
-        <canvas id="chart-propret"></canvas>
+      <!-- Timeline du jour (Gantt) -->
+      <div class="card">
+        <div class="card-title">📅 Timeline du jour</div>
+        <div id="gantt-container"></div>
       </div>
+
     </div>
 
-    <!-- Graphiques de jauge (générés dynamiquement par ui-stats.js) -->
+    <!-- ===================== Onglet PÉRIODE ===================== -->
+    <div id="stats-period" style="display:none">
 
-    <!-- Balades N jours -->
-    <div class="card">
-      <div class="card-title">🦮 Balades</div>
-      <div class="chart-wrap">
-        <canvas id="chart-walks"></canvas>
+      <!-- Period selector (7j / 14j / 30j) -->
+      <div id="stats-period-selector"></div>
+
+      <!-- Week navigation (premium: arrows, free: hint) -->
+      <div id="stats-week-nav" class="stats-week-nav"></div>
+
+      <!-- Graphique évolution propreté -->
+      <div class="card">
+        <div class="card-title">📈 Évolution propreté</div>
+        <div class="chart-wrap">
+          <canvas id="chart-propret"></canvas>
+        </div>
       </div>
-      <div class="today-walks-summary" id="today-walks-summary">—</div>
-    </div>
 
-    <!-- Gantt chart: today's timeline -->
-    <div class="card">
-      <div class="card-title">📅 Timeline du jour</div>
-      <div id="gantt-container"></div>
+      <!-- Graphiques de jauge (générés dynamiquement par ui-stats.js) -->
+
+      <!-- Balades N jours -->
+      <div class="card">
+        <div class="card-title">🦮 Balades</div>
+        <div class="chart-wrap">
+          <canvas id="chart-walks"></canvas>
+        </div>
+      </div>
+
     </div>
 
   </main>
 
   <!-- ===== Page 3 : Historique ===== -->
   <main id="page-history" class="page">
+    <div class="history-toolbar">
+      <button id="export-btn" class="export-btn">⬇️ Exporter mes données</button>
+    </div>
     <div id="entry-list"></div>
   </main>
 
@@ -293,11 +333,12 @@
       </div>
 
       <div class="card">
-        <div class="card-title">Categorie</div>
+        <div class="card-title">Catégorie</div>
         <select id="ct-category" class="ct-input">
-          <option value="activity">Activite</option>
-          <option value="need">Besoin (score proprete)</option>
+          <option value="activity">Activité (balade, jeu, soin…)</option>
+          <option value="need">Besoin naturel (pipi/caca — compte dans le score de propreté)</option>
         </select>
+        <p class="ct-hint">Choisis « Besoin naturel » uniquement pour les besoins qui entrent dans le score de propreté. Pour tout le reste, garde « Activité ».</p>
       </div>
 
       <div class="card">
@@ -363,6 +404,8 @@
       </button>
 
       <button class="btn-demo auth-demo-btn" id="auth-demo-btn">Essayer en mode démo</button>
+
+      <a href="privacy.html" class="auth-legal-link" target="_blank" rel="noopener">Politique de confidentialité</a>
     </div>
   </main>
 
@@ -470,20 +513,37 @@
   </div>
 </div>
 
-<!-- ===== Modal Premium CTA ===== -->
+<!-- ===== Modal Premium CTA (2 offres : Premium / Pro) ===== -->
 <div id="premium-modal" class="premium-modal">
   <div class="premium-sheet">
     <div class="premium-sheet-icon">⭐</div>
-    <h3 class="premium-sheet-title">AniTracker Premium</h3>
+    <h3 class="premium-sheet-title">Débloquez AniTracker</h3>
     <p id="premium-modal-msg" class="premium-sheet-msg"></p>
-    <ul class="premium-advantages">
-      <li>Tous les types d'entrées débloqués</li>
-      <li>Historique illimité</li>
-      <li>Stats par semaine avec navigation</li>
-      <li>Types personnalises</li>
-      <li>Export de données</li>
-    </ul>
-    <button id="premium-subscribe-btn" class="btn-premium">Essai gratuit 14 jours</button>
+
+    <div class="premium-offers">
+      <div class="premium-offer" data-offer="paid">
+        <div class="po-name">Premium</div>
+        <ul class="po-list">
+          <li>Types Repas & Occupation</li>
+          <li>Historique 3 mois</li>
+          <li>Stats par période + navigation</li>
+          <li>Export des données</li>
+        </ul>
+        <button class="btn-premium po-buy" data-buy="paid">Débloquer à vie</button>
+      </div>
+      <div class="premium-offer po-pro" data-offer="pro">
+        <div class="po-name">Pro</div>
+        <ul class="po-list">
+          <li>Tout Premium, et&nbsp;:</li>
+          <li>Types personnalisés</li>
+          <li>Historique illimité</li>
+        </ul>
+        <button class="btn-premium po-buy" data-buy="pro">Débloquer à vie</button>
+      </div>
+    </div>
+
+    <p class="premium-sheet-note">Achat unique · sans abonnement · à vie</p>
+    <button id="premium-restore-btn" class="premium-close-btn">Restaurer mes achats</button>
     <button id="premium-close-btn" class="premium-close-btn">Plus tard</button>
   </div>
 </div>

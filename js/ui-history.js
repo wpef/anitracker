@@ -8,8 +8,40 @@
 import { $, formatDuration, getTypeDef, getTextLabel, gaugeLabel } from './utils.js';
 import { db } from './db-context.js';
 import { openEditPage } from './ui-edit.js';
-import { getMaxHistoryDays, isPremium } from './permissions.js';
+import { getMaxHistoryDays, isPremium, canExportData } from './permissions.js';
 import { showPremiumCTA } from './ui-premium.js';
+import { showToast } from './toast.js';
+
+// ── Export des données (premium) ────────────────────────────────────────────
+
+/**
+ * Wire the "Exporter mes données" button. Premium-gated: free users see the
+ * premium CTA. Premium users download all their entries as a JSON file.
+ * (Web download path; native share is a V3 refinement.)
+ */
+export function initExport() {
+  $('export-btn')?.addEventListener('click', () => {
+    if (!canExportData()) {
+      showPremiumCTA('Passez en Premium pour exporter vos données');
+      return;
+    }
+    try {
+      const data = JSON.stringify(db.getAllEntries(), null, 2);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url;
+      a.download = `anitracker-export-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast('Données exportées ✓');
+    } catch {
+      showToast('Export impossible');
+    }
+  });
+}
 
 // ── Rendu principal ────────────────────────────────────────────────────────
 
@@ -39,11 +71,16 @@ export function renderHistory() {
 
   container.innerHTML = _buildHTML(visibleEntries);
 
-  // Show blurred premium gate if entries are hidden
+  // Show blurred premium gate if entries are hidden. The CTA is tier-aware:
+  //   free → Premium (3 mois) · Premium hitting its 90-day cap → Pro (illimité).
   if (hasHiddenEntries) {
     container.innerHTML += _buildPremiumGate(allEntries, visibleEntries.length);
     container.querySelector('.premium-gate-btn')?.addEventListener('click', () => {
-      showPremiumCTA('Passez en Premium pour voir tout l\'historique');
+      if (isPremium()) {
+        showPremiumCTA('Passez en Pro pour un historique illimité', 'pro');
+      } else {
+        showPremiumCTA('Premium : 3 mois d\'historique · Pro : illimité', 'paid');
+      }
     });
   }
 

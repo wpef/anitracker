@@ -33,17 +33,19 @@ let _statsCache = { hash: null, result: null };
  */
 export function getStats(entries, opts = {}) {
   // Backward compat: if opts is a number, treat as legacy weekOffset
-  let days, offset;
+  let days, offset, todayOffset;
   if (typeof opts === 'number') {
     days = 7;
     offset = opts;
+    todayOffset = 0;
   } else {
     days = opts.days || 7;
     offset = opts.offset || 0;
+    todayOffset = opts.todayOffset || 0;   // 0 = today, 1 = yesterday, …
   }
 
   // Memoization: skip recalculation if entries haven't changed
-  const hash = entries.length + '_' + (entries[0]?.id || '') + '_' + (entries[entries.length - 1]?.id || '') + '_d' + days + '_o' + offset;
+  const hash = entries.length + '_' + (entries[0]?.id || '') + '_' + (entries[entries.length - 1]?.id || '') + '_d' + days + '_o' + offset + '_t' + todayOffset;
   if (hash === _statsCache.hash) return _statsCache.result;
 
   const now = new Date();
@@ -68,16 +70,17 @@ export function getStats(entries, opts = {}) {
 
   const windowStart = dayBounds[0].start;
 
-  // Today window (5:30 AM boundary)
+  // Today window (5:30 AM → 5:30 AM next day) — bounded, so it matches the
+  // Gantt timeline exactly. `todayOffset` shifts it to a previous day.
   const todayFrom = new Date(now);
   if (now.getHours() < 5 || (now.getHours() === 5 && now.getMinutes() < 30))
     todayFrom.setDate(todayFrom.getDate() - 1);
+  todayFrom.setDate(todayFrom.getDate() - todayOffset);
   todayFrom.setHours(5, 30, 0, 0);
+  const todayTo = new Date(todayFrom);
+  todayTo.setDate(todayTo.getDate() + 1);
 
-  // 3-day window for gauge data
-  const threeDaysAgo = new Date(now);
-  threeDaysAgo.setDate(threeDaysAgo.getDate() - 2);
-  threeDaysAgo.setHours(0, 0, 0, 0);
+  // Gauge data uses the SAME N-day window as the charts (see windowStart below).
 
   // ── Initialize accumulators ───────────────────────────────────────────
 
@@ -105,10 +108,12 @@ export function getStats(entries, opts = {}) {
   const dailyNeedCountsMap = {};
   for (const [key] of needs) dailyNeedCountsMap[key] = new Array(days).fill(0);
 
-  // Gauge data collectors (3 days, sorted ascending later)
-  const gaugeCollectors = {};
+  // Gauge daily accumulators (aligned to the SAME day buckets as the charts,
+  // so every period chart shares one date axis).
+  const gaugeDaySum = {};
+  const gaugeDayCount = {};
   for (const [key, def] of needs) {
-    if (def.gauge) gaugeCollectors[key] = [];
+    if (def.gauge) { gaugeDaySum[key] = new Array(days).fill(0); gaugeDayCount[key] = new Array(days).fill(0); }
   }
 
   // ── SINGLE PASS over all entries ──────────────────────────────────────
@@ -148,6 +153,10 @@ export function getStats(entries, opts = {}) {
               dailyNeedInsideArr[dayIndex]++;
               dailyInsideArr[dayIndex]++;
             }
+            if (def.gauge && entry.num_val !== undefined && gaugeDaySum[entry.type]) {
+              gaugeDaySum[entry.type][dayIndex] += entry.num_val;
+              gaugeDayCount[entry.type][dayIndex]++;
+            }
           }
           break;
         }
@@ -155,7 +164,7 @@ export function getStats(entries, opts = {}) {
     }
 
     // --- Today window ---
-    if (ts >= todayFrom) {
+    if (ts >= todayFrom && ts < todayTo) {
       if (isNeed) {
         todayNeedCounts[entry.type].total++;
         todayNeedTotal++;
@@ -167,9 +176,13 @@ export function getStats(entries, opts = {}) {
         }
       }
       if (hasDuration) {
-        todayWalkMinSince7am += entry.duration_min || 0;
+        // todayWalks = ALL duration events today (walks + occupations…) for the
+        // "Activités du jour" chart. The walk-specific minute total counts only
+        // real walks (type 'walk'), so the "Balades du jour" card is accurate.
+        if (entry.type === 'walk') todayWalkMinSince7am += entry.duration_min || 0;
         todayWalks.push({
           id:          entry.id,
+          type:        entry.type,
           startTime:   entry.timestamp,
           endTime:     entry.end_time || null,
           durationMin: entry.duration_min || null,
@@ -177,10 +190,6 @@ export function getStats(entries, opts = {}) {
       }
     }
 
-    // --- Gauge data (3 days) ---
-    if (isNeed && def.gauge && entry.num_val !== undefined && ts >= threeDaysAgo) {
-      gaugeCollectors[entry.type].push(entry);
-    }
   }
 
   // ── Post-processing ───────────────────────────────────────────────────
@@ -213,22 +222,16 @@ export function getStats(entries, opts = {}) {
   const dailyNeedCounts = {};
   for (const [key] of needs) dailyNeedCounts[key] = dailyNeedCountsMap[key];
 
-  // Gauge data: sort ascending and format
+  // Gauge data: daily average, on the SAME date axis as the other charts.
   const gaugeData = {};
-  const todayStr = now.toDateString();
   for (const [key, def] of needs) {
     if (!def.gauge) continue;
-    const items = gaugeCollectors[key].sort(
-      (a, b) => new Date(a.timestamp) - new Date(b.timestamp)
-    );
+    const data = gaugeDaySum[key].map((sum, i) =>
+      gaugeDayCount[key][i] > 0 ? Math.round(sum / gaugeDayCount[key][i]) : null);
     gaugeData[key] = {
-      labels: items.map(e => {
-        const d = new Date(e.timestamp);
-        const dayStr = d.toDateString() === todayStr ? 'Auj.' : formatDayShort(d);
-        return dayStr + ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-      }),
-      data: items.map(e => e.num_val),
-      title: `${def.icon} ${def.gauge.title} – 3 jours`,
+      labels: dailyLabels,                 // identical axis → "tout se suit"
+      data,
+      title: `${def.icon} ${def.gauge.title} – ${days} jours`,
       color: def.color || '#ffcc80',
     };
   }
@@ -249,9 +252,12 @@ export function getStats(entries, opts = {}) {
     dailyWalkMin: dailyWalkMinArr,
     dailyNeedCounts,
     dailyInside: dailyInsideArr,
+    dailyNeedTotal: dailyNeedTotalArr,
     dailyPropretScore,
     gaugeData,
     days,
+    todayOffset,
+    todayWindowStart: todayFrom,
   };
 
   _statsCache = { hash, result };

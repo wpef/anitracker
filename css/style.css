@@ -112,7 +112,9 @@ nav {
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: var(--shadow);
+  margin-bottom: 16px;
 }
+.card:last-child { margin-bottom: 0; }
 .card-title {
   font-size: .8rem;
   font-weight: 700;
@@ -1390,6 +1392,165 @@ nav {
   font-weight: 700;
   margin-right: .5rem;
 }
+
+.premium-sheet-note {
+  color: var(--text2);
+  font-size: .8rem;
+  margin: 0 0 .75rem;
+  opacity: .85;
+}
+
+/* Two-offer premium modal (Premium / Pro) */
+.premium-offers {
+  display: flex;
+  gap: .6rem;
+  margin: .75rem 0 1rem;
+  text-align: left;
+}
+.premium-offer {
+  flex: 1;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 14px;
+  padding: .75rem .7rem;
+  display: flex;
+  flex-direction: column;
+}
+.premium-offer.po-pro { border-color: var(--walk); }
+.premium-offer.po-focus {
+  box-shadow: 0 0 0 2px var(--walk);
+  border-color: var(--walk);
+}
+.po-name { font-weight: 700; margin-bottom: .4rem; color: var(--text); }
+.po-pro .po-name { color: var(--walk); }
+.po-list { list-style: none; padding: 0; margin: 0 0 .75rem; }
+.po-list li {
+  font-size: .78rem;
+  color: var(--text2);
+  padding: .2rem 0;
+}
+.po-list li::before { content: '✓ '; color: #4caf50; font-weight: 700; }
+.po-buy { margin-top: auto; font-size: .85rem; padding: .6rem; }
+
+.today-duration-empty {
+  text-align: center;
+  color: var(--text2);
+  font-size: .85rem;
+  opacity: .8;
+  padding: 1rem 0;
+}
+
+.auth-legal-link {
+  display: inline-block;
+  margin-top: 1.25rem;
+  color: var(--text2);
+  font-size: .8rem;
+  text-decoration: underline;
+  opacity: .8;
+}
+
+/* QA tier switcher (test builds only) */
+.test-mode-bar {
+  position: fixed;
+  left: 8px;
+  bottom: 74px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 7px;
+  background: rgba(20, 20, 35, .92);
+  border: 1px solid var(--walk);
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  font-size: .7rem;
+}
+.test-mode-tag { color: var(--walk); font-weight: 700; margin-right: 2px; }
+.test-mode-btn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,.18);
+  color: var(--text2);
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: .68rem;
+  cursor: pointer;
+}
+.test-mode-btn.active {
+  background: var(--walk);
+  color: #0a0a14;
+  border-color: var(--walk);
+  font-weight: 700;
+}
+
+.ct-hint {
+  margin: .5rem 0 0;
+  font-size: .78rem;
+  color: var(--text2);
+  line-height: 1.4;
+  opacity: .9;
+}
+
+/* Stats: Aujourd'hui / Période tabs */
+.stats-tabs { margin-bottom: 1rem; }
+
+.stats-day-nav {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+  margin-bottom: .85rem;
+}
+.stats-day-label {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.stats-day-hint {
+  font-size: .72rem;
+  color: var(--text2);
+  opacity: .75;
+}
+
+.week-nav-free {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: .75rem;
+}
+.week-nav-free .week-nav-label { font-weight: 600; color: var(--text); }
+.week-nav-hint {
+  background: none;
+  border: none;
+  color: var(--text2);
+  font-size: .8rem;
+  cursor: pointer;
+  opacity: .8;
+  text-decoration: underline;
+  padding: .25rem 0;
+}
+.stats-empty-hint {
+  text-align: center;
+  color: var(--text2);
+  font-size: .85rem;
+  opacity: .8;
+  margin: 1rem 0;
+}
+
+.history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: .75rem;
+}
+.export-btn {
+  background: var(--card);
+  border: 1px solid var(--border, rgba(255,255,255,.1));
+  color: var(--text);
+  font-size: .85rem;
+  padding: .5rem .9rem;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.export-btn:active { opacity: .7; }
 
 .premium-close-btn {
   background: none;

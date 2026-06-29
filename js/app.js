@@ -21,10 +21,12 @@ import { showPage, onShowPage, setNavVisible } from './navigation.js';
 import { db } from './db-context.js';
 import { initNewEntry, entryLabel } from './ui-new-entry.js';
 import { initQuick } from './ui-quick.js';
-import { renderHistory } from './ui-history.js';
+import { renderHistory, initExport } from './ui-history.js';
 import { openEditPage } from './ui-edit.js';
 import { renderStats } from './ui-stats.js';
-import { setPremiumStatus, setDemoMode } from './permissions.js';
+import { setTier, setDemoMode, isFounder } from './permissions.js';
+import { initBilling } from './billing.js';
+import { initTestMode, TEST_MODE } from './test-mode.js';
 
 // ── Auth state ────────────────────────────────────────────────────────────
 let _authModule = null;
@@ -95,6 +97,21 @@ async function startDemo() {
   setSyncState('ok');
   initNewEntry();
   initQuick();
+  initExport();
+
+  // Custom types in demo: in-memory store (no Firebase). Lets the creation
+  // form (back/create buttons) be fully testable without a household.
+  const demoCustomTypes = {};
+  _customTypeModule = await import('./ui-custom-type.js');
+  _customTypeModule.initCustomType(() => 'demo', {
+    saveCustomType: async (_hid, key, def) => {
+      demoCustomTypes[key] = def;
+      registerCustomTypes(demoCustomTypes);
+      initNewEntry();
+      initQuick();
+    },
+  });
+
   showPage('quick');
 }
 
@@ -237,9 +254,28 @@ async function initApp(user) {
 
   _currentHouseholdId = householdId;
 
-  // Listen for premium subscription changes
-  _householdModule.onSubscriptionChange(householdId, (isPremium) => {
-    setPremiumStatus(isPremium);
+  // Grandfathering: households created before BASCULE_DATE get premium for
+  // life (founders). Idempotent and non-fatal — if it fails, gating simply
+  // falls back to the normal paywall. Runs before the subscription listener
+  // so the founder grant is reflected on first load.
+  try {
+    const createdAt = await _householdModule.getHouseholdCreatedAt(householdId);
+    if (isFounder(createdAt)) {
+      await _householdModule.setFounderSubscription(householdId);
+    }
+  } catch {
+    // Non-fatal: founder grant best-effort.
+  }
+
+  // Listen for tier changes (free | paid | pro)
+  _householdModule.onSubscriptionChange(householdId, (tier) => {
+    setTier(tier);
+  });
+
+  // Wire one-shot billing (native only; no-op on web/demo)
+  initBilling({
+    getHouseholdId: () => _currentHouseholdId,
+    householdModule: _householdModule,
   });
 
   // Listen for custom types changes
@@ -263,6 +299,7 @@ async function initApp(user) {
   $('header-logout-btn').style.display = 'block';
   initNewEntry();
   initQuick();
+  initExport();
 
   // Lazy-load custom type module
   _customTypeModule = await import('./ui-custom-type.js');
@@ -331,8 +368,13 @@ async function handleQuickEntry() {
 // ── Boot ───────────────────────────────────────────────────────────────────
 
 async function boot() {
-  // No Firebase config → show setup screen (config-first flow)
+  initTestMode(); // QA tier switcher (no-op unless TEST_MODE)
+
+  // No Firebase config (neither stored nor bundled):
   if (!getFirebaseConfig()) {
+    // Test build → straight to demo (no scary "paste config" screen).
+    if (TEST_MODE) { startDemo(); return; }
+    // Dev/self-host fallback → manual setup screen.
     showSetupScreen();
     $('btn-demo').addEventListener('click', startDemo);
     return;

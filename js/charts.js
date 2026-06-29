@@ -168,3 +168,101 @@ export function renderLineChart(canvasId, labels, data, color, opts = {}) {
     },
   });
 }
+
+/**
+ * Graphe de propreté : barres du score (%) sur l'axe gauche + 2 courbes
+ * (besoins total / besoins dedans) sur un 2e axe à droite (nombres).
+ *
+ * @param {string} canvasId
+ * @param {string[]} labels
+ * @param {{score:Array<number|null>, total:number[], inside:number[]}} series
+ */
+export function renderPropretChart(canvasId, labels, series) {
+  const ctx = $(canvasId);
+  if (!ctx) return;
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  charts[canvasId] = new Chart(ctx, {
+    data: {
+      labels,
+      datasets: [
+        { type: 'bar', label: 'Propreté (%)', yAxisID: 'y', order: 3, borderRadius: 4,
+          data: series.score.map(v => v === null ? NaN : v), backgroundColor: '#4caf50' },
+        { type: 'line', label: 'Besoins total', yAxisID: 'y1', order: 1,
+          data: series.total, borderColor: '#4cc9f0', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+        { type: 'line', label: 'Besoins dedans', yAxisID: 'y1', order: 0,
+          data: series.inside, borderColor: '#e94560', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { color: '#9a9ab0', font: { size: 10 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: {
+            label: c => c.dataset.yAxisID === 'y'
+              ? `Propreté: ${isNaN(c.parsed.y) ? '—' : c.parsed.y + '%'}`
+              : `${c.dataset.label}: ${c.parsed.y}`,
+          },
+        },
+      },
+      scales: {
+        x:  { ticks: { color: '#9a9ab0', font: { size: 9 }, autoSkip: true, maxTicksLimit: 10 }, grid: { color: 'rgba(255,255,255,.04)' } },
+        y:  { position: 'left', min: 0, max: 100, ticks: { color: '#9a9ab0', font: { size: 10 }, callback: v => v + '%' }, grid: { color: 'rgba(255,255,255,.06)' } },
+        y1: { position: 'right', min: 0, beginAtZero: true, ticks: { color: '#9a9ab0', font: { size: 10 }, precision: 0 }, grid: { drawOnChartArea: false } },
+      },
+    },
+  });
+}
+
+/**
+ * Graphe des activités à durée de la journée : barres CUMULÉES (empilées) par
+ * heure. X = heure de la journée, Y = durée (min), une couleur par type.
+ *
+ * @param {string} canvasId
+ * @param {string[]} labels                                 ex: ['0h','1h',…,'23h']
+ * @param {Array<{label:string, data:number[], color:string}>} datasets  un par type
+ */
+export function renderDayActivityBars(canvasId, labels, datasets) {
+  const ctx = $(canvasId);
+  if (!ctx) return;
+  if (charts[canvasId]) charts[canvasId].destroy();
+
+  charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: datasets.map(d => ({
+        label:           d.label,
+        data:            d.data,
+        backgroundColor: d.color,
+        stack:           'day',
+        borderRadius:    3,
+      })),
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { color: '#9a9ab0', font: { size: 10 }, boxWidth: 10 } },
+        tooltip: {
+          callbacks: { label: c => `${c.dataset.label}: ${c.parsed.y} min` },
+        },
+      },
+      scales: {
+        x: {
+          stacked: true,
+          ticks: { color: '#9a9ab0', font: { size: 9 }, autoSkip: true, maxTicksLimit: 9 },
+          grid:  { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          stacked: true, beginAtZero: true,
+          title: { display: true, text: 'min', color: '#9a9ab0', font: { size: 10 } },
+          ticks: { color: '#9a9ab0', font: { size: 10 }, precision: 0 },
+          grid:  { color: 'rgba(255,255,255,.06)' },
+        },
+      },
+    },
+  });
+}

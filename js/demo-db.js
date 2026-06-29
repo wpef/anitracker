@@ -131,6 +131,22 @@ function generateDemoData() {
   entries.push(pipi(6, 18, 0,  'outside', 55));
   entries.push(meal(6, 18, 30, 44, 'rushed'));
 
+  // ── Jours -7 à -61 — génération procédurale (~2 mois de données) ─────────
+  // Variation déterministe (pas de Math.random) pour des tests stables.
+  for (let d = 7; d <= 61; d++) {
+    const v = (d * 37) % 7;                 // 0..6
+    entries.push(meal(d, 7, 0, 50 + v * 2, v % 3 === 0 ? 'rushed' : 'normal'));
+    entries.push(walk(d, 7, 30 + v, 25 + v * 2));
+    entries.push(pipi(d, 7, 50, 'outside', 60 + v));
+    entries.push(pipi(d, 10, 0, v % 4 === 0 ? 'inside' : 'outside', 40 + v));   // accident occasionnel
+    entries.push(pipi(d, 12, 30, 'outside', 45));
+    entries.push(caca(d, 14, 0, v % 5 === 0 ? 'inside' : 'outside', 65 + v));
+    entries.push(walk(d, 17, 0, 30 + (v % 3) * 5));
+    entries.push(pipi(d, 18, 0, 'outside', 50));
+    if (v % 2 === 0) entries.push(occup(d, 9, 0, 15 + v, v % 3 === 0 ? 'play' : 'training', 50 + v * 3));
+    entries.push(meal(d, 18, 30, 46 + v));
+  }
+
   return entries;
 }
 

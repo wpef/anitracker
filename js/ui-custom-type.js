@@ -8,7 +8,7 @@
 import { $, TYPE_DEF } from './utils.js';
 import { showToast } from './toast.js';
 import { showPage } from './navigation.js';
-import { isPremium } from './permissions.js';
+import { canCreateCustomType } from './permissions.js';
 import { showPremiumCTA } from './ui-premium.js';
 
 let _getHouseholdId = null;
@@ -71,8 +71,8 @@ export function initCustomType(getHouseholdId, householdModule) {
  * Called when user taps the "+" button on the type selector.
  */
 export function openCustomTypePage() {
-  if (!isPremium()) {
-    showPremiumCTA('Creez vos propres types avec Premium');
+  if (!canCreateCustomType()) {
+    showPremiumCTA('Créez vos propres types avec Pro', 'pro');
     return;
   }
   _resetForm();
