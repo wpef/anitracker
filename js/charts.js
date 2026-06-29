@@ -188,10 +188,10 @@ export function renderPropretChart(canvasId, labels, series) {
       datasets: [
         { type: 'bar', label: 'Propreté (%)', yAxisID: 'y', order: 3, borderRadius: 4,
           data: series.score.map(v => v === null ? NaN : v), backgroundColor: '#4caf50' },
-        { type: 'line', label: 'Besoins total', yAxisID: 'y1', order: 1,
-          data: series.total, borderColor: '#4cc9f0', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
-        { type: 'line', label: 'Besoins dedans', yAxisID: 'y1', order: 0,
-          data: series.inside, borderColor: '#e94560', borderWidth: 2, pointRadius: 2, tension: 0.35, fill: false },
+        { type: 'line', label: 'Besoins total (cumulé)', yAxisID: 'y1', order: 1,
+          data: series.total, borderColor: '#4cc9f0', borderWidth: 2, pointRadius: 2, tension: 0.25, fill: false },
+        { type: 'line', label: 'Besoins dedans (cumulé)', yAxisID: 'y1', order: 0,
+          data: series.inside, borderColor: '#e94560', borderWidth: 2, pointRadius: 2, tension: 0.25, fill: false },
       ],
     },
     options: {

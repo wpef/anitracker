@@ -66,7 +66,7 @@ function _renderToday(s) {
   if (dayEl) dayEl.textContent = dayLbl;
   const hintEl = $('stats-day-hint');
   if (hintEl) hintEl.textContent = canSwipeStats()
-    ? (_todayOffset < MAX_DAY_BACK ? '← glisse pour les jours précédents' : 'jour le plus ancien')
+    ? (_todayOffset < MAX_DAY_BACK ? 'glisse → pour les jours précédents' : 'jour le plus ancien')
     : '🔒 glisse pour débloquer les jours précédents';
   const scoreTitle = $('score-card-title');
   if (scoreTitle) scoreTitle.textContent = `🏆 Score propreté – ${dayLbl.toLowerCase()}`;
@@ -124,11 +124,14 @@ function _renderPeriod(s) {
 
   const hasData = s.dailyPropretScore.some(v => v !== null && v !== undefined);
 
-  // Graphique propreté (N jours) : barres % + courbes besoins total / dedans
+  // Graphique propreté (N jours) : barres % du jour + courbes CUMULÉES
+  // (besoins total / dedans) sur la période → les jours "cata" (pente raide
+  // sur la courbe dedans) ressortent des jours "cools" (pente plate).
+  const cumulative = arr => { let acc = 0; return arr.map(v => (acc += (v || 0))); };
   renderPropretChart('chart-propret', s.dailyLabels, {
     score:  s.dailyPropretScore,
-    total:  s.dailyNeedTotal,
-    inside: s.dailyInside,
+    total:  cumulative(s.dailyNeedTotal),
+    inside: cumulative(s.dailyInside),
   });
 
   // Graphique balades (N jours) — barres pour une lecture claire des totaux
@@ -278,8 +281,8 @@ if (statsPage) {
       return;
     }
 
-    // Aujourd'hui tab: swipe LEFT = previous day, RIGHT = toward today.
-    if (diff < 0) {
+    // Aujourd'hui tab: swipe RIGHT = previous day, LEFT = toward today.
+    if (diff > 0) {
       // Going back in time → premium-gated, capped at MAX_DAY_BACK
       if (!canSwipeStats()) {
         showPremiumCTA('Passez en Premium pour voir les jours précédents', 'paid');
