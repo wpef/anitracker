@@ -251,6 +251,27 @@ export const activityTypes = () => Object.entries(getTypeDef()).filter(([, d]) =
 export const allTypes      = () => Object.entries(getTypeDef());
 
 /**
+ * Ordonne des entrées [key, def] pour l'affichage : d'abord les types
+ * accessibles (déverrouillés), et au sein de chaque groupe les besoins avant
+ * les activités. Garantit que, pour un utilisateur free, les besoins
+ * apparaissent AVANT les types verrouillés.
+ *
+ * @param {Array<[string, object]>} entries
+ * @param {(key: string) => boolean} canUse  Prédicat d'accès (ex: canUseType)
+ * @returns {Array<[string, object]>}
+ */
+export function sortTypesByAccess(entries, canUse) {
+  return entries.slice().sort((a, b) => {
+    const la = canUse(a[0]) ? 0 : 1;
+    const lb = canUse(b[0]) ? 0 : 1;
+    if (la !== lb) return la - lb;                       // déverrouillés d'abord
+    const na = a[1].category === 'need' ? 0 : 1;
+    const nb = b[1].category === 'need' ? 0 : 1;
+    return na - nb;                                      // besoins avant activités
+  });
+}
+
+/**
  * Retourne le label lisible d'une text_val pour un type donné.
  * @param {string} type   Clé du type (ex: 'pipi')
  * @param {string} value  Valeur (ex: 'outside')

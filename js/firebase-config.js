@@ -4,6 +4,8 @@
  * Elle peut être saisie directement depuis l'app (pas besoin d'éditer ce fichier).
  */
 
+import { DEFAULT_FIREBASE_CONFIG } from './firebase-config.default.js';
+
 const CONFIG_KEY = 'anitracker_firebase_config';
 
 export function getFirebaseConfig() {
@@ -14,6 +16,11 @@ export function getFirebaseConfig() {
       if (cfg.apiKey && cfg.databaseURL) return cfg;
     }
   } catch {}
+  // Fallback: config baked into the build (store release). When filled, end
+  // users never see the setup screen.
+  if (DEFAULT_FIREBASE_CONFIG?.apiKey && DEFAULT_FIREBASE_CONFIG?.databaseURL) {
+    return DEFAULT_FIREBASE_CONFIG;
+  }
   return null;
 }
 

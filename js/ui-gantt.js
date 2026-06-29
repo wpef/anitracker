@@ -21,17 +21,19 @@ const AXIS_HOURS = [6, 8, 10, 12, 14, 16, 18, 20, 22];
  * Render the Gantt chart into a container element.
  *
  * @param {HTMLElement} container
- * @param {object[]} entries  All entries (will be filtered to today)
+ * @param {object[]} entries     All entries (will be filtered to the day)
+ * @param {number}    [dayOffset] 0 = today, 1 = yesterday, …
  */
-export function renderGantt(container, entries) {
+export function renderGantt(container, entries, dayOffset = 0) {
   const now = new Date();
 
-  // Compute today's 5:30 boundary
+  // Compute the day's 5:30 boundary, shifted by dayOffset
   const todayStart = new Date(now);
   if (now.getHours() < DAY_START_HOUR ||
       (now.getHours() === DAY_START_HOUR && now.getMinutes() < DAY_START_MIN)) {
     todayStart.setDate(todayStart.getDate() - 1);
   }
+  todayStart.setDate(todayStart.getDate() - dayOffset);
   todayStart.setHours(DAY_START_HOUR, DAY_START_MIN, 0, 0);
 
   const todayEnd = new Date(todayStart);
