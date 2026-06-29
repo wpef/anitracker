@@ -138,7 +138,6 @@ function _resetForm() {
   $('ct-text-config').style.display = 'none';
   $('ct-text-list').innerHTML = '';
   $('ct-duration-toggle').checked = false;
-  $('ct-category').value = 'activity';
 }
 
 // ── Save ─────────────────────────────────────────────────────────────────────
@@ -171,7 +170,7 @@ async function _handleSave() {
   const hasDuration = $('ct-duration-toggle').checked;
   const hasGauge = $('ct-gauge-toggle').checked;
   const hasText = $('ct-text-toggle').checked;
-  const category = $('ct-category').value;
+  const category = 'activity'; // custom types are always activities
 
   const typeDef = {
     key,
