@@ -1,0 +1,77 @@
+{
+  "rules": {
+    // -----------------------------------------------------------------------
+    // AniTracker — Firebase Realtime Database Security Rules (production)
+    //
+    // Data model (see js/household.js):
+    //   users/{uid}                          -> { householdId, email, displayName }
+    //   households/{hid}/members/{uid}        -> { email, displayName, role, joinedAt }
+    //   households/{hid}/settings            -> { householdName, createdAt, createdBy }
+    //   households/{hid}/entries/{entryId}   -> BaseEntry
+    //   households/{hid}/customTypes/{key}   -> TYPE_DEF entry (Pro feature)
+    //   households/{hid}/subscription        -> { plan, source, ... }  SERVER-ONLY
+    //
+    // Default deny: any path without an explicit rule is denied for auth'd and
+    // anonymous clients alike. Requires Firebase Auth (Email/Password + Google).
+    // -----------------------------------------------------------------------
+
+    // Per-user private profile + reverse lookup to the household id.
+    "users": {
+      "$uid": {
+        ".read":  "auth != null && $uid === auth.uid",
+        ".write": "auth != null && $uid === auth.uid"
+      }
+    },
+
+    "households": {
+      "$householdId": {
+        // Any authenticated member can read the whole household node. Read
+        // permission cascades to entries / members / settings / customTypes /
+        // subscription — members can SEE their tier, never change it.
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+
+        "members": {
+          "$uid": {
+            // Create/update your own membership (create or join a household),
+            // or an owner can manage other members' records.
+            ".write": "auth != null && ($uid === auth.uid || data.parent().child(auth.uid).child('role').val() === 'owner')"
+          }
+        },
+
+        "settings": {
+          // Members may edit household metadata. createdAt is locked once set so
+          // it cannot be back-dated (defense in depth — founder status is decided
+          // server-side, never from this value; see subscription below).
+          ".write": "auth != null && root.child('households/' + $householdId + '/members/' + auth.uid).exists()",
+          "createdAt": {
+            ".validate": "!data.exists() || data.val() === newData.val()"
+          }
+        },
+
+        "entries": {
+          ".write": "auth != null && root.child('households/' + $householdId + '/members/' + auth.uid).exists()"
+        },
+
+        "customTypes": {
+          // Pro-only feature. The app gates creation in permissions.js; this rule
+          // provides household isolation. To also enforce the tier server-side,
+          // AND the member check with:
+          //   root.child('households/' + $householdId + '/subscription/plan').val() === 'pro'
+          ".write": "auth != null && root.child('households/' + $householdId + '/members/' + auth.uid).exists()"
+        },
+
+        "subscription": {
+          // SERVER-AUTHORITATIVE — this is what protects the paywall.
+          // Entitlements are written ONLY by trusted server code via the Firebase
+          // Admin SDK (the RevenueCat webhook, and the founder grant), which
+          // bypasses these rules. Clients can READ their tier (via the household
+          // read above) but can NEVER write it, so no member can self-grant Pro.
+          // The optimistic client writes in billing.js (_grantLocally) and app.js
+          // (founder grant) are already wrapped in try/catch and reconcile from
+          // the server, so denying them here changes no user-facing behaviour.
+          ".write": false
+        }
+      }
+    }
+  }
+}
