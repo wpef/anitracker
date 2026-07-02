@@ -1,0 +1,74 @@
+name: Build Android Debug (APK)
+
+# Produces an UNSIGNED-for-store, debug-signed APK for on-device testing
+# (sideload). No Play Store, no keystore secrets. Meant for the RevenueCat
+# "Test Store" loop: the RevenueCat key is injected at build time from the
+# workflow input, so it is never committed to the repo.
+#
+# TEST_MODE stays true in this build, so the on-device 🧪 switcher
+# (OFF/FREE/PREMIUM/PRO) is available to exercise the gating instantly, and
+# setting it to OFF lets you test the real (simulated) purchase flow.
+#
+# Trigger: Actions tab → "Build Android Debug (APK)" → Run workflow → paste
+# your RevenueCat Test Store public key (test_...). Download the APK from the
+# run's Artifacts and install it on your phone.
+
+on:
+  workflow_dispatch:
+    inputs:
+      revenuecat_key:
+        description: 'RevenueCat Test Store public key (test_...). Leave blank to build without billing.'
+        required: false
+        default: ''
+
+jobs:
+  debug-apk:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Inject RevenueCat key (build-time only)
+        env:
+          RC_KEY: ${{ github.event.inputs.revenuecat_key }}
+        run: |
+          if [ -n "$RC_KEY" ]; then
+            echo "::add-mask::$RC_KEY"
+            node -e "const f='js/billing.js';const fs=require('fs');let s=fs.readFileSync(f,'utf8');const k=process.env.RC_KEY;s=s.replace(/const REVENUECAT_ANDROID_API_KEY = '';/, \"const REVENUECAT_ANDROID_API_KEY = '\"+k+\"';\");fs.writeFileSync(f,s);"
+            echo "RevenueCat key injected."
+          else
+            echo "No key provided — billing stays disabled (web/demo fallback)."
+          fi
+
+      - name: Build web assets + sync to Android
+        run: npm run sync
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Build debug APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: anitracker-debug-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
