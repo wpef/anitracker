@@ -27,8 +27,10 @@ const RANK = { free: 0, paid: 1, pro: 2 };
 // life, free of charge, never paywalled. Households created on/after pay the
 // normal one-shot price. `installed_at` is the household's `settings.createdAt`
 // (written at household creation) — no extra field needed.
-// ⚠️ Set this to the V2 store-launch date before publishing.
-export const BASCULE_DATE = '2026-07-01T00:00:00.000Z';
+// ⚠️ Set this to the V2 store-launch date before publishing. MUST stay in sync
+// with BASCULE_DATE in functions/index.js (the server grant is authoritative;
+// the client grant path is denied by the security rules).
+export const BASCULE_DATE = '2026-07-06T00:00:00.000Z';
 
 /**
  * Whether a household qualifies for founder (grandfathered) premium.

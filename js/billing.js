@@ -67,6 +67,20 @@ export async function initBilling({ getHouseholdId, householdModule }) {
     return;
   }
 
+  // Identify the RevenueCat customer as the household so the webhook can map
+  // purchase events to households/{app_user_id}/subscription. Without this the
+  // customer is anonymous ($RCAnonymousID) and the webhook cannot attribute the
+  // purchase to a household (see functions/index.js). Aliases any purchases made
+  // while anonymous onto the household id.
+  const hid = _getHouseholdId?.();
+  if (hid) {
+    try {
+      await Purchases.logIn({ appUserID: hid });
+    } catch (e) {
+      console.warn('[billing] RevenueCat logIn failed', e);
+    }
+  }
+
   // Reflect any pre-existing entitlement (e.g. after reinstall) on startup.
   try {
     const { customerInfo } = await Purchases.getCustomerInfo();
