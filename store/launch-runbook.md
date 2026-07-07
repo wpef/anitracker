@@ -35,7 +35,7 @@ la reprendre dans une nouvelle conversation Claude Code.
 | # | Phase | Statut |
 |---|-------|--------|
 | 0 | Recette navigateur (gating free/premium/pro) | ☐ |
-| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ⏳ workflow sur main ; ⛔ branche par défaut à basculer sur `main` |
+| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ⏳ workflow déclenchable ; build à lancer depuis l'UI Actions |
 | 2 | Google Play : app + signing + 1er AAB en test interne | ⏳ compte créé (2026-07-02) |
 | 3 | Produits Play + RevenueCat prod + entitlements + clé `goog_` | ☐ |
 | 4 | Backend prod : Firebase Auth + règles + Cloud Functions + webhook | ☐ |
@@ -46,11 +46,12 @@ la reprendre dans une nouvelle conversation Claude Code.
 - Règles Firebase (`database.rules.json`) : ☑ sur main (PR #60) — **pas déployées**.
 - Pièce serveur (`functions/`) + workflow debug (`android-debug.yml`) : ☑ sur
   main (PR #61, 2026-07-02).
-- ⛔ **Branche par défaut du repo = `claude/current-v1`** : GitHub n'enregistre
-  les workflows `workflow_dispatch` que depuis la branche par défaut, donc
-  `android-debug.yml` (et `android-release.yml`) sont invisibles dans l'onglet
-  Actions. **Action requise (toi)** : GitHub → Settings → General → Default
-  branch → basculer sur `main`.
+- ☑ Branche par défaut du repo basculée sur `main` (2026-07-07) : les workflows
+  `android-debug.yml` et `android-release.yml` sont enregistrés et visibles
+  dans l'onglet Actions.
+- ℹ️ L'intégration GitHub de Claude n'a pas la permission `actions: write`
+  (dispatch API → 403) : les workflows se déclenchent **depuis l'UI Actions**
+  (bouton « Run workflow »), pas via Claude.
 
 ---
 
@@ -93,7 +94,7 @@ avec la date, ajoute une entrée au Journal, commit + push.
 
 ## Phase 1 — Recette achat simulé (Test Store + APK debug)
 
-**Statut : ⏳ (workflow mergé sur main ; ⛔ déclenchable seulement après bascule de la branche par défaut sur `main`)**
+**Statut : ⏳ (workflow déclenchable depuis l'UI Actions ; build + test device restants)**
 
 **Objectif.** Valider le vrai bouton d'achat (`billing.js` → entitlement → toast
 → déblocage) sur ton téléphone, avec des achats **simulés** (RevenueCat Test
@@ -101,9 +102,8 @@ Store). Pas de compte Google Play requis, pas de paiement.
 
 **Prérequis.**
 - ☑ PR de la branche de dev **mergée** (PR #61, sur main le 2026-07-02).
-- ⛔ **Branche par défaut du repo → `main`** (Settings → General → Default
-  branch). Tant que c'est `claude/current-v1`, le bouton « Run workflow »
-  n'apparaît pas et l'API de dispatch refuse le déclenchement.
+- ☑ Branche par défaut du repo = `main` (basculée le 2026-07-07) : le bouton
+  « Run workflow » est disponible dans l'onglet Actions.
 - Firebase : **Auth Email/Password activée** + Realtime DB avec des **règles
   ouvertes** (NE PAS déployer `database.rules.json` maintenant — on veut que
   l'écriture optimiste de `billing.js` fasse basculer le tier sans webhook).
@@ -144,6 +144,10 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   la branche par défaut du repo est `claude/current-v1`, donc GitHub n'expose pas
   `android-debug.yml` (tentative de dispatch → 403). Action : basculer la branche
   par défaut sur `main`, puis relancer.
+- 2026-07-07 : branche par défaut basculée sur `main` → workflows debug/release
+  enregistrés côté GitHub (vérifié via l'API). Clé Test Store `test_…` reçue.
+  Dispatch via l'intégration Claude toujours en 403 (pas de permission
+  `actions: write`) → le build se lance depuis l'UI Actions avec la clé.
 
 **📋 Prompt (nouvelle conversation).**
 ```
