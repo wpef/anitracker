@@ -35,7 +35,7 @@ la reprendre dans une nouvelle conversation Claude Code.
 | # | Phase | Statut |
 |---|-------|--------|
 | 0 | Recette navigateur (gating free/premium/pro) | ☐ |
-| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ⏳ workflow déclenchable ; build à lancer depuis l'UI Actions |
+| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ⏳ APK buildé (run #1 vert) ; install + test achat sur device restants |
 | 2 | Google Play : app + signing + 1er AAB en test interne | ⏳ compte créé (2026-07-02) |
 | 3 | Produits Play + RevenueCat prod + entitlements + clé `goog_` | ☐ |
 | 4 | Backend prod : Firebase Auth + règles + Cloud Functions + webhook | ☐ |
@@ -94,7 +94,7 @@ avec la date, ajoute une entrée au Journal, commit + push.
 
 ## Phase 1 — Recette achat simulé (Test Store + APK debug)
 
-**Statut : ⏳ (workflow déclenchable depuis l'UI Actions ; build + test device restants)**
+**Statut : ⏳ (APK debug buildé avec la clé Test Store ; install + test achat sur device restants)**
 
 **Objectif.** Valider le vrai bouton d'achat (`billing.js` → entitlement → toast
 → déblocage) sur ton téléphone, avec des achats **simulés** (RevenueCat Test
@@ -148,6 +148,11 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   enregistrés côté GitHub (vérifié via l'API). Clé Test Store `test_…` reçue.
   Dispatch via l'intégration Claude toujours en 403 (pas de permission
   `actions: write`) → le build se lance depuis l'UI Actions avec la clé.
+- 2026-07-07 : run #1 du workflow **vert** (2 min 46, clé injectée). Artifact
+  `anitracker-debug-7fac908…` (~6 Mo, expire le 2026-07-21) :
+  https://github.com/wpef/anitracker/actions/runs/28867117897. Règles RTDB de
+  test (`auth != null`) communiquées. Reste : install APK + recette achat
+  simulé sur device (étapes 8-11).
 
 **📋 Prompt (nouvelle conversation).**
 ```
