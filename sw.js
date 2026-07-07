@@ -1,5 +1,5 @@
 // ⚠️ Incrémenter CACHE_NAME à chaque déploiement pour forcer la mise à jour
-const CACHE_NAME = 'anitracker-v85';
+const CACHE_NAME = 'anitracker-v86';
 const ASSETS = [
   '/index.html',
   '/quick.html',
@@ -34,6 +34,7 @@ const ASSETS = [
   '/js/billing.js',
   '/js/test-mode.js',
   '/js/vendor/chart.umd.min.js',
+  '/js/vendor/purchases-capacitor.js',
   // ── Icons ──────────────────────────────────────────────────────────────
   '/icons/icon.svg',
   '/icons/icon-192.png',

@@ -14,10 +14,13 @@
  * UI unlocks immediately; the webhook reconciles authoritatively. See plan.md.
  *
  * ⚠️ No JS bundler in this project (build.js just copies files). The RevenueCat
- * JS wrapper is therefore loaded as a self-contained ESM bundle from a CDN,
- * mirroring how Firebase is loaded. The native SDK itself is wired by
- * `npx cap sync` from the installed @revenuecat/purchases-capacitor package.
- * Validate this path on the first real device build.
+ * JS wrapper is therefore vendored as a self-contained ESM bundle in
+ * js/vendor/ (same pattern as Chart.js) and lazy-imported on native only.
+ * It was previously loaded from the esm.sh CDN at runtime, but that entry
+ * point chains 2 further esm.sh fetches at app start and silently killed
+ * billing when unreachable in the Android WebView (Phase 1 recette, 2026-07-07).
+ * The native SDK itself is wired by `npx cap sync` from the installed
+ * @revenuecat/purchases-capacitor package.
  */
 
 import { setPurchaseHandler, setRestoreHandler, hidePremiumCTA } from './ui-premium.js';
@@ -34,8 +37,8 @@ const ENTITLEMENT = { paid: 'premium', pro: 'pro' };
 // Product identifiers (one non-consumable per tier) — configure in RC/Play.
 const PRODUCT = { paid: 'anitracker_premium', pro: 'anitracker_pro' };
 
-// CDN ESM build of the Capacitor wrapper (deps bundled in).
-const RC_MODULE_URL = 'https://esm.sh/@revenuecat/purchases-capacitor@9?bundle';
+// Vendored ESM build of the Capacitor wrapper (deps bundled in) — see header.
+const RC_MODULE_URL = './vendor/purchases-capacitor.js';
 
 let _getHouseholdId = null;
 let _householdModule = null;

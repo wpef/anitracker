@@ -162,6 +162,16 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   sans réputation qui déclenche l'heuristique Defender. Contournement : passer
   par le téléphone directement (ou hash-check + restauration depuis la
   quarantaine). sha256 `app-debug.apk` = `caf5133f…08ad0fa`.
+- 2026-07-07 : APK installé, recette achat → **bug trouvé** : boutons d'achat →
+  toast de repli « Achat disponible dans l'application mobile » + aucun customer
+  RevenueCat = SDK jamais initialisé. Cause : `billing.js` chargeait le wrapper
+  RevenueCat depuis `esm.sh` à l'exécution, or cette URL est un shim qui chaîne
+  2 fetchs esm.sh supplémentaires — chaîne cassée dans la WebView → billing
+  désactivé en silence. **Fix** : SDK vendored en bundle ESM autonome
+  (`js/vendor/purchases-capacitor.js`, 50 Ko, même pattern que Chart.js),
+  import local dans `billing.js`, ajout au precache SW. Pattern d'injection de
+  clé du workflow vérifié intact. → Rebuilder l'APK depuis la branche de dev
+  Phase 1 et rejouer la recette (étapes 10-11).
 
 **📋 Prompt (nouvelle conversation).**
 ```
