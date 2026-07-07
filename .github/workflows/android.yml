@@ -1,15 +1,32 @@
 name: Build Android APK
 
+# Auto-deploy loop: every push to main builds the debug APK and (optionally)
+# ships it to Firebase App Distribution's "internal" group, so each merge lands
+# on testers' phones via the Firebase App Tester app. The distribution step is
+# optional — it skips cleanly when the Firebase secrets are absent, so the build
+# never breaks.
+#
+# Manual billing tests (injecting a RevenueCat test_ key) live in the separate
+# android-debug.yml (workflow_dispatch). This file is the hands-off main loop.
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+# Never let two main builds distribute on top of each other; keep only the latest.
+concurrency:
+  group: android-main
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      # Exposed as env so the optional distribution step can gate on it in `if:`.
+      # Empty when the secret is unset → the step is skipped, build unaffected.
+      FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
 
     steps:
       - uses: actions/checkout@v4
@@ -22,6 +39,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Optional: enable the real (simulated) RevenueCat purchase flow in the
+      # auto build too. Add a REVENUECAT_TEST_KEY repo secret (test_...) to turn
+      # it on; without it, billing stays disabled and the 🧪 switcher is used.
+      - name: Inject RevenueCat key (optional)
+        env:
+          RC_KEY: ${{ secrets.REVENUECAT_TEST_KEY }}
+        run: |
+          if [ -n "$RC_KEY" ]; then
+            echo "::add-mask::$RC_KEY"
+            node -e "const f='js/billing.js';const fs=require('fs');let s=fs.readFileSync(f,'utf8');const k=process.env.RC_KEY;s=s.replace(/const REVENUECAT_ANDROID_API_KEY = '';/, \"const REVENUECAT_ANDROID_API_KEY = '\"+k+\"';\");fs.writeFileSync(f,s);"
+            echo "RevenueCat key injected."
+          else
+            echo "No REVENUECAT_TEST_KEY secret — billing stays disabled (web/demo fallback)."
+          fi
+
       - name: Build web assets + sync to Android
         run: npm run sync
 
@@ -32,6 +64,18 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+
+      # Give every build a unique, ordered version so releases are
+      # distinguishable in Firebase App Tester (otherwise all show "1.0 (1)").
+      # Stamped at build time only — the committed build.gradle stays 1.0/1 for
+      # the Play (AAB) path in android-release.yml.
+      - name: Stamp version (App Tester distinguishability)
+        run: |
+          VN="1.${{ github.run_number }}"
+          VC="${{ github.run_number }}"
+          sed -i -E "s/versionCode [0-9]+/versionCode ${VC}/" android/app/build.gradle
+          sed -i -E "s/versionName \"[^\"]+\"/versionName \"${VN}\"/" android/app/build.gradle
+          echo "Version stamped: ${VN} (${VC})"
 
       - name: Build debug APK
         working-directory: android
@@ -45,3 +89,26 @@ jobs:
           name: anitracker-${{ github.sha }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+      # --- Auto-distribute to Firebase App Distribution (optional) -----------
+      # Same mechanism as android-debug.yml. Skipped entirely when
+      # FIREBASE_APP_ID is unset. Requires repo secrets FIREBASE_APP_ID and
+      # FIREBASE_SERVICE_ACCOUNT (see store/distribution.md, Level 2).
+      - name: Distribute to Firebase App Distribution (optional)
+        if: ${{ env.FIREBASE_APP_ID != '' }}
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "FIREBASE_APP_ID is set but FIREBASE_SERVICE_ACCOUNT is missing — skipping distribution."
+            exit 0
+          fi
+          SA_FILE="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$SA_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$SA_FILE"
+          npx --yes firebase-tools@13 appdistribution:distribute \
+            android/app/build/outputs/apk/debug/app-debug.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "internal" \
+            --release-notes "v1.${{ github.run_number }} · main ${GITHUB_SHA::7}: $(git log -1 --pretty=%s)"
+          rm -f "$SA_FILE"

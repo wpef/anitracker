@@ -123,6 +123,37 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
    nouvelles versions et tu installes en un tap. Les builds suivants arrivent
    par notif.
 
+### F. Déploiement automatique sur `main`
+
+Le workflow **android.yml** (« Build Android APK ») tourne **à chaque push sur
+`main`** : il build l'APK debug **et** le pousse sur App Distribution (groupe
+`internal`). Donc chaque merge sur `main` atterrit tout seul dans App Tester —
+zéro clic. L'étape de distribution y est optionnelle de la même façon (skip
+propre si les secrets Firebase manquent).
+
+- `android.yml` (auto, push `main`) = la boucle de déploiement sans intervention.
+- `android-debug.yml` (manuel, `workflow_dispatch`) = pour tester le billing en
+  injectant une clé `test_` à la main.
+
+Les deux ne se déclenchent pas sur le même événement → pas de double envoi.
+
+Option : pour activer le vrai flux d'achat (RevenueCat) aussi dans les builds
+auto, ajoute un secret **`REVENUECAT_TEST_KEY`** = ta clé `test_...`. Sans lui, le
+billing reste désactivé dans la boucle auto (le switcher 🧪 suffit pour le gating).
+
+### G. Numéro de version unique par build
+
+Pour distinguer les releases dans App Tester, chaque build est **estampillé au
+moment du build** (pas de commit de bump) :
+
+- `android.yml` (auto) : `versionName = 1.<numéro de run>` → `1.34`, `1.35`, `1.36`…
+- `android-debug.yml` (manuel) : `versionName = 1.<numéro de run>-test`.
+- `versionCode = <numéro de run>` dans les deux cas.
+
+Le `android/app/build.gradle` committé reste à `versionName "1.0"` / `versionCode
+1` : c'est la base du chemin **Play (AAB)** dans `android-release.yml`, non
+impactée par l'estampillage des builds de test.
+
 ---
 
 ## Niveau 3 — Play Store, canal de test interne (préparé, DORMANT)
@@ -183,6 +214,7 @@ release. Rien ne part vers de vrais utilisateurs automatiquement.
 |---|---|---|
 | `FIREBASE_APP_ID` | 2 | activer l'upload App Distribution |
 | `FIREBASE_SERVICE_ACCOUNT` | 2 | auth App Distribution (JSON) |
+| `REVENUECAT_TEST_KEY` *(option)* | 2 | activer le billing dans les builds auto (`main`) |
 | `ANDROID_KEYSTORE_BASE64` | 3 | signer l'AAB (déjà en Phase 2) |
 | `ANDROID_KEYSTORE_PASSWORD` | 3 | idem |
 | `ANDROID_KEY_ALIAS` | 3 | idem |
