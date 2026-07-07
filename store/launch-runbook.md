@@ -387,6 +387,46 @@ Journal de la Phase 6, commit + push.
 
 ---
 
+## Annexe — automatisation de la distribution (chantier parallèle)
+
+Chantier indépendant des phases : livrer l'APK/AAB sur le téléphone sans
+manipulation manuelle (adb USB, Firebase App Distribution, canal interne Play).
+Se mène dans une conversation séparée, sans toucher au statut des phases.
+
+**📋 Prompt (nouvelle conversation).**
+```
+Lis store/launch-runbook.md (contexte : lancement AniTracker, Phase 1 en cours
+sur une autre conversation — ne touche pas à la recette Test Store ni au statut
+des phases). Objectif de CETTE conversation : automatiser la livraison de l'app
+sur mon téléphone, en 3 niveaux :
+
+1. Script local `scripts/install-apk.sh` : télécharge le dernier artifact APK
+   du workflow android-debug.yml (via l'API GitHub) et l'installe sur mon
+   téléphone branché en USB avec adb. Documente les prérequis (adb, débogage
+   USB, token GitHub).
+
+2. Distribution cloud via Firebase App Distribution : ajoute au workflow
+   android-debug.yml une étape qui uploade l'APK vers App Distribution après le
+   build (groupe de testeurs "internal"). Dis-moi exactement quels secrets
+   GitHub créer (FIREBASE_APP_ID, credentials service account…), comment
+   activer App Distribution dans la console Firebase, et comment j'installe
+   l'app depuis mon téléphone. L'étape doit être optionnelle (skip proprement
+   si les secrets sont absents) pour ne pas casser le build actuel.
+
+3. Prépare (sans l'activer) le niveau Play Store : une étape/workflow qui
+   uploade l'AAB signé sur le canal de test interne à chaque tag, via un
+   service account Play. Note clairement les dépendances sur les Phases 2-3 du
+   runbook (keystore, fiche app, service account) et laisse le tout désactivé
+   ou documenté tant qu'elles ne sont pas faites.
+
+Contraintes : ne jamais commiter de clés/keystore/JSON service account ;
+travaille sur ta branche de dev dédiée (pas celle de la Phase 1) ; mets à jour
+la doc (store/release-guide.md ou un nouveau store/distribution.md) ; commit +
+push + lien PR à la fin.
+```
+
+---
+
 ## Annexe — rappels utiles
 
 - Ne jamais commiter les clés `goog_`/keystore/JSON service account.
