@@ -153,6 +153,15 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   https://github.com/wpef/anitracker/actions/runs/28867117897. Règles RTDB de
   test (`auth != null`) communiquées. Reste : install APK + recette achat
   simulé sur device (étapes 8-11).
+- 2026-07-07 : Windows Defender bloque le zip de l'artifact (« Trojan ») →
+  **faux positif vérifié** : zip re-téléchargé et audité par Claude — sha256 du
+  zip identique au digest GitHub (`eae823c2…`), structure APK Capacitor
+  attendue (27 modules JS dans `assets/public/js`, clé `test_` bien injectée
+  dans `billing.js`), aucun exécutable étranger, signature = certificat
+  **Android Debug** standard généré au build — c'est précisément ce cert debug
+  sans réputation qui déclenche l'heuristique Defender. Contournement : passer
+  par le téléphone directement (ou hash-check + restauration depuis la
+  quarantaine). sha256 `app-debug.apk` = `caf5133f…08ad0fa`.
 
 **📋 Prompt (nouvelle conversation).**
 ```
