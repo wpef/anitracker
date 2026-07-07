@@ -22,6 +22,13 @@ keystore.properties
 *.keystore
 android/app/google-services.json
 
+# Service-account JSON keys (Firebase App Distribution, Play Developer API) —
+# NEVER commit these. They live only in GitHub Actions secrets.
+*service-account*.json
+*-sa.json
+firebase-service-account.json
+play-service-account.json
+
 # Built APKs/AABs (delivered as artifacts, not committed)
 *.apk
 *.aab
