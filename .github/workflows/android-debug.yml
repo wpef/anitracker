@@ -26,6 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      # Exposed as env (not read straight from secrets) so the optional
+      # Firebase step below can decide, in an `if:`, whether it is configured.
+      # Empty when the secret is unset → the whole distribution step is skipped
+      # and the build is unaffected.
+      FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
     steps:
       - uses: actions/checkout@v4
 
@@ -72,3 +77,34 @@ jobs:
           name: anitracker-debug-${{ github.sha }}
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
+
+      # --- Level 2: cloud distribution (optional) ----------------------------
+      # Pushes the freshly built APK to Firebase App Distribution so testers in
+      # the "internal" group get a notification and install straight from their
+      # phone — no USB, no artifact download.
+      #
+      # OPTIONAL BY DESIGN: the step is skipped entirely when FIREBASE_APP_ID is
+      # unset, so the current build is never broken. To enable it, add two repo
+      # secrets (Settings → Secrets and variables → Actions):
+      #   FIREBASE_APP_ID          e.g. 1:1234567890:android:abcdef012345
+      #   FIREBASE_SERVICE_ACCOUNT the full JSON of a service account key with
+      #                            the "Firebase App Distribution Admin" role
+      # See store/distribution.md for the console walkthrough.
+      - name: Distribute to Firebase App Distribution (optional)
+        if: ${{ env.FIREBASE_APP_ID != '' }}
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "FIREBASE_APP_ID is set but FIREBASE_SERVICE_ACCOUNT is missing — skipping distribution."
+            exit 0
+          fi
+          SA_FILE="$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$SA_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$SA_FILE"
+          npx --yes firebase-tools@13 appdistribution:distribute \
+            android/app/build/outputs/apk/debug/app-debug.apk \
+            --app "$FIREBASE_APP_ID" \
+            --groups "internal" \
+            --release-notes "Debug build ${GITHUB_SHA::7} on ${GITHUB_REF_NAME}"
+          rm -f "$SA_FILE"

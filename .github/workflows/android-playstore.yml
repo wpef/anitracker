@@ -1,0 +1,111 @@
+name: Publish to Play Store (internal)
+
+# Level 3 delivery — PREPARED BUT DORMANT.
+#
+# Builds the signed AAB and uploads it to the Google Play *internal* test track
+# on every version tag (v*). It stays a clean no-op until Phases 2-3 of
+# store/launch-runbook.md are done, because the upload job only runs when the
+# PLAY_SERVICE_ACCOUNT_JSON secret exists. Until then this workflow finishes
+# green without touching Play — nothing to disable, nothing to break.
+#
+# DEPENDENCIES (all from the runbook — do these before it does anything):
+#   Phase 2 — upload keystore generated + these 4 secrets set (already used by
+#             android-release.yml):
+#               ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#               ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+#           — the app listing created in Play Console AND a first AAB uploaded
+#             MANUALLY once (Play refuses API uploads before the first manual
+#             release fixes the com.anitracker.app package).
+#   Phase 3 — a Google Play service account with the Play Android Developer API
+#             enabled and "Release to testing tracks" permission; its JSON key
+#             stored as the secret:
+#               PLAY_SERVICE_ACCOUNT_JSON
+#
+# When PLAY_SERVICE_ACCOUNT_JSON is present, tagging (e.g. `git tag v1.0.1 &&
+# git push origin v1.0.1`) builds and uploads to the internal track as a DRAFT
+# (status: draft) so you review/promote it by hand in Play Console — nothing
+# goes to real users automatically.
+#
+# See store/distribution.md for the full setup walkthrough.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  # Preflight decides whether the pipeline is armed. It reads the secret into an
+  # output (job-level `if:` cannot see the secrets context directly).
+  preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          PLAY_SA: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -n "$PLAY_SA" ]; then
+            echo "Play service account present — publish job will run."
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "PLAY_SERVICE_ACCOUNT_JSON not set — skipping Play upload (Phases 2-3 not done yet)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  publish-internal:
+    needs: preflight
+    if: ${{ needs.preflight.outputs.enabled == 'true' }}
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web assets + sync to Android
+        run: npm run sync
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Decode upload keystore
+        run: echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > android/app/upload-keystore.jks
+
+      - name: Build signed release bundle
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew bundleRelease
+
+      - name: Write Play service account key
+        run: printf '%s' '${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}' > "$RUNNER_TEMP/play-sa.json"
+
+      - name: Upload AAB to Play internal track (draft)
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ runner.temp }}/play-sa.json
+          packageName: com.anitracker.app
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: draft
+
+      - name: Clean up secrets on disk
+        if: always()
+        run: rm -f android/app/upload-keystore.jks "$RUNNER_TEMP/play-sa.json"

@@ -3,6 +3,9 @@
 V2 cible **Android uniquement** (iOS = V3). Build web sans bundler ; le natif est
 généré par Capacitor.
 
+> 📲 **Livrer l'app sur ton téléphone pour tester** (install USB local, Firebase
+> App Distribution, canal test interne Play) : voir **`store/distribution.md`**.
+
 ## 1. Pré-requis (une fois)
 
 - [ ] Compte **Google Play Console** (frais unique 25 $).
