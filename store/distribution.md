@@ -123,32 +123,46 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
    nouvelles versions et tu installes en un tap. Les builds suivants arrivent
    par notif.
 
-### F. Déploiement automatique sur `main`
+### F. Déploiement automatique sur tag de version
 
-Le workflow **android.yml** (« Build Android APK ») tourne **à chaque push sur
-`main`** : il build l'APK debug **et** le pousse sur App Distribution (groupe
-`internal`). Donc chaque merge sur `main` atterrit tout seul dans App Tester —
-zéro clic. L'étape de distribution y est optionnelle de la même façon (skip
-propre si les secrets Firebase manquent).
+Le workflow **android.yml** (« Build Android APK ») distribue sur App
+Distribution **quand tu pousses un tag de version** :
 
-- `android.yml` (auto, push `main`) = la boucle de déploiement sans intervention.
-- `android-debug.yml` (manuel, `workflow_dispatch`) = pour tester le billing en
-  injectant une clé `test_` à la main.
+```bash
+git tag v1.2.0 && git push origin v1.2.0
+```
 
-Les deux ne se déclenchent pas sur le même événement → pas de double envoi.
+→ il build l'APK debug et le pousse au groupe `internal`. La release atterrit
+seule dans App Tester. L'étape de distribution est optionnelle (skip propre si
+les secrets Firebase manquent) et **ne tourne que sur les tags**.
 
-Option : pour activer le vrai flux d'achat (RevenueCat) aussi dans les builds
-auto, ajoute un secret **`REVENUECAT_TEST_KEY`** = ta clé `test_...`. Sans lui, le
-billing reste désactivé dans la boucle auto (le switcher 🧪 suffit pour le gating).
+Sur un **push `main` normal**, `android.yml` build toujours l'APK en artifact
+(check CI) mais **ne distribue pas** — seuls les tags déclenchent l'envoi.
+
+Récap des déclencheurs :
+
+| Workflow | Déclencheur | Effet |
+|---|---|---|
+| `android.yml` | push `main` | build APK + artifact (pas de distrib) |
+| `android.yml` | tag `v*` | build APK + **distrib App Distribution** |
+| `android-debug.yml` | manuel (`workflow_dispatch`) | build APK + distrib + injection clé `test_` |
+| `android-release.yml` | tag `v*` | AAB signé (artifact, pour Play) |
+| `android-playstore.yml` | tag `v*` | upload Play interne (dormant, cf. Niveau 3) |
+
+Option : pour activer le vrai flux d'achat (RevenueCat) dans le build de tag,
+ajoute un secret **`REVENUECAT_TEST_KEY`** = ta clé `test_...`. Sans lui, le
+billing reste désactivé (le switcher 🧪 suffit pour le gating).
 
 ### G. Numéro de version unique par build
 
 Pour distinguer les releases dans App Tester, chaque build est **estampillé au
 moment du build** (pas de commit de bump) :
 
-- `android.yml` (auto) : `versionName = 1.<numéro de run>` → `1.34`, `1.35`, `1.36`…
+- `android.yml` sur **tag** : `versionName = <tag sans le v>` (ex. `v1.2.0` →
+  `1.2.0`).
+- `android.yml` hors tag / dispatch : `versionName = 1.<numéro de run>`.
 - `android-debug.yml` (manuel) : `versionName = 1.<numéro de run>-test`.
-- `versionCode = <numéro de run>` dans les deux cas.
+- `versionCode = <numéro de run>` partout (monotone).
 
 Le `android/app/build.gradle` committé reste à `versionName "1.0"` / `versionCode
 1` : c'est la base du chemin **Play (AAB)** dans `android-release.yml`, non
