@@ -122,7 +122,22 @@ let _isSignup = false;
 function showAuthPage() {
   setNavVisible(false);
   $('header-logout-btn').style.display = 'none';
+  // Google's OAuth popup is blocked inside the Android WebView (opens a blank
+  // page and never returns). Hide the Google path on native — email/password
+  // works fine there. A native Google plugin is a later (store-release) task.
+  if (_isNativePlatform()) {
+    const g = $('auth-google-btn');
+    if (g) g.style.display = 'none';
+    const sep = document.querySelector('.auth-separator');
+    if (sep) sep.style.display = 'none';
+  }
   showPage('auth');
+}
+
+function _isNativePlatform() {
+  return !!(window.Capacitor
+    && typeof window.Capacitor.isNativePlatform === 'function'
+    && window.Capacitor.isNativePlatform());
 }
 
 function showAuthError(msg) {
@@ -186,6 +201,12 @@ $('auth-submit-btn')?.addEventListener('click', async () => {
 // Auth form: Google sign-in
 $('auth-google-btn')?.addEventListener('click', async () => {
   hideAuthError();
+  // Defense in depth: on native the button is hidden, but never launch the
+  // WebView-blocked popup even if it somehow gets clicked.
+  if (_isNativePlatform()) {
+    showToast('Dans l\'app, connecte-toi avec ton email et ton mot de passe');
+    return;
+  }
   try {
     await _authModule.loginWithGoogle();
   } catch (err) {

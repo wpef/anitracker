@@ -172,6 +172,19 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   import local dans `billing.js`, ajout au precache SW. Pattern d'injection de
   clé du workflow vérifié intact. → Rebuilder l'APK depuis la branche de dev
   Phase 1 et rejouer la recette (étapes 10-11).
+- 2026-07-07 : run #2 **vert** (fix SDK vendored) — artifact
+  `anitracker-debug-b1c5535…` : https://github.com/wpef/anitracker/actions/runs/28882564581.
+- 2026-07-07 : 2 problèmes remontés au test device. (a) **Sign-in Google → page
+  blanche** : `loginWithGoogle` utilise `signInWithPopup`, or Google bloque
+  OAuth dans les WebView Android (popup vide qui ne revient jamais). Fix : bouton
+  Google masqué sur natif (+ garde dans le handler `app.js`) ; email/mot de passe
+  fonctionne nativement. Plugin Google natif = tâche de release ultérieure.
+  **Contournement immédiat** : créer un compte email/mot de passe. (b) **Config
+  Firebase à recoller** : `firebase-config.default.js` vide → écran de setup à
+  chaque fois. Fix : étape d'injection `FIREBASE_CONFIG` (secret GitHub) dans
+  `android-debug.yml` qui bake la config au build (jamais commitée) → setup
+  screen supprimé. **Action toi** : créer le secret repo `FIREBASE_CONFIG` = ta
+  config Firebase en JSON (apiKey + databaseURL minimum). → Rebuild run #3.
 
 **📋 Prompt (nouvelle conversation).**
 ```
