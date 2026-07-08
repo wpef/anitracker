@@ -14,14 +14,40 @@
  * UI unlocks immediately; the webhook reconciles authoritatively. See plan.md.
  *
  * ⚠️ No JS bundler in this project (build.js just copies files). The RevenueCat
- * JS wrapper is therefore loaded as a self-contained ESM bundle from a CDN,
- * mirroring how Firebase is loaded. The native SDK itself is wired by
- * `npx cap sync` from the installed @revenuecat/purchases-capacitor package.
- * Validate this path on the first real device build.
+ * JS wrapper is therefore vendored as a self-contained ESM bundle in
+ * js/vendor/ (same pattern as Chart.js) and lazy-imported on native only.
+ * It was previously loaded from the esm.sh CDN at runtime, but that entry
+ * point chains 2 further esm.sh fetches at app start and silently killed
+ * billing when unreachable in the Android WebView (Phase 1 recette, 2026-07-07).
+ * The native SDK itself is wired by `npx cap sync` from the installed
+ * @revenuecat/purchases-capacitor package.
  */
 
 import { setPurchaseHandler, setRestoreHandler, hidePremiumCTA } from './ui-premium.js';
 import { showToast } from './toast.js';
+import { TEST_MODE } from './test-mode.js';
+
+/**
+ * Report a billing error. Always logs + shows the short toast. In TEST_MODE it
+ * ALSO opens a native dialog with the full RevenueCat error, because the toast
+ * is ephemeral, truncates long text, and renders behind the premium modal —
+ * useless for on-device debugging. The dialog sits on top, stays until
+ * dismissed, wraps, and is screenshot-able. Never shown in production.
+ * @param {string} label  Human prefix ("Achat échoué", "Restauration échouée")
+ * @param {any}    e       The caught error
+ */
+function _reportBillingError(label, e) {
+  console.error('[billing]', label, e);
+  showToast(label + ', réessaie plus tard');
+  if (TEST_MODE && typeof window !== 'undefined' && typeof window.alert === 'function') {
+    const detail = [
+      e?.code            != null ? 'code: ' + e.code : null,
+      e?.message         ? 'message: ' + e.message : null,
+      e?.underlyingErrorMessage ? 'underlying: ' + e.underlyingErrorMessage : null,
+    ].filter(Boolean).join('\n\n');
+    window.alert('[billing] ' + label + '\n\n' + (detail || '(aucun détail fourni)'));
+  }
+}
 
 // ⚠️ MANUAL ACTION: set this to the RevenueCat *public* Android SDK key before
 // the native release (RevenueCat dashboard → Project → API keys). Leaving it
@@ -34,8 +60,8 @@ const ENTITLEMENT = { paid: 'premium', pro: 'pro' };
 // Product identifiers (one non-consumable per tier) — configure in RC/Play.
 const PRODUCT = { paid: 'anitracker_premium', pro: 'anitracker_pro' };
 
-// CDN ESM build of the Capacitor wrapper (deps bundled in).
-const RC_MODULE_URL = 'https://esm.sh/@revenuecat/purchases-capacitor@9?bundle';
+// Vendored ESM build of the Capacitor wrapper (deps bundled in) — see header.
+const RC_MODULE_URL = './vendor/purchases-capacitor.js';
 
 let _getHouseholdId = null;
 let _householdModule = null;
@@ -115,7 +141,11 @@ async function _buyLifetime(Purchases, tier) {
     const pkgs = offerings?.current?.availablePackages || [];
     // Pick the package whose product matches the wanted tier (fallback: first).
     const pkg = pkgs.find(p => p?.product?.identifier === PRODUCT[wanted]) || pkgs[0];
-    if (!pkg) { showToast('Offre indisponible pour le moment'); return; }
+    if (!pkg) {
+      console.warn('[billing] no package for', PRODUCT[wanted], '— offering:', offerings?.current?.identifier, 'packages:', pkgs.map(p => p?.product?.identifier));
+      showToast('Offre indisponible pour le moment');
+      return;
+    }
 
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
     const granted = _entitledTier(customerInfo);
@@ -126,8 +156,7 @@ async function _buyLifetime(Purchases, tier) {
     }
   } catch (e) {
     if (e?.userCancelled) return;      // user dismissed the native sheet
-    console.error('[billing] purchase failed', e);
-    showToast('Achat échoué, réessaie plus tard');
+    _reportBillingError('Achat échoué', e);
   }
 }
 
@@ -143,8 +172,7 @@ async function _restore(Purchases) {
       showToast('Aucun achat à restaurer');
     }
   } catch (e) {
-    console.error('[billing] restore failed', e);
-    showToast('Restauration échouée');
+    _reportBillingError('Restauration échouée', e);
   }
 }
 

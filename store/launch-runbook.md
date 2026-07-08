@@ -35,7 +35,7 @@ la reprendre dans une nouvelle conversation Claude Code.
 | # | Phase | Statut |
 |---|-------|--------|
 | 0 | Recette navigateur (gating free/premium/pro) | ☐ |
-| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ⏳ workflow prêt, PR à merger |
+| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ☑ (2026-07-08) — achat Test Store valide → tier débloqué en direct |
 | 2 | Google Play : app + signing + 1er AAB en test interne | ⏳ compte créé (2026-07-02) |
 | 3 | Produits Play + RevenueCat prod + entitlements + clé `goog_` | ☐ |
 | 4 | Backend prod : Firebase Auth + règles + Cloud Functions + webhook | ☐ |
@@ -44,8 +44,14 @@ la reprendre dans une nouvelle conversation Claude Code.
 
 **État du code (sur `main` sauf mention)** :
 - Règles Firebase (`database.rules.json`) : ☑ sur main (PR #60) — **pas déployées**.
-- Pièce serveur (`functions/`) + workflow debug (`android-debug.yml`) : sur la
-  branche de dev — **PR à merger**.
+- Pièce serveur (`functions/`) + workflow debug (`android-debug.yml`) : ☑ sur
+  main (PR #61, 2026-07-02).
+- ☑ Branche par défaut du repo basculée sur `main` (2026-07-07) : les workflows
+  `android-debug.yml` et `android-release.yml` sont enregistrés et visibles
+  dans l'onglet Actions.
+- ℹ️ L'intégration GitHub de Claude n'a pas la permission `actions: write`
+  (dispatch API → 403) : les workflows se déclenchent **depuis l'UI Actions**
+  (bouton « Run workflow »), pas via Claude.
 
 ---
 
@@ -88,15 +94,16 @@ avec la date, ajoute une entrée au Journal, commit + push.
 
 ## Phase 1 — Recette achat simulé (Test Store + APK debug)
 
-**Statut : ⏳ (workflow `android-debug.yml` prêt ; PR à merger pour l'activer)**
+**Statut : ☑ (2026-07-08) — achat simulé Test Store validé de bout en bout sur device : achat → entitlement → toast → tier débloqué en direct.**
 
 **Objectif.** Valider le vrai bouton d'achat (`billing.js` → entitlement → toast
 → déblocage) sur ton téléphone, avec des achats **simulés** (RevenueCat Test
 Store). Pas de compte Google Play requis, pas de paiement.
 
 **Prérequis.**
-- PR de la branche de dev **mergée** (le workflow `workflow_dispatch` ne
-  s'active que depuis `main`).
+- ☑ PR de la branche de dev **mergée** (PR #61, sur main le 2026-07-02).
+- ☑ Branche par défaut du repo = `main` (basculée le 2026-07-07) : le bouton
+  « Run workflow » est disponible dans l'onglet Actions.
 - Firebase : **Auth Email/Password activée** + Realtime DB avec des **règles
   ouvertes** (NE PAS déployer `database.rules.json` maintenant — on veut que
   l'écriture optimiste de `billing.js` fasse basculer le tier sans webhook).
@@ -131,6 +138,88 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
 **Journal.**
 - 2026-07-02 : workflow `android-debug.yml` + pièce serveur livrés sur la branche
   de dev (commits `fd299d2`, `60a7799`). En attente de merge + config Test Store.
+- 2026-07-02 : PR #61 mergée → workflow + `functions/` sur main (`7fac908`).
+  Contenu du workflow vérifié (injection clé `test_` OK, pattern
+  `REVENUECAT_ANDROID_API_KEY = ''` présent dans `js/billing.js:29`). **Bloqué** :
+  la branche par défaut du repo est `claude/current-v1`, donc GitHub n'expose pas
+  `android-debug.yml` (tentative de dispatch → 403). Action : basculer la branche
+  par défaut sur `main`, puis relancer.
+- 2026-07-07 : branche par défaut basculée sur `main` → workflows debug/release
+  enregistrés côté GitHub (vérifié via l'API). Clé Test Store `test_…` reçue.
+  Dispatch via l'intégration Claude toujours en 403 (pas de permission
+  `actions: write`) → le build se lance depuis l'UI Actions avec la clé.
+- 2026-07-07 : run #1 du workflow **vert** (2 min 46, clé injectée). Artifact
+  `anitracker-debug-7fac908…` (~6 Mo, expire le 2026-07-21) :
+  https://github.com/wpef/anitracker/actions/runs/28867117897. Règles RTDB de
+  test (`auth != null`) communiquées. Reste : install APK + recette achat
+  simulé sur device (étapes 8-11).
+- 2026-07-07 : Windows Defender bloque le zip de l'artifact (« Trojan ») →
+  **faux positif vérifié** : zip re-téléchargé et audité par Claude — sha256 du
+  zip identique au digest GitHub (`eae823c2…`), structure APK Capacitor
+  attendue (27 modules JS dans `assets/public/js`, clé `test_` bien injectée
+  dans `billing.js`), aucun exécutable étranger, signature = certificat
+  **Android Debug** standard généré au build — c'est précisément ce cert debug
+  sans réputation qui déclenche l'heuristique Defender. Contournement : passer
+  par le téléphone directement (ou hash-check + restauration depuis la
+  quarantaine). sha256 `app-debug.apk` = `caf5133f…08ad0fa`.
+- 2026-07-07 : APK installé, recette achat → **bug trouvé** : boutons d'achat →
+  toast de repli « Achat disponible dans l'application mobile » + aucun customer
+  RevenueCat = SDK jamais initialisé. Cause : `billing.js` chargeait le wrapper
+  RevenueCat depuis `esm.sh` à l'exécution, or cette URL est un shim qui chaîne
+  2 fetchs esm.sh supplémentaires — chaîne cassée dans la WebView → billing
+  désactivé en silence. **Fix** : SDK vendored en bundle ESM autonome
+  (`js/vendor/purchases-capacitor.js`, 50 Ko, même pattern que Chart.js),
+  import local dans `billing.js`, ajout au precache SW. Pattern d'injection de
+  clé du workflow vérifié intact. → Rebuilder l'APK depuis la branche de dev
+  Phase 1 et rejouer la recette (étapes 10-11).
+- 2026-07-07 : run #2 **vert** (fix SDK vendored) — artifact
+  `anitracker-debug-b1c5535…` : https://github.com/wpef/anitracker/actions/runs/28882564581.
+- 2026-07-07 : 2 problèmes remontés au test device. (a) **Sign-in Google → page
+  blanche** : `loginWithGoogle` utilise `signInWithPopup`, or Google bloque
+  OAuth dans les WebView Android (popup vide qui ne revient jamais). Fix : bouton
+  Google masqué sur natif (+ garde dans le handler `app.js`) ; email/mot de passe
+  fonctionne nativement. Plugin Google natif = tâche de release ultérieure.
+  **Contournement immédiat** : créer un compte email/mot de passe. (b) **Config
+  Firebase à recoller** : `firebase-config.default.js` vide → écran de setup à
+  chaque fois. Fix : étape d'injection `FIREBASE_CONFIG` (secret GitHub) dans
+  `android-debug.yml` qui bake la config au build (jamais commitée) → setup
+  screen supprimé. **Action toi** : créer le secret repo `FIREBASE_CONFIG` = ta
+  config Firebase en JSON (apiKey + databaseURL minimum). → Rebuild run #3.
+- 2026-07-08 : achat (compte email) → toast « Achat échoué » masquant l'erreur.
+  Diagnostic : billing bien branché, `Purchases.purchasePackage` lève
+  **RevenueCat code 23 = ConfigurationError**. Toast inutilisable pour lire
+  l'erreur (fugace, tronquée, derrière la modale) → fix : en TEST_MODE les
+  erreurs billing s'affichent aussi dans un **dialogue natif** (sur la modale,
+  persistant, screenshot-able) + `webContentsDebuggingEnabled=true` sur le build
+  debug (via workflow) pour `chrome://inspect`. Plugin `@revenuecat/purchases-
+  capacitor@9.2.2` / `purchases-hybrid-common 13.26.0` (récent → Test Store
+  supporté ; 23 pointe la config dashboard). → Rebuild + screenshot du message
+  sous-jacent attendu pour la cause exacte.
+- 2026-07-08 : constat gating — en **OFF** (= vrai tier) toutes les features
+  sont débloquées. **Pas un bug** : le compte de test est **FOUNDER**
+  (`BASCULE_DATE=2026-07-06` est dans le passé → tout foyer créé avant est
+  grandfathered Pro à vie via `setFounderSubscription`). Vérif on-device :
+  switcher 🧪 **FREE** → les cadenas réapparaissent (gating OK). **Implication
+  recette** : pour observer un achat débloquer le tier, tester avec un compte
+  email **neuf** (créé après le 06-07 → tier free). À ajuster : `BASCULE_DATE`
+  = vraie date de lancement en Phase 4/6.
+- 2026-07-08 : **cause racine du code 23 trouvée** — le Test Store RevenueCat
+  exige `purchases-capacitor ≥ 11.2.6`, qui exige `@capacitor/core ≥ 7`. Le
+  projet était en Capacitor 6 / RC 9.2.2 → clé `test_` non supportée → code 23.
+  **Migration faite** : Capacitor 6→7 (AGP 8.7.2, Gradle 8.11.1, Java 21,
+  SDK 35, minSdk 23), RevenueCat → 11.3.2 (natif hybrid-common 17.25.0), SDK
+  re-vendoré, CI en Java 21. `billing.js` inchangé (API v9=v11). Build CI vert
+  du 1er coup.
+- 2026-07-08 : sur le nouveau build, la **feuille d'achat Test Store** s'affiche
+  (`anitracker_pro`, 190 $) → **TEST VALID PURCHASE** → toast « Pro débloqué 🎉 »,
+  modale fermée, mais **cadenas figés**. Cause : `onSubscriptionChange` ne
+  faisait que `setTier()` sans re-render (le gating est évalué au rendu ; le
+  switcher 🧪 masquait le trou via `location.reload()`). **Fix** :
+  `refreshTierGatedUI()` (rebuild sélecteurs + re-render page active) appelé au
+  changement d'abonnement, gardé par `_uiReady`.
+- 2026-07-08 : ✅ **Phase 1 validée** — achat Test Store → entitlement → toast →
+  écriture Firebase `subscription` → **tier débloqué en direct** (cadenas qui
+  sautent). Chaîne d'achat complète fonctionnelle.
 
 **📋 Prompt (nouvelle conversation).**
 ```
@@ -361,6 +450,46 @@ changements code (clé goog_ que je te donne, TEST_MODE=false, bump version,
 BASCULE_DATE finale) sur une PR. Rappelle-moi le checklist Play Console (privacy
 URL, Data Safety, visuels, promotion en production). Mets à jour le statut + le
 Journal de la Phase 6, commit + push.
+```
+
+---
+
+## Annexe — automatisation de la distribution (chantier parallèle)
+
+Chantier indépendant des phases : livrer l'APK/AAB sur le téléphone sans
+manipulation manuelle (adb USB, Firebase App Distribution, canal interne Play).
+Se mène dans une conversation séparée, sans toucher au statut des phases.
+
+**📋 Prompt (nouvelle conversation).**
+```
+Lis store/launch-runbook.md (contexte : lancement AniTracker, Phase 1 en cours
+sur une autre conversation — ne touche pas à la recette Test Store ni au statut
+des phases). Objectif de CETTE conversation : automatiser la livraison de l'app
+sur mon téléphone, en 3 niveaux :
+
+1. Script local `scripts/install-apk.sh` : télécharge le dernier artifact APK
+   du workflow android-debug.yml (via l'API GitHub) et l'installe sur mon
+   téléphone branché en USB avec adb. Documente les prérequis (adb, débogage
+   USB, token GitHub).
+
+2. Distribution cloud via Firebase App Distribution : ajoute au workflow
+   android-debug.yml une étape qui uploade l'APK vers App Distribution après le
+   build (groupe de testeurs "internal"). Dis-moi exactement quels secrets
+   GitHub créer (FIREBASE_APP_ID, credentials service account…), comment
+   activer App Distribution dans la console Firebase, et comment j'installe
+   l'app depuis mon téléphone. L'étape doit être optionnelle (skip proprement
+   si les secrets sont absents) pour ne pas casser le build actuel.
+
+3. Prépare (sans l'activer) le niveau Play Store : une étape/workflow qui
+   uploade l'AAB signé sur le canal de test interne à chaque tag, via un
+   service account Play. Note clairement les dépendances sur les Phases 2-3 du
+   runbook (keystore, fiche app, service account) et laisse le tout désactivé
+   ou documenté tant qu'elles ne sont pas faites.
+
+Contraintes : ne jamais commiter de clés/keystore/JSON service account ;
+travaille sur ta branche de dev dédiée (pas celle de la Phase 1) ; mets à jour
+la doc (store/release-guide.md ou un nouveau store/distribution.md) ; commit +
+push + lien PR à la fin.
 ```
 
 ---

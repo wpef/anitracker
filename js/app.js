@@ -35,6 +35,22 @@ let _customTypeModule = null;
 let _appInitialized = false;  // prevents double-init on rapid auth changes
 let _isDemo = false;
 let _currentHouseholdId = null;
+let _uiReady = false;         // true once the tier-gated UI has been built
+
+/**
+ * Re-render the tier-gated surfaces (type selectors, locks, history/stats
+ * limits) after the subscription tier changes at runtime — e.g. right after a
+ * purchase, so locks drop live without a reload. No-op until the initial UI is
+ * built (the boot render handles the first pass).
+ */
+function refreshTierGatedUI() {
+  if (!_uiReady) return;
+  initNewEntry();
+  initQuick();
+  const active = document.querySelector('.page.active');
+  if (active?.id === 'page-stats')   renderStats();
+  if (active?.id === 'page-history') renderHistory();
+}
 
 // ── Chargement DB ──────────────────────────────────────────────────────────
 
@@ -122,7 +138,22 @@ let _isSignup = false;
 function showAuthPage() {
   setNavVisible(false);
   $('header-logout-btn').style.display = 'none';
+  // Google's OAuth popup is blocked inside the Android WebView (opens a blank
+  // page and never returns). Hide the Google path on native — email/password
+  // works fine there. A native Google plugin is a later (store-release) task.
+  if (_isNativePlatform()) {
+    const g = $('auth-google-btn');
+    if (g) g.style.display = 'none';
+    const sep = document.querySelector('.auth-separator');
+    if (sep) sep.style.display = 'none';
+  }
   showPage('auth');
+}
+
+function _isNativePlatform() {
+  return !!(window.Capacitor
+    && typeof window.Capacitor.isNativePlatform === 'function'
+    && window.Capacitor.isNativePlatform());
 }
 
 function showAuthError(msg) {
@@ -186,6 +217,12 @@ $('auth-submit-btn')?.addEventListener('click', async () => {
 // Auth form: Google sign-in
 $('auth-google-btn')?.addEventListener('click', async () => {
   hideAuthError();
+  // Defense in depth: on native the button is hidden, but never launch the
+  // WebView-blocked popup even if it somehow gets clicked.
+  if (_isNativePlatform()) {
+    showToast('Dans l\'app, connecte-toi avec ton email et ton mot de passe');
+    return;
+  }
   try {
     await _authModule.loginWithGoogle();
   } catch (err) {
@@ -267,9 +304,11 @@ async function initApp(user) {
     // Non-fatal: founder grant best-effort.
   }
 
-  // Listen for tier changes (free | paid | pro)
+  // Listen for tier changes (free | paid | pro). A purchase writes the
+  // subscription node → this fires → re-render so the locks drop live.
   _householdModule.onSubscriptionChange(householdId, (tier) => {
     setTier(tier);
+    refreshTierGatedUI();
   });
 
   // Wire one-shot billing (native only; no-op on web/demo)
@@ -300,6 +339,7 @@ async function initApp(user) {
   initNewEntry();
   initQuick();
   initExport();
+  _uiReady = true;   // subsequent tier changes now trigger a live re-render
 
   // Lazy-load custom type module
   _customTypeModule = await import('./ui-custom-type.js');

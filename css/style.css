@@ -1263,16 +1263,17 @@ nav {
 /* ===== Header logout button ===== */
 .header-logout-btn {
   background: none;
-  border: none;
-  color: var(--text2);
-  font-size: 1.1rem;
+  border: 1px solid var(--text2);
+  color: var(--text);
+  font-size: 1.35rem;
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: color .2s;
+  padding: 6px 8px;
+  border-radius: 8px;
+  transition: color .2s, background .2s, border-color .2s;
   line-height: 1;
 }
-.header-logout-btn:hover { color: var(--inside); }
+.header-logout-btn:hover,
+.header-logout-btn:active { color: var(--inside); border-color: var(--inside); }
 
 /* ===== Premium / Freemium gating ===== */
 

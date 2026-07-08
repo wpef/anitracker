@@ -54,13 +54,26 @@ jobs:
             echo "No key provided — billing stays disabled (web/demo fallback)."
           fi
 
+      - name: Inject Firebase config (build-time only)
+        env:
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+        run: node scripts/inject-firebase-config.js
+
+      - name: Enable WebView debugging (debug build only)
+        # Lets chrome://inspect attach to the app's WebView so billing/auth
+        # errors are inspectable on-device. Debug APK only — the release
+        # workflow keeps capacitor.config.json's false, so prod stays locked.
+        run: |
+          node -e "const f='capacitor.config.json';const fs=require('fs');const c=JSON.parse(fs.readFileSync(f,'utf8'));c.android=c.android||{};c.android.webContentsDebuggingEnabled=true;fs.writeFileSync(f,JSON.stringify(c,null,2)+'\n');"
+          echo "WebView debugging enabled for this debug build."
+
       - name: Build web assets + sync to Android
         run: npm run sync
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
