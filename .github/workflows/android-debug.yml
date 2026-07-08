@@ -51,15 +51,8 @@ jobs:
 
       - name: Inject Firebase config (build-time only)
         env:
-          FB_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
-        run: |
-          if [ -n "$FB_CONFIG" ]; then
-            echo "::add-mask::$FB_CONFIG"
-            node -e "const fs=require('fs');const cfg=JSON.parse(process.env.FB_CONFIG);if(!cfg.apiKey||!cfg.databaseURL){throw new Error('FIREBASE_CONFIG must contain at least apiKey and databaseURL');}fs.writeFileSync('js/firebase-config.default.js','export const DEFAULT_FIREBASE_CONFIG = '+JSON.stringify(cfg,null,2)+';\n');"
-            echo "Firebase config baked into build — setup screen skipped."
-          else
-            echo "No FIREBASE_CONFIG secret — app will show the paste-config setup screen."
-          fi
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+        run: node scripts/inject-firebase-config.js
 
       - name: Build web assets + sync to Android
         run: npm run sync
