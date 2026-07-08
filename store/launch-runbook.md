@@ -185,6 +185,24 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   `android-debug.yml` qui bake la config au build (jamais commitée) → setup
   screen supprimé. **Action toi** : créer le secret repo `FIREBASE_CONFIG` = ta
   config Firebase en JSON (apiKey + databaseURL minimum). → Rebuild run #3.
+- 2026-07-08 : achat (compte email) → toast « Achat échoué » masquant l'erreur.
+  Diagnostic : billing bien branché, `Purchases.purchasePackage` lève
+  **RevenueCat code 23 = ConfigurationError**. Toast inutilisable pour lire
+  l'erreur (fugace, tronquée, derrière la modale) → fix : en TEST_MODE les
+  erreurs billing s'affichent aussi dans un **dialogue natif** (sur la modale,
+  persistant, screenshot-able) + `webContentsDebuggingEnabled=true` sur le build
+  debug (via workflow) pour `chrome://inspect`. Plugin `@revenuecat/purchases-
+  capacitor@9.2.2` / `purchases-hybrid-common 13.26.0` (récent → Test Store
+  supporté ; 23 pointe la config dashboard). → Rebuild + screenshot du message
+  sous-jacent attendu pour la cause exacte.
+- 2026-07-08 : constat gating — en **OFF** (= vrai tier) toutes les features
+  sont débloquées. **Pas un bug** : le compte de test est **FOUNDER**
+  (`BASCULE_DATE=2026-07-06` est dans le passé → tout foyer créé avant est
+  grandfathered Pro à vie via `setFounderSubscription`). Vérif on-device :
+  switcher 🧪 **FREE** → les cadenas réapparaissent (gating OK). **Implication
+  recette** : pour observer un achat débloquer le tier, tester avec un compte
+  email **neuf** (créé après le 06-07 → tier free). À ajuster : `BASCULE_DATE`
+  = vraie date de lancement en Phase 4/6.
 
 **📋 Prompt (nouvelle conversation).**
 ```
