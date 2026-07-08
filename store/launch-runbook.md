@@ -35,7 +35,7 @@ la reprendre dans une nouvelle conversation Claude Code.
 | # | Phase | Statut |
 |---|-------|--------|
 | 0 | Recette navigateur (gating free/premium/pro) | ☐ |
-| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ⏳ APK buildé (run #1 vert) ; install + test achat sur device restants |
+| 1 | Recette achat simulé (RevenueCat Test Store + APK debug) | ☑ (2026-07-08) — achat Test Store valide → tier débloqué en direct |
 | 2 | Google Play : app + signing + 1er AAB en test interne | ⏳ compte créé (2026-07-02) |
 | 3 | Produits Play + RevenueCat prod + entitlements + clé `goog_` | ☐ |
 | 4 | Backend prod : Firebase Auth + règles + Cloud Functions + webhook | ☐ |
@@ -94,7 +94,7 @@ avec la date, ajoute une entrée au Journal, commit + push.
 
 ## Phase 1 — Recette achat simulé (Test Store + APK debug)
 
-**Statut : ⏳ (APK debug buildé avec la clé Test Store ; install + test achat sur device restants)**
+**Statut : ☑ (2026-07-08) — achat simulé Test Store validé de bout en bout sur device : achat → entitlement → toast → tier débloqué en direct.**
 
 **Objectif.** Valider le vrai bouton d'achat (`billing.js` → entitlement → toast
 → déblocage) sur ton téléphone, avec des achats **simulés** (RevenueCat Test
@@ -203,6 +203,23 @@ déclencher le workflow à ta place si tu me donnes la clé `test_`.
   recette** : pour observer un achat débloquer le tier, tester avec un compte
   email **neuf** (créé après le 06-07 → tier free). À ajuster : `BASCULE_DATE`
   = vraie date de lancement en Phase 4/6.
+- 2026-07-08 : **cause racine du code 23 trouvée** — le Test Store RevenueCat
+  exige `purchases-capacitor ≥ 11.2.6`, qui exige `@capacitor/core ≥ 7`. Le
+  projet était en Capacitor 6 / RC 9.2.2 → clé `test_` non supportée → code 23.
+  **Migration faite** : Capacitor 6→7 (AGP 8.7.2, Gradle 8.11.1, Java 21,
+  SDK 35, minSdk 23), RevenueCat → 11.3.2 (natif hybrid-common 17.25.0), SDK
+  re-vendoré, CI en Java 21. `billing.js` inchangé (API v9=v11). Build CI vert
+  du 1er coup.
+- 2026-07-08 : sur le nouveau build, la **feuille d'achat Test Store** s'affiche
+  (`anitracker_pro`, 190 $) → **TEST VALID PURCHASE** → toast « Pro débloqué 🎉 »,
+  modale fermée, mais **cadenas figés**. Cause : `onSubscriptionChange` ne
+  faisait que `setTier()` sans re-render (le gating est évalué au rendu ; le
+  switcher 🧪 masquait le trou via `location.reload()`). **Fix** :
+  `refreshTierGatedUI()` (rebuild sélecteurs + re-render page active) appelé au
+  changement d'abonnement, gardé par `_uiReady`.
+- 2026-07-08 : ✅ **Phase 1 validée** — achat Test Store → entitlement → toast →
+  écriture Firebase `subscription` → **tier débloqué en direct** (cadenas qui
+  sautent). Chaîne d'achat complète fonctionnelle.
 
 **📋 Prompt (nouvelle conversation).**
 ```
