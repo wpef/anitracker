@@ -28,16 +28,25 @@ import { showToast } from './toast.js';
 import { TEST_MODE } from './test-mode.js';
 
 /**
- * Short human detail for a RevenueCat error, appended to toasts in test builds
- * only so the tester can read the real failure on-device (no laptop needed).
- * Never shown in production (would leak internals).
- * @param {any} e
- * @returns {string}
+ * Report a billing error. Always logs + shows the short toast. In TEST_MODE it
+ * ALSO opens a native dialog with the full RevenueCat error, because the toast
+ * is ephemeral, truncates long text, and renders behind the premium modal —
+ * useless for on-device debugging. The dialog sits on top, stays until
+ * dismissed, wraps, and is screenshot-able. Never shown in production.
+ * @param {string} label  Human prefix ("Achat échoué", "Restauration échouée")
+ * @param {any}    e       The caught error
  */
-function _errDetail(e) {
-  if (!TEST_MODE) return '';
-  const parts = [e?.code, e?.message, e?.underlyingErrorMessage].filter(Boolean);
-  return parts.length ? ' — ' + parts.join(' / ') : '';
+function _reportBillingError(label, e) {
+  console.error('[billing]', label, e);
+  showToast(label + ', réessaie plus tard');
+  if (TEST_MODE && typeof window !== 'undefined' && typeof window.alert === 'function') {
+    const detail = [
+      e?.code            != null ? 'code: ' + e.code : null,
+      e?.message         ? 'message: ' + e.message : null,
+      e?.underlyingErrorMessage ? 'underlying: ' + e.underlyingErrorMessage : null,
+    ].filter(Boolean).join('\n\n');
+    window.alert('[billing] ' + label + '\n\n' + (detail || '(aucun détail fourni)'));
+  }
 }
 
 // ⚠️ MANUAL ACTION: set this to the RevenueCat *public* Android SDK key before
@@ -147,8 +156,7 @@ async function _buyLifetime(Purchases, tier) {
     }
   } catch (e) {
     if (e?.userCancelled) return;      // user dismissed the native sheet
-    console.error('[billing] purchase failed', e);
-    showToast('Achat échoué, réessaie plus tard' + _errDetail(e));
+    _reportBillingError('Achat échoué', e);
   }
 }
 
@@ -164,8 +172,7 @@ async function _restore(Purchases) {
       showToast('Aucun achat à restaurer');
     }
   } catch (e) {
-    console.error('[billing] restore failed', e);
-    showToast('Restauration échouée');
+    _reportBillingError('Restauration échouée', e);
   }
 }
 
