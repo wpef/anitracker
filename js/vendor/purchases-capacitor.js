@@ -1,4 +1,4 @@
-/* Vendored self-contained ESM bundle of @revenuecat/purchases-capacitor@9.2.2 (deps incl. @capacitor/core@6 inlined). Generated with esbuild from the installed npm package — do not edit by hand; regenerate after upgrading the package. Replaces the runtime esm.sh CDN import, which required 3 chained network fetches at app start and broke billing when unreachable in the Android WebView. */
+/* Vendored self-contained ESM bundle of @revenuecat/purchases-capacitor@11.3.2 (deps incl. @capacitor/core inlined). Generated with esbuild from the installed npm package — do not edit by hand; regenerate after upgrading the package. Replaces the runtime esm.sh CDN import, which broke billing in the Android WebView. v11+ is required for RevenueCat Test Store support (Capacitor >=7). */
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __esm = (fn, res, err) => function __init() {
@@ -15,32 +15,9 @@ var __export = (target, all) => {
 };
 
 // node_modules/@capacitor/core/dist/index.js
-var createCapacitorPlatforms, initPlatforms, CapacitorPlatforms, addPlatform, setPlatform, ExceptionCode, CapacitorException, getPlatformId, createCapacitor, initCapacitorGlobal, Capacitor, registerPlugin, Plugins, WebPlugin, encode, decode, CapacitorCookiesPluginWeb, CapacitorCookies, readBlobAsBase64, normalizeHttpHeaders, buildUrlParams, buildRequestInit, CapacitorHttpPluginWeb, CapacitorHttp;
+var ExceptionCode, CapacitorException, getPlatformId, createCapacitor, initCapacitorGlobal, Capacitor, registerPlugin, WebPlugin, encode, decode, CapacitorCookiesPluginWeb, CapacitorCookies, readBlobAsBase64, normalizeHttpHeaders, buildUrlParams, buildRequestInit, CapacitorHttpPluginWeb, CapacitorHttp;
 var init_dist = __esm({
   "node_modules/@capacitor/core/dist/index.js"() {
-    createCapacitorPlatforms = (win) => {
-      const defaultPlatformMap = /* @__PURE__ */ new Map();
-      defaultPlatformMap.set("web", { name: "web" });
-      const capPlatforms = win.CapacitorPlatforms || {
-        currentPlatform: { name: "web" },
-        platforms: defaultPlatformMap
-      };
-      const addPlatform2 = (name, platform) => {
-        capPlatforms.platforms.set(name, platform);
-      };
-      const setPlatform2 = (name) => {
-        if (capPlatforms.platforms.has(name)) {
-          capPlatforms.currentPlatform = capPlatforms.platforms.get(name);
-        }
-      };
-      capPlatforms.addPlatform = addPlatform2;
-      capPlatforms.setPlatform = setPlatform2;
-      return capPlatforms;
-    };
-    initPlatforms = (win) => win.CapacitorPlatforms = createCapacitorPlatforms(win);
-    CapacitorPlatforms = /* @__PURE__ */ initPlatforms(typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {});
-    addPlatform = CapacitorPlatforms.addPlatform;
-    setPlatform = CapacitorPlatforms.setPlatform;
     (function(ExceptionCode2) {
       ExceptionCode2["Unimplemented"] = "UNIMPLEMENTED";
       ExceptionCode2["Unavailable"] = "UNAVAILABLE";
@@ -64,18 +41,14 @@ var init_dist = __esm({
       }
     };
     createCapacitor = (win) => {
-      var _a, _b, _c, _d, _e;
       const capCustomPlatform = win.CapacitorCustomPlatform || null;
       const cap = win.Capacitor || {};
-      const Plugins2 = cap.Plugins = cap.Plugins || {};
-      const capPlatforms = win.CapacitorPlatforms;
-      const defaultGetPlatform = () => {
+      const Plugins = cap.Plugins = cap.Plugins || {};
+      const getPlatform = () => {
         return capCustomPlatform !== null ? capCustomPlatform.name : getPlatformId(win);
       };
-      const getPlatform = ((_a = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _a === void 0 ? void 0 : _a.getPlatform) || defaultGetPlatform;
-      const defaultIsNativePlatform = () => getPlatform() !== "web";
-      const isNativePlatform = ((_b = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _b === void 0 ? void 0 : _b.isNativePlatform) || defaultIsNativePlatform;
-      const defaultIsPluginAvailable = (pluginName) => {
+      const isNativePlatform = () => getPlatform() !== "web";
+      const isPluginAvailable = (pluginName) => {
         const plugin = registeredPlugins.get(pluginName);
         if (plugin === null || plugin === void 0 ? void 0 : plugin.platforms.has(getPlatform())) {
           return true;
@@ -85,18 +58,13 @@ var init_dist = __esm({
         }
         return false;
       };
-      const isPluginAvailable = ((_c = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _c === void 0 ? void 0 : _c.isPluginAvailable) || defaultIsPluginAvailable;
-      const defaultGetPluginHeader = (pluginName) => {
-        var _a2;
-        return (_a2 = cap.PluginHeaders) === null || _a2 === void 0 ? void 0 : _a2.find((h) => h.name === pluginName);
+      const getPluginHeader = (pluginName) => {
+        var _a;
+        return (_a = cap.PluginHeaders) === null || _a === void 0 ? void 0 : _a.find((h) => h.name === pluginName);
       };
-      const getPluginHeader = ((_d = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _d === void 0 ? void 0 : _d.getPluginHeader) || defaultGetPluginHeader;
       const handleError = (err) => win.console.error(err);
-      const pluginMethodNoop = (_target, prop, pluginName) => {
-        return Promise.reject(`${pluginName} does not have an implementation of "${prop}".`);
-      };
       const registeredPlugins = /* @__PURE__ */ new Map();
-      const defaultRegisterPlugin = (pluginName, jsImplementations = {}) => {
+      const registerPlugin2 = (pluginName, jsImplementations = {}) => {
         const registeredPlugin = registeredPlugins.get(pluginName);
         if (registeredPlugin) {
           console.warn(`Capacitor plugin "${pluginName}" already registered. Cannot register plugins twice.`);
@@ -114,7 +82,7 @@ var init_dist = __esm({
           return jsImplementation;
         };
         const createPluginMethod = (impl, prop) => {
-          var _a2, _b2;
+          var _a, _b;
           if (pluginHeader) {
             const methodHeader = pluginHeader === null || pluginHeader === void 0 ? void 0 : pluginHeader.methods.find((m) => prop === m.name);
             if (methodHeader) {
@@ -124,10 +92,10 @@ var init_dist = __esm({
                 return (options, callback) => cap.nativeCallback(pluginName, prop.toString(), options, callback);
               }
             } else if (impl) {
-              return (_a2 = impl[prop]) === null || _a2 === void 0 ? void 0 : _a2.bind(impl);
+              return (_a = impl[prop]) === null || _a === void 0 ? void 0 : _a.bind(impl);
             }
           } else if (impl) {
-            return (_b2 = impl[prop]) === null || _b2 === void 0 ? void 0 : _b2.bind(impl);
+            return (_b = impl[prop]) === null || _b === void 0 ? void 0 : _b.bind(impl);
           } else {
             throw new CapacitorException(`"${pluginName}" plugin is not implemented on ${platform}`, ExceptionCode.Unimplemented);
           }
@@ -193,18 +161,14 @@ var init_dist = __esm({
             }
           }
         });
-        Plugins2[pluginName] = proxy;
+        Plugins[pluginName] = proxy;
         registeredPlugins.set(pluginName, {
           name: pluginName,
           proxy,
-          platforms: /* @__PURE__ */ new Set([
-            ...Object.keys(jsImplementations),
-            ...pluginHeader ? [platform] : []
-          ])
+          platforms: /* @__PURE__ */ new Set([...Object.keys(jsImplementations), ...pluginHeader ? [platform] : []])
         });
         return proxy;
       };
-      const registerPlugin2 = ((_e = capPlatforms === null || capPlatforms === void 0 ? void 0 : capPlatforms.currentPlatform) === null || _e === void 0 ? void 0 : _e.registerPlugin) || defaultRegisterPlugin;
       if (!cap.convertFileSrc) {
         cap.convertFileSrc = (filePath) => filePath;
       }
@@ -212,28 +176,20 @@ var init_dist = __esm({
       cap.handleError = handleError;
       cap.isNativePlatform = isNativePlatform;
       cap.isPluginAvailable = isPluginAvailable;
-      cap.pluginMethodNoop = pluginMethodNoop;
       cap.registerPlugin = registerPlugin2;
       cap.Exception = CapacitorException;
       cap.DEBUG = !!cap.DEBUG;
       cap.isLoggingEnabled = !!cap.isLoggingEnabled;
-      cap.platform = cap.getPlatform();
-      cap.isNative = cap.isNativePlatform();
       return cap;
     };
     initCapacitorGlobal = (win) => win.Capacitor = createCapacitor(win);
     Capacitor = /* @__PURE__ */ initCapacitorGlobal(typeof globalThis !== "undefined" ? globalThis : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : typeof global !== "undefined" ? global : {});
     registerPlugin = Capacitor.registerPlugin;
-    Plugins = Capacitor.Plugins;
     WebPlugin = class {
-      constructor(config) {
+      constructor() {
         this.listeners = {};
         this.retainedEventArguments = {};
         this.windowListeners = {};
-        if (config) {
-          console.warn(`Capacitor WebPlugin "${config.name}" config object was deprecated in v3 and will be removed in v4.`);
-          this.config = config;
-        }
       }
       addListener(eventName, listenerFunc) {
         let firstListener = false;
@@ -277,7 +233,8 @@ var init_dist = __esm({
         listeners.forEach((listener) => listener(data));
       }
       hasListeners(eventName) {
-        return !!this.listeners[eventName].length;
+        var _a;
+        return !!((_a = this.listeners[eventName]) === null || _a === void 0 ? void 0 : _a.length);
       }
       registerWindowListener(windowEventName, pluginEventName) {
         this.windowListeners[pluginEventName] = {
@@ -348,7 +305,7 @@ var init_dist = __esm({
         try {
           const encodedKey = encode(options.key);
           const encodedValue = encode(options.value);
-          const expires = `; expires=${(options.expires || "").replace("expires=", "")}`;
+          const expires = options.expires ? `; expires=${options.expires.replace("expires=", "")}` : "";
           const path = (options.path || "/").replace("path=", "");
           const domain = options.url != null && options.url.length > 0 ? `domain=${options.url}` : "";
           document.cookie = `${encodedKey}=${encodedValue || ""}${expires}; path=${path}; ${domain};`;
@@ -599,6 +556,7 @@ var init_errors = __esm({
       PURCHASES_ERROR_CODE2["API_ENDPOINT_BLOCKED"] = "33";
       PURCHASES_ERROR_CODE2["INVALID_PROMOTIONAL_OFFER_ERROR"] = "34";
       PURCHASES_ERROR_CODE2["OFFLINE_CONNECTION_ERROR"] = "35";
+      PURCHASES_ERROR_CODE2["TEST_STORE_SIMULATED_PURCHASE_ERROR"] = "42";
     })(PURCHASES_ERROR_CODE || (PURCHASES_ERROR_CODE = {}));
     UninitializedPurchasesError = /** @class */
     (function(_super) {
@@ -753,6 +711,12 @@ var init_enums = __esm({
   }
 });
 
+// node_modules/@revenuecat/purchases-typescript-internal-esm/dist/purchaseParams.js
+var init_purchaseParams = __esm({
+  "node_modules/@revenuecat/purchases-typescript-internal-esm/dist/purchaseParams.js"() {
+  }
+});
+
 // node_modules/@revenuecat/purchases-typescript-internal-esm/dist/purchasesConfiguration.js
 var init_purchasesConfiguration = __esm({
   "node_modules/@revenuecat/purchases-typescript-internal-esm/dist/purchasesConfiguration.js"() {
@@ -779,6 +743,18 @@ var init_webRedemption = __esm({
   }
 });
 
+// node_modules/@revenuecat/purchases-typescript-internal-esm/dist/storefront.js
+var init_storefront = __esm({
+  "node_modules/@revenuecat/purchases-typescript-internal-esm/dist/storefront.js"() {
+  }
+});
+
+// node_modules/@revenuecat/purchases-typescript-internal-esm/dist/virtualCurrency.js
+var init_virtualCurrency = __esm({
+  "node_modules/@revenuecat/purchases-typescript-internal-esm/dist/virtualCurrency.js"() {
+  }
+});
+
 // node_modules/@revenuecat/purchases-typescript-internal-esm/dist/index.js
 var init_dist2 = __esm({
   "node_modules/@revenuecat/purchases-typescript-internal-esm/dist/index.js"() {
@@ -786,9 +762,12 @@ var init_dist2 = __esm({
     init_customerInfo();
     init_offerings();
     init_enums();
+    init_purchaseParams();
     init_purchasesConfiguration();
     init_callbackTypes();
     init_webRedemption();
+    init_storefront();
+    init_virtualCurrency();
   }
 });
 
@@ -827,9 +806,20 @@ var init_web = __esm({
           nonSubscriptionTransactions: [],
           subscriptionsByProductIdentifier: {}
         };
+        this.mockEmptyVirtualCurrencies = {
+          all: {}
+        };
       }
       configure(_configuration) {
         return this.mockNonReturningFunctionIfEnabled("configure");
+      }
+      parseAsWebPurchaseRedemption(_options) {
+        return this.mockReturningFunctionIfEnabled("parseAsWebPurchaseRedemption", { webPurchaseRedemption: null });
+      }
+      redeemWebPurchase(_options) {
+        return this.mockReturningFunctionIfEnabled("redeemWebPurchase", {
+          result: WebPurchaseRedemptionResultType.INVALID_TOKEN
+        });
       }
       setMockWebResults(options) {
         this.shouldMockWebResults = options.shouldMockWebResults;
@@ -925,6 +915,11 @@ var init_web = __esm({
       getAppUserID() {
         return this.mockReturningFunctionIfEnabled("getAppUserID", {
           appUserID: "test-web-user-id"
+        });
+      }
+      getStorefront() {
+        return this.mockReturningFunctionIfEnabled("getStorefront", {
+          countryCode: "USA"
         });
       }
       logIn(_appUserID) {
@@ -1086,6 +1081,19 @@ var init_web = __esm({
       isConfigured() {
         const mockResult = { isConfigured: true };
         return this.mockReturningFunctionIfEnabled("isConfigured", mockResult);
+      }
+      getVirtualCurrencies() {
+        return this.mockReturningFunctionIfEnabled("getVirtualCurrencies", {
+          virtualCurrencies: this.mockEmptyVirtualCurrencies
+        });
+      }
+      invalidateVirtualCurrenciesCache() {
+        return this.mockNonReturningFunctionIfEnabled("invalidateVirtualCurrenciesCache");
+      }
+      getCachedVirtualCurrencies() {
+        return this.mockReturningFunctionIfEnabled("getCachedVirtualCurrencies", {
+          cachedVirtualCurrencies: this.mockEmptyVirtualCurrencies
+        });
       }
       mockTransaction(productIdentifier) {
         return {
