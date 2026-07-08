@@ -25,6 +25,20 @@
 
 import { setPurchaseHandler, setRestoreHandler, hidePremiumCTA } from './ui-premium.js';
 import { showToast } from './toast.js';
+import { TEST_MODE } from './test-mode.js';
+
+/**
+ * Short human detail for a RevenueCat error, appended to toasts in test builds
+ * only so the tester can read the real failure on-device (no laptop needed).
+ * Never shown in production (would leak internals).
+ * @param {any} e
+ * @returns {string}
+ */
+function _errDetail(e) {
+  if (!TEST_MODE) return '';
+  const parts = [e?.code, e?.message, e?.underlyingErrorMessage].filter(Boolean);
+  return parts.length ? ' — ' + parts.join(' / ') : '';
+}
 
 // ⚠️ MANUAL ACTION: set this to the RevenueCat *public* Android SDK key before
 // the native release (RevenueCat dashboard → Project → API keys). Leaving it
@@ -118,7 +132,11 @@ async function _buyLifetime(Purchases, tier) {
     const pkgs = offerings?.current?.availablePackages || [];
     // Pick the package whose product matches the wanted tier (fallback: first).
     const pkg = pkgs.find(p => p?.product?.identifier === PRODUCT[wanted]) || pkgs[0];
-    if (!pkg) { showToast('Offre indisponible pour le moment'); return; }
+    if (!pkg) {
+      console.warn('[billing] no package for', PRODUCT[wanted], '— offering:', offerings?.current?.identifier, 'packages:', pkgs.map(p => p?.product?.identifier));
+      showToast('Offre indisponible pour le moment');
+      return;
+    }
 
     const { customerInfo } = await Purchases.purchasePackage({ aPackage: pkg });
     const granted = _entitledTier(customerInfo);
@@ -130,7 +148,7 @@ async function _buyLifetime(Purchases, tier) {
   } catch (e) {
     if (e?.userCancelled) return;      // user dismissed the native sheet
     console.error('[billing] purchase failed', e);
-    showToast('Achat échoué, réessaie plus tard');
+    showToast('Achat échoué, réessaie plus tard' + _errDetail(e));
   }
 }
 
