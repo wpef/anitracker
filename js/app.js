@@ -35,6 +35,22 @@ let _customTypeModule = null;
 let _appInitialized = false;  // prevents double-init on rapid auth changes
 let _isDemo = false;
 let _currentHouseholdId = null;
+let _uiReady = false;         // true once the tier-gated UI has been built
+
+/**
+ * Re-render the tier-gated surfaces (type selectors, locks, history/stats
+ * limits) after the subscription tier changes at runtime — e.g. right after a
+ * purchase, so locks drop live without a reload. No-op until the initial UI is
+ * built (the boot render handles the first pass).
+ */
+function refreshTierGatedUI() {
+  if (!_uiReady) return;
+  initNewEntry();
+  initQuick();
+  const active = document.querySelector('.page.active');
+  if (active?.id === 'page-stats')   renderStats();
+  if (active?.id === 'page-history') renderHistory();
+}
 
 // ── Chargement DB ──────────────────────────────────────────────────────────
 
@@ -288,9 +304,11 @@ async function initApp(user) {
     // Non-fatal: founder grant best-effort.
   }
 
-  // Listen for tier changes (free | paid | pro)
+  // Listen for tier changes (free | paid | pro). A purchase writes the
+  // subscription node → this fires → re-render so the locks drop live.
   _householdModule.onSubscriptionChange(householdId, (tier) => {
     setTier(tier);
+    refreshTierGatedUI();
   });
 
   // Wire one-shot billing (native only; no-op on web/demo)
@@ -321,6 +339,7 @@ async function initApp(user) {
   initNewEntry();
   initQuick();
   initExport();
+  _uiReady = true;   // subsequent tier changes now trigger a live re-render
 
   // Lazy-load custom type module
   _customTypeModule = await import('./ui-custom-type.js');
