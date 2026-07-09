@@ -22,9 +22,9 @@ name: Publish to Play Store (internal)
 #               PLAY_SERVICE_ACCOUNT_JSON
 #
 # When PLAY_SERVICE_ACCOUNT_JSON is present, tagging (e.g. `git tag v1.0.1 &&
-# git push origin v1.0.1`) builds and uploads to the internal track as a DRAFT
-# (status: draft) so you review/promote it by hand in Play Console — nothing
-# goes to real users automatically.
+# git push origin v1.0.1`) builds and uploads to the internal track with
+# status: completed — the release goes live to your *internal testers* with no
+# manual promote step. Internal testers only (never production/real users).
 #
 # See store/distribution.md for the full setup walkthrough.
 
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -104,7 +104,7 @@ jobs:
           packageName: com.anitracker.app
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: internal
-          status: draft
+          status: completed
 
       - name: Clean up secrets on disk
         if: always()

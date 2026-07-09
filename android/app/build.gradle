@@ -23,7 +23,7 @@ android {
                 keyAlias keystoreProps['keyAlias']
                 keyPassword keystoreProps['keyPassword']
             } else if (System.getenv("ANDROID_KEYSTORE_PASSWORD") != null) {
-                storeFile rootProject.file("upload-keystore.jks")
+                storeFile file("upload-keystore.jks")
                 storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
                 keyAlias System.getenv("ANDROID_KEY_ALIAS")
                 keyPassword System.getenv("ANDROID_KEY_PASSWORD")
